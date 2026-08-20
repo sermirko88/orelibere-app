@@ -1951,9 +1951,10 @@ function TutorialOverlay({ step, steps, frameRef, onNext, onFinish }) {
   );
 }
 
-function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpenReport, onOpenGoal, onSimulateBankTx, rateSource }) {
+function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpenReport, onOpenGoal, onSimulateBankTx, rateSource, onEditEntry, onDeleteEntry }) {
   const [showConcept, setShowConcept] = useState(false);
   const [reminderSaved, setReminderSaved] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
   const hourly = profile.hourlyRate;
   const dailyHours = 8;
   const fixedMonthly = profile.fixedList.reduce((s, f) => s + toMonthly(f), 0);
@@ -2092,19 +2093,24 @@ function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpen
             {todayEntries.map((e, i) => {
               const EntryIcon = (typeof e.icon === "function" ? e.icon : null) || (CATEGORIES.find((c) => c.id === e.iconId)?.icon) || MoreHorizontal;
               return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px" }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button
+                key={e.id ?? i}
+                onClick={() => setEditingEntry(e)}
+                style={{ width: "100%", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px" }}
+              >
+                <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <EntryIcon size={15} color={C.brass} />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: C.paper, fontSize: 13, fontWeight: 600 }}>{e.cat}</div>
                   <div style={{ color: C.textDim, fontSize: 11, fontFamily: MONO_FONT }}>{e.time}</div>
                 </div>
-                <div style={{ textAlign: "right" }}>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
                   <div style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.paper }}>{e.euro.toFixed(2)}€</div>
                   <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: C.brass }}>{euroToTime(e.euro, hourly)}</div>
                 </div>
-              </div>
+                <ChevronRight size={14} color={C.textFainter} style={{ flexShrink: 0 }} />
+              </button>
               );
             })}
           </div>
@@ -2147,6 +2153,105 @@ function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpen
           </div>
         </div>
       )}
+
+      {editingEntry && (
+        <EditEntrySheet
+          entry={editingEntry}
+          hourly={hourly}
+          onClose={() => setEditingEntry(null)}
+          onSave={onEditEntry}
+          onDelete={onDeleteEntry}
+        />
+      )}
+    </div>
+  );
+}
+
+// Foglio per correggere o cancellare una spesa già registrata, aperto toccando
+// la riga corrispondente in "Timbrature di oggi".
+function EditEntrySheet({ entry, hourly, onClose, onSave, onDelete }) {
+  const [amountStr, setAmountStr] = useState(String(entry.euro).replace(".", ","));
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const EntryIcon = (CATEGORIES.find((c) => c.id === entry.iconId)?.icon) || MoreHorizontal;
+  const numericAmount = parseFloat(amountStr.replace(",", ".")) || 0;
+  const changed = numericAmount !== entry.euro;
+
+  const handleSave = () => {
+    if (numericAmount <= 0) return;
+    onSave(entry.id, numericAmount);
+    onClose();
+  };
+  const handleDelete = () => {
+    onDelete(entry.id);
+    onClose();
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={onClose} />
+      <div style={{ position: "relative", backgroundColor: C.panel, borderTop: "1px solid #DED7C4", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
+        <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <EntryIcon size={20} color={C.brass} />
+            <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>{entry.cat}</span>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
+        </div>
+
+        <div style={{ marginBottom: 6 }}><FieldLabel>Importo</FieldLabel></div>
+        <div style={{ marginBottom: 16 }}>
+          <TextInput type="number" value={amountStr} prefix="€" big onChange={(e) => setAmountStr(e.target.value)} />
+        </div>
+
+        {numericAmount > 0 && (
+          <div style={{ fontSize: 12, color: C.textFaint, marginBottom: 20, fontFamily: MONO_FONT }}>
+            → {euroToTime(numericAmount, hourly)} del tuo tempo
+          </div>
+        )}
+
+        {!confirmDelete ? (
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              style={{ flex: 1, padding: "13px 0", borderRadius: 4, border: `1px solid ${C.rust}`, background: "none", color: C.rust, fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}
+            >
+              Elimina
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!changed || numericAmount <= 0}
+              style={{
+                flex: 2, padding: "13px 0", borderRadius: 4, border: "none", fontWeight: 700, fontSize: 13.5,
+                cursor: changed && numericAmount > 0 ? "pointer" : "default",
+                backgroundColor: changed && numericAmount > 0 ? C.brass : "#DED7C4",
+                color: changed && numericAmount > 0 ? C.ink : C.textDim,
+              }}
+            >
+              Salva modifica
+            </button>
+          </div>
+        ) : (
+          <div style={{ backgroundColor: "rgba(225,74,46,0.08)", border: `1px solid ${C.rust}`, borderRadius: 6, padding: 14 }}>
+            <p style={{ fontSize: 13, color: C.paper, margin: "0 0 12px 0" }}>Eliminare questa spesa? Non si può annullare.</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                style={{ flex: 1, padding: "11px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleDelete}
+                style={{ flex: 1, padding: "11px 0", borderRadius: 4, border: "none", backgroundColor: C.rust, color: "#FFFFFF", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+              >
+                Sì, elimina
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -3128,6 +3233,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   const [showAdd, setShowAdd] = useState(false);
   const [showProgetti, setShowProgetti] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [editingCalEntry, setEditingCalEntry] = useState(null); // voce in modifica (turno/entrata/uscita)
   const [form, setForm] = useState({ tipo: redditoTipo === "variabile" ? "turno" : "uscita", ore: "", importo: "", descrizione: "" });
 
   const year = viewDate.getFullYear();
@@ -3183,6 +3289,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   const removeEntry = (k, id) => setCalendario({ ...calendario, [k]: (calendario[k] || []).filter((e) => e.id !== id) });
   const toggleStato = (k, id) =>
     setCalendario({ ...calendario, [k]: (calendario[k] || []).map((e) => (e.id === id ? { ...e, stato: e.stato === "consuntivo" ? "pianificato" : "consuntivo" } : e)) });
+  const editEntryCal = (k, id, patch) =>
+    setCalendario({ ...calendario, [k]: (calendario[k] || []).map((e) => (e.id === id ? { ...e, ...patch } : e)) });
 
   return (
     <div style={{ flex: 1, overflowY: "auto", paddingBottom: 96 }}>
@@ -3382,7 +3490,10 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                 <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {e.tipo === "turno" ? <Clock size={13} color={C.fixedBar} /> : e.tipo === "entrata" ? <TrendingUp size={13} color={C.green} /> : <TrendingDown size={13} color={C.rust} />}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <button
+                  onClick={() => setEditingCalEntry(e)}
+                  style={{ flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                >
                   <div style={{ fontSize: 12.5, color: C.paper, fontWeight: 600 }}>
                     {e.tipo === "turno"
                       ? `Turno · ${e.ore}h`
@@ -3391,13 +3502,13 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                         : `Uscita · ${Number(e.importo).toFixed(0)}€ · ${euroToTime(Number(e.importo), hourlyEstimate)}`}
                     {e.descrizione ? ` — ${e.descrizione}` : ""}
                   </div>
-                  <button
-                    onClick={() => toggleStato(selectedKey, e.id)}
-                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 10.5, fontFamily: MONO_FONT, color: e.stato === "consuntivo" ? C.green : C.textFaint, marginTop: 2 }}
+                  <span
+                    onClick={(ev) => { ev.stopPropagation(); toggleStato(selectedKey, e.id); }}
+                    style={{ display: "inline-block", fontSize: 10.5, fontFamily: MONO_FONT, color: e.stato === "consuntivo" ? C.green : C.textFaint, marginTop: 2 }}
                   >
                     {e.stato === "consuntivo" ? "✓ consuntivo" : "○ pianificato — tocca per confermare"}
-                  </button>
-                </div>
+                  </span>
+                </button>
                 <button onClick={() => removeEntry(selectedKey, e.id)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={14} color={C.textDim} /></button>
                 {e.tipo === "uscita" && e.stato === "pianificato" && (
                   <button onClick={() => scaricaPromemoria({ ...e, date: selectedDay, dateStr: selectedKey })} style={{ background: "none", border: "none", cursor: "pointer" }} title="Aggiungi promemoria al telefono">
@@ -3455,6 +3566,118 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
           </div>
         </div>
       )}
+
+      {editingCalEntry && (
+        <EditCalendarioEntrySheet
+          entry={editingCalEntry}
+          onClose={() => setEditingCalEntry(null)}
+          onSave={(id, patch) => editEntryCal(dateKey(selectedDay), id, patch)}
+          onDelete={(id) => removeEntry(dateKey(selectedDay), id)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Foglio per correggere o cancellare una voce del Calendario già inserita (turno,
+// entrata o uscita), aperto toccando la voce nel foglio del giorno.
+function EditCalendarioEntrySheet({ entry, onClose, onSave, onDelete }) {
+  const [ore, setOre] = useState(entry.tipo === "turno" ? String(entry.ore ?? "") : "");
+  const [importo, setImporto] = useState(entry.tipo !== "turno" ? String(entry.importo ?? "") : "");
+  const [descrizione, setDescrizione] = useState(entry.descrizione || "");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const label = entry.tipo === "turno" ? "Turno" : entry.tipo === "entrata" ? "Entrata" : "Uscita";
+  const valid = entry.tipo === "turno" ? Number(ore) > 0 : Number(importo) > 0;
+
+  const handleSave = () => {
+    if (!valid) return;
+    const patch = { descrizione };
+    if (entry.tipo === "turno") patch.ore = Number(ore) || 0;
+    else patch.importo = Number(importo) || 0;
+    onSave(entry.id, patch);
+    onClose();
+  };
+  const handleDelete = () => {
+    onDelete(entry.id);
+    onClose();
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 65, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={onClose} />
+      <div style={{ position: "relative", backgroundColor: C.panel, borderTop: "1px solid #DED7C4", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
+        <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Modifica {label.toLowerCase()}</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
+        </div>
+
+        {entry.tipo === "turno" ? (
+          <>
+            <FieldLabel>Ore lavorate</FieldLabel>
+            <div style={{ marginTop: 4, marginBottom: 12 }}>
+              <TextInput type="number" value={ore} onChange={(e) => setOre(e.target.value)} suffix="h" />
+            </div>
+          </>
+        ) : (
+          <>
+            <FieldLabel>Importo</FieldLabel>
+            <div style={{ marginTop: 4, marginBottom: 12 }}>
+              <TextInput type="number" value={importo} onChange={(e) => setImporto(e.target.value)} prefix="€" />
+            </div>
+          </>
+        )}
+
+        <FieldLabel>Descrizione (opzionale)</FieldLabel>
+        <input
+          type="text" value={descrizione}
+          onChange={(e) => setDescrizione(e.target.value)}
+          style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 20, outline: "none" }}
+        />
+
+        {!confirmDelete ? (
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              style={{ flex: 1, padding: "13px 0", borderRadius: 4, border: `1px solid ${C.rust}`, background: "none", color: C.rust, fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}
+            >
+              Elimina
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!valid}
+              style={{
+                flex: 2, padding: "13px 0", borderRadius: 4, border: "none", fontWeight: 700, fontSize: 13.5,
+                cursor: valid ? "pointer" : "default",
+                backgroundColor: valid ? C.brass : "#DED7C4",
+                color: valid ? C.ink : C.textDim,
+              }}
+            >
+              Salva modifica
+            </button>
+          </div>
+        ) : (
+          <div style={{ backgroundColor: "rgba(225,74,46,0.08)", border: `1px solid ${C.rust}`, borderRadius: 6, padding: 14 }}>
+            <p style={{ fontSize: 13, color: C.paper, margin: "0 0 12px 0" }}>Eliminare questa voce? Non si può annullare.</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                style={{ flex: 1, padding: "11px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleDelete}
+                style={{ flex: 1, padding: "11px 0", borderRadius: 4, border: "none", backgroundColor: C.rust, color: "#FFFFFF", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+              >
+                Sì, elimina
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -4722,6 +4945,11 @@ function MainApp({ currentUser, onChangeUser }) {
   const [categorizeOpen, setCategorizeOpen] = useState(false);
   const [txFeed, setTxFeed] = useState(null); // elenco transazioni della schermata Spese, persistente tra i cambi di tab
   const [entries, setEntries] = useState([]); // nessuna spesa demo: si parte da un diario vuoto
+  // Aggiunge una timbratura assegnandole un id univoco (se non lo ha già), così
+  // in seguito si può ritrovarla per modificarla o eliminarla.
+  const addEntry = (e) => setEntries((prev) => [{ id: e.id ?? Date.now() + Math.random(), ...e }, ...prev]);
+  const editEntry = (id, newEuro) => setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, euro: newEuro } : e)));
+  const deleteEntry = (id) => setEntries((prev) => prev.filter((e) => e.id !== id));
   const [showClosureLockedInfo, setShowClosureLockedInfo] = useState(false); // spiegazione quando si tocca "Chiusura" prima che si attivi da sola
   const [showClosurePaywall, setShowClosurePaywall] = useState(false); // paywall quando si tocca "Chiusura" senza avere Premium
 
@@ -4967,6 +5195,8 @@ function MainApp({ currentUser, onChangeUser }) {
               onOpenGoal={() => setTab("goal")}
               onSimulateBankTx={() => setBankTx(generateFakeTransaction())}
               rateSource={data.redditoTipo === "variabile" ? (realRateInfo.ready ? "reale" : "stima") : null}
+              onEditEntry={editEntry}
+              onDeleteEntry={deleteEntry}
             />
           )}
           {tab === "sim" && <SimulatoreScreen hourly={hourlyRate} onUnlock={handleUnlockTier} />}
@@ -5052,11 +5282,11 @@ function MainApp({ currentUser, onChangeUser }) {
                 setFeed={setTxFeed}
                 onBack={() => setTab("diario")}
                 onOpenSettings={() => setTab("settings")}
-                onCategorize={(e) => setEntries([e, ...entries])}
+                onCategorize={addEntry}
               />
             </LockedFeature>
           )}
-          {addOpen && <AddSheet hourly={hourlyRate} onClose={() => setAddOpen(false)} onAdd={(e) => setEntries([e, ...entries])} />}
+          {addOpen && <AddSheet hourly={hourlyRate} onClose={() => setAddOpen(false)} onAdd={addEntry} />}
           {bankTx && !categorizeOpen && (
             <BankNotificationBanner tx={bankTx} onTap={() => setCategorizeOpen(true)} onDismiss={() => setBankTx(null)} />
           )}
@@ -5065,7 +5295,7 @@ function MainApp({ currentUser, onChangeUser }) {
               tx={bankTx}
               hourly={hourlyRate}
               onClose={() => { setCategorizeOpen(false); setBankTx(null); }}
-              onConfirm={(e) => setEntries([e, ...entries])}
+              onConfirm={addEntry}
             />
           )}
           {showClosureLockedInfo && (
