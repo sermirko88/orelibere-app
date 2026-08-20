@@ -790,11 +790,133 @@ function LockedFeatureSheet({ minTier, featureName, description, developmentNote
   );
 }
 
+// Form di interesse per i "Conti collegati": invece del solito paywall-sblocco (finto,
+// per i tester), qui chiediamo davvero se la funzione servirebbe e quanto la si
+// pagherebbe — così si decide di costruirla solo se c'è domanda reale, prima di
+// spendere soldi e tempo in burocrazia bancaria.
+function BankInterestSheet({ userName, onClose }) {
+  const [email, setEmail] = useState("");
+  const [disponibilita, setDisponibilita] = useState(null);
+  const [banca, setBanca] = useState("");
+  const [status, setStatus] = useState("form"); // form | sending | done | error
+
+  const OPTIONS = [
+    { id: "no", label: "Non la userei" },
+    { id: "1-3", label: "1-3€ al mese" },
+    { id: "3-6", label: "3-6€ al mese" },
+    { id: "6+", label: "Più di 6€ al mese" },
+  ];
+
+  const canSubmit = email.trim().length > 3 && email.includes("@") && disponibilita;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setStatus("sending");
+    if (!supabaseConfigured) {
+      setStatus("done"); // salvataggio online non collegato: mostriamo comunque il grazie
+      return;
+    }
+    const { error } = await supabase.from("interesse_conti_bancari").insert({
+      email: email.trim(),
+      disponibilita,
+      banca: banca.trim() || null,
+      user_name: userName || null,
+    });
+    setStatus(error ? "error" : "done");
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 65, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.78)" }} onClick={status === "sending" ? undefined : onClose} />
+      <div style={{ position: "relative", backgroundColor: C.panel, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "20px 22px 32px 22px", maxHeight: "88vh", overflowY: "auto" }}>
+        <div style={{ width: 40, height: 4, backgroundColor: C.panelBorder, borderRadius: 4, margin: "0 auto 18px auto" }} />
+
+        {status !== "done" ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <span style={{
+                fontSize: 10, fontFamily: MONO_FONT, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                padding: "4px 10px", borderRadius: 999, backgroundColor: C.bg, color: C.textDim,
+              }}>
+                In valutazione
+              </span>
+              <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
+            </div>
+
+            <h3 style={{ fontSize: 19, fontWeight: 800, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 10px 0" }}>Conti collegati</h3>
+            <p style={{ fontSize: 13.5, color: C.textDim, fontFamily: SANS_FONT, lineHeight: 1.6, margin: "0 0 20px 0" }}>
+              Collegare banca, Revolut o PayPal per avere le spese in automatico richiede sviluppo e costi non piccoli — la costruiamo solo se sappiamo che serve davvero. Dicci se la useresti: ci aiuta a decidere.
+            </p>
+
+            <div style={{ marginBottom: 4 }}><FieldLabel>La tua email</FieldLabel></div>
+            <input
+              type="email" value={email} placeholder="nome@esempio.it"
+              onChange={(e) => setEmail(e.target.value)}
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }}
+            />
+
+            <div style={{ marginBottom: 8 }}><FieldLabel>Quanto pagheresti al mese per questa funzione?</FieldLabel></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+              {OPTIONS.map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => setDisponibilita(o.id)}
+                  style={{
+                    textAlign: "left", padding: "12px 14px", borderRadius: 6, cursor: "pointer",
+                    border: `1px solid ${disponibilita === o.id ? C.brass : C.panelBorder}`,
+                    backgroundColor: disponibilita === o.id ? "rgba(255,107,74,0.08)" : C.inputBg,
+                    color: disponibilita === o.id ? C.brassDim : C.paper,
+                    fontSize: 13.5, fontWeight: disponibilita === o.id ? 700 : 500,
+                  }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ marginBottom: 4 }}><FieldLabel>Che banca usi? (opzionale)</FieldLabel></div>
+            <input
+              type="text" value={banca} placeholder="es. Intesa Sanpaolo"
+              onChange={(e) => setBanca(e.target.value)}
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 20, outline: "none" }}
+            />
+
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit || status === "sending"}
+              style={{
+                width: "100%", padding: "13px 0", borderRadius: 6, border: "none", fontWeight: 700, fontSize: 14,
+                cursor: canSubmit ? "pointer" : "default",
+                backgroundColor: canSubmit ? C.brass : "#DED7C4",
+                color: canSubmit ? "#FFFFFF" : C.textDim,
+              }}
+            >
+              {status === "sending" ? "Invio..." : "Invia"}
+            </button>
+            {status === "error" && (
+              <p style={{ fontSize: 12, color: C.rust, marginTop: 10, textAlign: "center" }}>Qualcosa è andato storto — riprova tra poco.</p>
+            )}
+          </>
+        ) : (
+          <div style={{ padding: "20px 0", textAlign: "center" }}>
+            <div style={{ fontSize: 30, marginBottom: 10, color: C.green }}>✓</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.paper, marginBottom: 4 }}>Grazie!</div>
+            <div style={{ fontSize: 12.5, color: C.textFaint }}>Ti faremo sapere se la costruiamo davvero.</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Avvolge una funzione a pagamento non ancora sbloccata: la mostra in scala di grigi
 // (visibile ma non utilizzabile — niente tap sui contenuti), e ad ogni tocco apre la
 // spiegazione della funzione con il paywall. Se il piano richiesto è già attivo,
 // mostra semplicemente i figli normalmente, senza overlay.
-function LockedFeature({ minTier, featureName, description, developmentNote, hourlyRate, onUnlock, children }) {
+// variant="interest" mostra invece un form di interesse (email + disponibilità a
+// pagare) al posto dello sblocco-test — usato per funzioni non ancora costruite
+// davvero, come i Conti collegati.
+function LockedFeature({ minTier, featureName, description, developmentNote, hourlyRate, onUnlock, userName, variant = "unlock", children }) {
   useTier(); // forza il ri-render quando il piano cambia, così l'overlay sparisce da solo dopo lo sblocco
   const [showSheet, setShowSheet] = useState(false);
   const unlocked = hasTier(minTier);
@@ -812,15 +934,19 @@ function LockedFeature({ minTier, featureName, description, developmentNote, hou
         style={{ position: "absolute", inset: 0, background: "none", border: "none", cursor: "pointer", zIndex: 5 }}
       />
       {showSheet && (
-        <LockedFeatureSheet
-          minTier={minTier}
-          featureName={featureName}
-          description={description}
-          developmentNote={developmentNote}
-          hourlyRate={hourlyRate}
-          onClose={() => setShowSheet(false)}
-          onUnlock={onUnlock}
-        />
+        variant === "interest" ? (
+          <BankInterestSheet userName={userName} onClose={() => setShowSheet(false)} />
+        ) : (
+          <LockedFeatureSheet
+            minTier={minTier}
+            featureName={featureName}
+            description={description}
+            developmentNote={developmentNote}
+            hourlyRate={hourlyRate}
+            onClose={() => setShowSheet(false)}
+            onUnlock={onUnlock}
+          />
+        )
       )}
     </div>
   );
@@ -3937,7 +4063,7 @@ function RegimeFiscaleScreen({ data, setData, onBack }) {
   );
 }
 
-function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransactions, onChangeUser, onOpenRegime, onOpenImport, onOpenImportPDF, onOpenGuida, onReplayTutorial, hourlyRate, onUnlock }) {
+function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransactions, onChangeUser, onOpenRegime, onOpenImport, onOpenImportPDF, onOpenGuida, onReplayTutorial, hourlyRate, onUnlock, userName }) {
   const PERIOD_OPTIONS = [
     { id: "giorno", label: "Giorno", desc: "chiudi ogni giorno" },
     { id: "settimana", label: "Settimana", desc: "chiudi ogni settimana" },
@@ -4026,6 +4152,8 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
             developmentNote="In fase di sviluppo: il collegamento vero ai conti arriverà in un prossimo aggiornamento — qui stai vedendo un'anteprima con dati simulati."
             hourlyRate={hourlyRate}
             onUnlock={onUnlock}
+            userName={userName}
+            variant="interest"
           >
           <>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Conti collegati</div>
@@ -5223,7 +5351,7 @@ function MainApp({ currentUser, onChangeUser }) {
           {tab === "report" && <ReportScreen hourly={hourlyRate} profile={profile} onBack={() => setTab("diario")} onOpenClosure={handleOpenClosure} />}
           {tab === "closure" && <ClosureScreen hourly={hourlyRate} profile={profile} onBack={() => setTab("report")} onAllocate={addToGoalSaved} onCarryOver={setCarryOver} />}
           {tab === "goal" && <GoalScreen profile={profile} hourly={hourlyRate} onAddGoal={addGoal} onUnlock={handleUnlockTier} />}
-          {tab === "settings" && <SettingsScreen data={data} setData={setData} onBack={() => setTab("diario")} onFullOnboarding={() => { setReOnboarding(true); setStep(0); setOnboarded(false); }} onOpenTransactions={() => setTab("transactions")} onChangeUser={onChangeUser} onOpenRegime={() => setTab("regime")} onOpenImport={() => setTab("importcsv")} onOpenImportPDF={() => setTab("importpdf")} onOpenGuida={() => setTab("guida")} onReplayTutorial={replayTutorial} hourlyRate={hourlyRate} onUnlock={handleUnlockTier} />}
+          {tab === "settings" && <SettingsScreen data={data} setData={setData} onBack={() => setTab("diario")} onFullOnboarding={() => { setReOnboarding(true); setStep(0); setOnboarded(false); }} onOpenTransactions={() => setTab("transactions")} onChangeUser={onChangeUser} onOpenRegime={() => setTab("regime")} onOpenImport={() => setTab("importcsv")} onOpenImportPDF={() => setTab("importpdf")} onOpenGuida={() => setTab("guida")} onReplayTutorial={replayTutorial} hourlyRate={hourlyRate} onUnlock={handleUnlockTier} userName={currentUser} />}
           {tab === "regime" && (
             <LockedFeature
               minTier="elite"
@@ -5274,6 +5402,8 @@ function MainApp({ currentUser, onChangeUser }) {
               developmentNote="In fase di sviluppo: il collegamento vero ai conti arriverà in un prossimo aggiornamento — qui stai vedendo un'anteprima con dati simulati."
               hourlyRate={hourlyRate}
               onUnlock={handleUnlockTier}
+              userName={currentUser}
+              variant="interest"
             >
               <TransactionsScreen
                 hourly={hourlyRate}
