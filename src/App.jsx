@@ -5087,16 +5087,16 @@ function MainApp({ currentUser, onChangeUser }) {
         {(tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario") && (
           <div id="tut-tabbar" style={{ borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 16px" }}>
             <button onClick={() => setTab("diario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <Home size={20} color={tab === "diario" ? C.brass : C.paper} />
-              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "diario" ? C.brass : C.paper }}>Diario</span>
+              <Home size={20} color={tab === "diario" ? C.brass : C.fixedBar} />
+              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "diario" ? C.brass : C.fixedBar }}>Diario</span>
             </button>
             <button id="tut-tab-sim" onClick={() => setTab("sim")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <Calculator size={20} color={tab === "sim" ? C.brass : C.paper} />
-              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "sim" ? C.brass : C.paper }}>Simulatore</span>
+              <Calculator size={20} color={tab === "sim" ? C.brass : C.fixedBar} />
+              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "sim" ? C.brass : C.fixedBar }}>Simulatore</span>
             </button>
             <button id="tut-tab-calendario" onClick={() => setTab("calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <Calendar size={20} color={!hasTier("premium") ? "#C9C4B6" : tab === "calendario" ? C.brass : C.paper} />
-              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: !hasTier("premium") ? "#C9C4B6" : tab === "calendario" ? C.brass : C.paper }}>Calendario</span>
+              <Calendar size={20} color={!hasTier("premium") ? "#C9C4B6" : tab === "calendario" ? C.brass : C.fixedBar} />
+              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: !hasTier("premium") ? "#C9C4B6" : tab === "calendario" ? C.brass : C.fixedBar }}>Calendario</span>
             </button>
             <button
               id="tut-tab-closure"
@@ -5104,21 +5104,21 @@ function MainApp({ currentUser, onChangeUser }) {
               style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}
             >
               <div style={{ position: "relative" }}>
-                <HandCoins size={20} color={closureActive ? (tab === "closure" ? C.brass : C.paper) : "#C9C4B6"} />
+                <HandCoins size={20} color={closureActive ? (tab === "closure" ? C.brass : C.fixedBar) : "#C9C4B6"} />
                 {closureActive && closurePool > 0 && (
                   <span style={{ position: "absolute", top: -3, right: -4, width: 8, height: 8, borderRadius: "50%", backgroundColor: C.rust, border: `1.5px solid ${C.bg}` }} />
                 )}
               </div>
-              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: closureActive ? (tab === "closure" ? C.brass : C.paper) : "#C9C4B6" }}>Chiusura</span>
+              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: closureActive ? (tab === "closure" ? C.brass : C.fixedBar) : "#C9C4B6" }}>Chiusura</span>
             </button>
             <button id="tut-tab-goal" onClick={() => setTab("goal")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <Target size={20} color={tab === "goal" ? C.brass : C.paper} />
-              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "goal" ? C.brass : C.paper }}>Obiettivi</span>
+              <Target size={20} color={tab === "goal" ? C.brass : C.fixedBar} />
+              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "goal" ? C.brass : C.fixedBar }}>Obiettivi</span>
             </button>
             {hasTier("premium") && hasAnyAccountConnected && (
               <button onClick={() => setTab("transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
                 <div style={{ position: "relative" }}>
-                  <BarChart3 size={20} color={tab === "transactions" ? C.brass : C.paper} />
+                  <BarChart3 size={20} color={tab === "transactions" ? C.brass : C.fixedBar} />
                   {pendingTxCount > 0 && (
                     <span style={{
                       position: "absolute", top: -6, right: -8, minWidth: 14, height: 14, borderRadius: 999, backgroundColor: C.brass,
@@ -5128,7 +5128,7 @@ function MainApp({ currentUser, onChangeUser }) {
                     </span>
                   )}
                 </div>
-                <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "transactions" ? C.brass : C.paper }}>Spese</span>
+                <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "transactions" ? C.brass : C.fixedBar }}>Spese</span>
               </button>
             )}
           </div>
