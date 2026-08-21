@@ -1,0 +1,98 @@
+name: Build APK
+
+# Si avvia a mano dalla tab "Actions" del repo (tasto "Run workflow").
+# Puoi scegliere da quale branch compilare: di default Dev.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Scarica il codice
+        uses: actions/checkout@v4
+
+      - name: Prepara Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Prepara Java (serve a Gradle per Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Prepara Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Installa le dipendenze
+        run: npm install
+
+      - name: Installa Capacitor
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      # Le chiavi Supabase su Vercel non arrivano qui: vanno passate a Vite al momento
+      # della compilazione, altrimenti l'APK viene costruito senza collegamento al
+      # database e i dati non si salvano online.
+      - name: Compila il sito (Vite -> cartella dist)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      - name: Crea il progetto Android
+        run: |
+          npx cap add android || echo "cartella android già presente"
+          npx cap sync android
+
+      # Capacitor porta kotlin-stdlib 1.8.22, ma alcune librerie trascinano ancora
+      # kotlin-stdlib-jdk7/jdk8 1.6.21: le stesse classi finiscono due volte nell'APK
+      # e Gradle si ferma con "Duplicate class". Qui forziamo tutto sulla stessa versione.
+      - name: Allinea le versioni di Kotlin
+        run: |
+          cat >> android/build.gradle << 'EOF'
+
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22"
+                  }
+              }
+          }
+          EOF
+
+      - name: Compila l'APK di debug
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Rinomina l'APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk orelibere.apk
+
+      # L'APK resta scaricabile per 90 giorni dalla pagina del workflow.
+      - name: Carica l'APK come artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: orelibere-apk
+          path: orelibere.apk
+
+      # Crea anche una Release, così hai un link diretto e permanente da mandare ai tester.
+      - name: Pubblica la Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: OreLibere build ${{ github.run_number }}
+          body: |
+            APK di test di OreLibere.
+            Scarica `orelibere.apk` qui sotto e installalo dal telefono.
+            Serve autorizzare l'installazione da "origini sconosciute".
+          files: orelibere.apk
