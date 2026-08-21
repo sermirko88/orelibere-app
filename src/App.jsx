@@ -1558,7 +1558,7 @@ function buildTutorialSteps(isVariabile) {
     steps.push({
       tab: "calendario", targetId: "tut-tab-calendario", radius: 16,
       text: isVariabile
-        ? "Il Calendario è pensato per te: segna turni, entrate e uscite, pianificati o già confermati. Da qui trovi anche \"Progetti\", per capire quanto rendono davvero i lavori che accetti."
+        ? "Il Calendario è pensato per te: tocca un giorno e scegli cosa registrare — una giornata, un periodo di lavoro, o un progetto con la sua tariffa."
         : "Il Calendario serve a pianificare le spese extra che sai già che arriveranno — una multa, la gita scolastica dei figli, il bollo auto — così le vedi arrivare prima che ti colgano di sorpresa.",
     });
   }
@@ -2776,6 +2776,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   const [showAdd, setShowAdd] = useState(false);
   const [showProgetti, setShowProgetti] = useState(false);
   const [showLockedProgetti, setShowLockedProgetti] = useState(false);
+  const [addMenuDay, setAddMenuDay] = useState(null); // null = chiuso, Date = menu aperto per quel giorno
   const [showAddRange, setShowAddRange] = useState(false);
   const [rangeForm, setRangeForm] = useState({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", lordoNetto: "netto", percentualeNettaManuale: "65", scadenzaPagamento: "", descrizione: "" });
   const [rangeResult, setRangeResult] = useState(null);
@@ -2935,37 +2936,68 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
       <ScreenHeader
         eyebrow={redditoTipo === "variabile" ? "Entrate, uscite e turni" : "Spese extra pianificate"}
         title="Calendario"
-        right={
-          redditoTipo === "variabile" ? (
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                onClick={() => setShowAddRange(true)}
-                style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "6px 10px", cursor: "pointer" }}
-              >
-                <Calendar size={13} color={C.brass} />
-                <span style={{ fontSize: 11, color: C.textDim, fontFamily: MONO_FONT }}>Periodo</span>
-              </button>
-              {hasTier("elite") ? (
-                <button
-                  onClick={() => setShowProgetti(true)}
-                  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "6px 10px", cursor: "pointer" }}
-                >
-                  <Receipt size={13} color={C.brass} />
-                  <span style={{ fontSize: 11, color: C.textDim, fontFamily: MONO_FONT }}>Progetti</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowLockedProgetti(true)}
-                  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "6px 10px", cursor: "pointer", opacity: 0.7 }}
-                >
-                  <Receipt size={13} color={C.textFainter} />
-                  <span style={{ fontSize: 11, color: C.textFainter, fontFamily: MONO_FONT }}>Progetti · Elite</span>
-                </button>
-              )}
-            </div>
-          ) : null
-        }
       />
+
+      {addMenuDay && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setAddMenuDay(null)} />
+          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid #DED7C4`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
+            <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Cosa vuoi registrare?</span>
+              <button onClick={() => setAddMenuDay(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
+            </div>
+            <p style={{ fontSize: 11.5, color: C.textFaint, margin: "0 0 16px 0" }}>
+              {addMenuDay.toLocaleDateString("it-IT", { day: "numeric", month: "long" })}
+            </p>
+
+            <button
+              onClick={() => { const d = addMenuDay; setAddMenuDay(null); setSelectedDay(d); setShowAdd(true); }}
+              style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 8, cursor: "pointer" }}
+            >
+              <div style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.panel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Plus size={16} color={C.brass} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: C.paper }}>Una giornata</div>
+                <div style={{ fontSize: 11, color: C.textFaint, marginTop: 1 }}>Un turno, un'entrata o un'uscita su questo giorno</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => { const d = addMenuDay; setAddMenuDay(null); setRangeForm((f) => ({ ...f, da: dateKey(d) })); setShowAddRange(true); }}
+              style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 8, cursor: "pointer" }}
+            >
+              <div style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.panel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Calendar size={16} color={C.brass} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: C.paper }}>Un periodo</div>
+                <div style={{ fontSize: 11, color: C.textFaint, marginTop: 1 }}>Più giorni di lavoro insieme, a partire da questo — comodo invece di uno alla volta</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => { setAddMenuDay(null); if (hasTier("elite")) setShowProgetti(true); else setShowLockedProgetti(true); }}
+              style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", opacity: hasTier("elite") ? 1 : 0.7 }}
+            >
+              <div style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.panel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Receipt size={16} color={C.brass} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: C.paper, display: "flex", alignItems: "center", gap: 6 }}>
+                  Un progetto
+                  {!hasTier("elite") && (
+                    <span style={{ fontSize: 8.5, fontFamily: MONO_FONT, fontWeight: 800, textTransform: "uppercase", padding: "1px 6px", borderRadius: 999, backgroundColor: "#171717", color: "#F7F3EA" }}>Elite</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: C.textFaint, marginTop: 1 }}>Prezzo di vendita e ore di un lavoro, per sapere la tua tariffa oraria vera su quel progetto</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
       {hasTier("elite") && showProgetti && (
         <ProgettiScreen progetti={progetti} setProgetti={setProgetti} hourlyBaseline={hourlyEstimate} onBack={() => setShowProgetti(false)} />
       )}
@@ -3135,7 +3167,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
               return (
                 <button
                   key={i}
-                  onClick={() => { setSelectedDay(d); setShowAdd(false); }}
+                  onClick={() => { if (dayEntries.length === 0) { setAddMenuDay(d); } else { setSelectedDay(d); setShowAdd(false); } }}
                   style={{
                     aspectRatio: "1", borderRadius: 6, border: `${borderW} solid ${borderColor}`,
                     backgroundColor: fatturaStato === "pagata" ? "rgba(124,179,66,0.08)" : fatturaStato === "attesa" ? "rgba(255,107,74,0.08)" : dayEntries.length ? C.panel : "transparent",
@@ -3246,7 +3278,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
               </div>
             ) : (
               <button
-                onClick={() => setShowAdd(true)}
+                onClick={() => setAddMenuDay(selectedDay)}
                 style={{ width: "100%", padding: "12px 0", borderRadius: 6, border: `1px dashed ${C.panelBorder}`, background: "none", color: C.textFaint, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
               >
                 <Plus size={15} /> Aggiungi voce
@@ -3551,7 +3583,7 @@ function GuidaScreen({ onBack, redditoTipo }) {
       titolo: "Calendario",
       minTier: "premium",
       esempio: redditoTipo === "variabile"
-        ? "Serve per registrare le tue giornate di lavoro. Tocca un giorno, scegli \"Turno\" se hai lavorato (scrivi le ore), oppure \"Entrata\"/\"Uscita\" per un pagamento ricevuto o fatto. Se lavori più giorni di fila, il bottone \"Periodo\" in alto ti evita di farlo uno per uno: scegli le date, quanto ti pagano (dicendo se è lordo o netto — se è lordo e hai configurato il Regime fiscale, l'app calcola da sola il netto vero), e quando ti aspetti il pagamento. Il compenso resta \"in attesa\" (arancione, solo una stima) finché non lo segni come pagato — a quel punto diventa verde e conta davvero nei tuoi totali."
+        ? "Tocca il \"+\" in alto: si apre un menu con tre scelte. \"Una giornata\" registra un singolo turno, entrata o uscita — su oggi, o su un altro giorno se lo tocchi prima nel calendario. \"Un periodo\" evita di farlo giorno per giorno se lavori più giorni di fila: scegli le date, quanto ti pagano (lordo o netto — se è lordo e hai configurato il Regime fiscale, l'app calcola da sola il netto vero), e quando ti aspetti il pagamento. Il compenso resta \"in attesa\" (arancione, solo una stima) finché non lo segni come pagato — a quel punto diventa verde e conta davvero nei tuoi totali. \"Un progetto\" (Elite) ti dice la tariffa oraria vera su un singolo lavoro."
         : "Serve per segnare in anticipo le spese che sai già che arriveranno — una multa, il bollo auto, una gita scolastica. Tocca il giorno in cui scade, scegli \"Uscita\", scrivi l'importo. Comparirà nella lista \"Prossime uscite\" in cima al Calendario, con un conto alla rovescia.",
     },
     {
