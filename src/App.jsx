@@ -1264,20 +1264,33 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
 function SpendingBar({ fixedHours, extraHours, capHours, hourly }) {
   const spentHours = fixedHours + extraHours;
   const over = spentHours > capHours;
+  const remainingHours = Math.max(capHours - spentHours, 0);
   const fixedPct = Math.min(fixedHours / capHours, 1) * 100;
   const extraPct = Math.min(extraHours / capHours, 1 - fixedPct / 100) * 100;
+  const remainingPct = Math.max(100 - fixedPct - extraPct, 0);
   const extraColor = over ? C.rust : C.brass;
+  const availableColor = "#C9A86A"; // oro tenue, coerente con la palette da "scontrino" — niente verde
 
   return (
     <div style={{ width: "100%" }}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 16 }}>
-        <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: C.textFaint, marginBottom: 4 }}>Ore spese oggi</span>
-        <span style={{ fontFamily: SERIF_FONT, fontSize: 38, fontWeight: 700, letterSpacing: "-0.01em", color: over ? C.rust : C.ink }}>{spentHours.toFixed(1)}h</span>
-        {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(spentHours * hourly).toFixed(0)}€</span> : null}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: C.textFaint, marginBottom: 4 }}>Ore spese oggi</span>
+          <span style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em", color: over ? C.rust : C.ink }}>{spentHours.toFixed(1)}h</span>
+          {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(spentHours * hourly).toFixed(0)}€</span> : null}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: C.textFaint, marginBottom: 4 }}>Ore disponibili</span>
+          <span style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em", color: "#A9863F" }}>{remainingHours.toFixed(1)}h</span>
+          {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(remainingHours * hourly).toFixed(0)}€</span> : null}
+        </div>
       </div>
       <div style={{ position: "relative", width: "100%", height: 18, borderRadius: 999, backgroundColor: "rgba(23,23,23,0.08)", overflow: "hidden", display: "flex" }}>
         <div style={{ width: `${fixedPct}%`, backgroundColor: C.fixedBar, transition: "width 0.6s ease", borderRadius: 999 }} />
         <div style={{ width: `${extraPct}%`, backgroundColor: extraColor, transition: "width 0.6s ease, background-color 0.3s ease", borderRadius: 999, marginLeft: fixedPct > 0 && extraPct > 0 ? 3 : 0 }} />
+        {!over && remainingPct > 0 && (
+          <div style={{ width: `${remainingPct}%`, backgroundColor: availableColor, transition: "width 0.6s ease", borderRadius: 999, marginLeft: (fixedPct > 0 || extraPct > 0) ? 3 : 0 }} />
+        )}
       </div>
       <div style={{ textAlign: "right", marginTop: 6 }}>
         <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFainter, fontFamily: MONO_FONT }}>su {capHours}h oggi</span>
@@ -1667,8 +1680,41 @@ function TutorialOverlay({ step, steps, frameRef, onNext, onFinish }) {
   );
 }
 
-function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpenReport, onOpenGoal, onSimulateBankTx, rateSource }) {
+// Piccolo wrapper che riusa AmountKeypad per modificare un importo già esistente,
+// partendo precompilato dal valore attuale invece che da zero.
+function EditAmountInline({ initial, onConfirm }) {
+  const [amountStr, setAmountStr] = useState(String(initial).replace(".", ","));
+  return (
+    <AmountKeypad
+      value={amountStr}
+      onChange={setAmountStr}
+      onConfirm={() => onConfirm(Number((amountStr || "0").replace(",", ".")))}
+      confirmLabel="Salva modifica"
+    />
+  );
+}
+
+// Come EditAmountInline, ma per una voce del Calendario: "ore" per un turno, "importo" per
+// entrata/uscita — stesso tastierino, cambia solo cosa si sta modificando.
+function EditCalEntryInline({ entry, onConfirm }) {
+  const isOre = entry.tipo === "turno";
+  const initial = isOre ? entry.ore : entry.importo;
+  const [valStr, setValStr] = useState(String(initial).replace(".", ","));
+  return (
+    <AmountKeypad
+      value={valStr}
+      onChange={setValStr}
+      onConfirm={() => onConfirm(Number((valStr || "0").replace(",", ".")))}
+      confirmLabel="Salva modifica"
+      suffix={isOre ? "h" : "€"}
+    />
+  );
+}
+
+function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpenReport, onOpenGoal, onSimulateBankTx, rateSource, onDeleteEntry, onEditEntry }) {
   const [showConcept, setShowConcept] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [editingEntry, setEditingEntry] = useState(null);
   const hourly = profile.hourlyRate;
   const dailyHours = 8;
   const fixedMonthly = profile.fixedList.reduce((s, f) => s + toMonthly(f), 0);
@@ -1722,27 +1768,29 @@ function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpen
       <div style={{ padding: "0 20px" }}>
         <PunchTicket id="tut-gauge" style={{ borderRadius: 4, padding: "24px 16px", border: `1px solid #E2DAC5` }}>
           <SpendingBar fixedHours={fixedHours} extraHours={extraHours} capHours={dailyHours} hourly={hourly} />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 12, marginBottom: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 12, marginBottom: over ? 4 : 0, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: C.fixedBar, display: "inline-block" }} />
               <span style={{ fontSize: 11, color: C.textFaint }}>Fisse {fixedHours.toFixed(1)}h</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: C.brass, display: "inline-block" }} />
+              <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: over ? C.rust : C.brass, display: "inline-block" }} />
               <span style={{ fontSize: 11, color: C.textFaint }}>Extra {extraHours.toFixed(1)}h</span>
             </div>
+            {!over && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: "#C9A86A", display: "inline-block" }} />
+                <span style={{ fontSize: 11, color: C.textFaint }}>Disponibili {remaining.toFixed(1)}h</span>
+              </div>
+            )}
           </div>
-          <div style={{ textAlign: "center", marginTop: 8 }}>
-            {over ? (
+          {over && (
+            <div style={{ textAlign: "center", marginTop: 8 }}>
               <p style={{ fontSize: 13, color: C.rust, fontWeight: 600, margin: 0 }}>
                 Oltre di {(spentHours - dailyHours).toFixed(1)}h ({((spentHours - dailyHours) * hourly).toFixed(0)}€)
               </p>
-            ) : (
-              <p style={{ fontSize: 13, color: C.green, fontWeight: 600, margin: 0 }}>
-                Ore libere: {remaining.toFixed(1)}h ({(remaining * hourly).toFixed(0)}€)
-              </p>
-            )}
-          </div>
+            </div>
+          )}
         </PunchTicket>
       </div>
 
@@ -1796,25 +1844,57 @@ function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpen
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {todayEntries.map((e, i) => {
               const EntryIcon = (typeof e.icon === "function" ? e.icon : null) || (CATEGORIES.find((c) => c.id === e.iconId)?.icon) || MoreHorizontal;
+              const confirming = confirmDeleteId === e.id;
               return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px" }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div key={e.id ?? i} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: confirming ? "rgba(196,64,42,0.08)" : C.panel, border: `1px solid ${confirming ? C.rust : C.panelBorder}`, borderRadius: 4, padding: "10px 12px" }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <EntryIcon size={15} color={C.brass} />
                 </div>
-                <div style={{ flex: 1 }}>
+                <button onClick={() => setEditingEntry(e)} style={{ flex: 1, background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer" }}>
                   <div style={{ color: C.paper, fontSize: 13, fontWeight: 600 }}>{e.cat}</div>
                   <div style={{ color: C.textDim, fontSize: 11, fontFamily: MONO_FONT }}>{e.time}</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
+                </button>
+                <button onClick={() => setEditingEntry(e)} style={{ textAlign: "right", background: "none", border: "none", padding: 0, cursor: "pointer" }}>
                   <div style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.paper }}>{e.euro.toFixed(2)}€</div>
                   <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: C.brass }}>{euroToTime(e.euro, hourly)}</div>
-                </div>
+                </button>
+                {confirming ? (
+                  <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                    <button onClick={() => { onDeleteEntry(e.id); setConfirmDeleteId(null); }} style={{ background: C.rust, border: "none", borderRadius: 4, padding: "6px 8px", cursor: "pointer" }}>
+                      <span style={{ fontSize: 10, color: "#FFFFFF", fontWeight: 700 }}>Elimina</span>
+                    </button>
+                    <button onClick={() => setConfirmDeleteId(null)} style={{ background: "none", border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "6px 8px", cursor: "pointer" }}>
+                      <span style={{ fontSize: 10, color: C.textDim }}>Annulla</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmDeleteId(e.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, flexShrink: 0 }}>
+                    <TrendingDown size={14} color={C.textFainter} style={{ transform: "rotate(90deg) scaleX(-1)" }} />
+                  </button>
+                )}
               </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {editingEntry && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 55, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setEditingEntry(null)} />
+          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: "1px solid #DED7C4", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
+            <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Modifica "{editingEntry.cat}"</span>
+              <button onClick={() => setEditingEntry(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
+            </div>
+            <EditAmountInline
+              initial={editingEntry.euro}
+              onConfirm={(newVal) => { onEditEntry(editingEntry.id, newVal); setEditingEntry(null); }}
+            />
+          </div>
+        </div>
+      )}
 
       <button
         id="tut-add"
@@ -1856,16 +1936,68 @@ function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpen
   );
 }
 
+// Tastierino numerico che COMPONE la cifra (come una calcolatrice) invece di confermare
+// a ogni tocco: supporta i decimali (virgola), backspace, e richiede un tocco esplicito
+// su "Conferma" prima di registrare l'importo — evita di inserire per sbaglio un numero
+// a metà mentre lo si sta ancora scrivendo.
+function AmountKeypad({ value, onChange, onConfirm, confirmLabel = "Conferma", suffix = "€" }) {
+  const appendDigit = (d) => {
+    if (value.replace(",", "").length >= 7) return; // limite ragionevole di cifre
+    if (value === "0") { onChange(d); return; }
+    onChange(value + d);
+  };
+  const appendDecimal = () => {
+    if (value.includes(",")) return;
+    onChange((value || "0") + ",");
+  };
+  const backspace = () => onChange(value.slice(0, -1));
+  const numericValue = Number((value || "0").replace(",", "."));
+
+  return (
+    <>
+      <div style={{ textAlign: "center", padding: "20px 0 24px 0" }}>
+        <span style={{ fontFamily: MONO_FONT, fontSize: 38, fontWeight: 800, color: C.paper }}>
+          {value || "0"}
+        </span>
+        <span style={{ fontFamily: MONO_FONT, fontSize: 24, fontWeight: 800, color: C.textFaint, marginLeft: 4 }}>{suffix}</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+        {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫"].map((k, i) => (
+          <button
+            key={i}
+            onClick={() => { if (k === ",") appendDecimal(); else if (k === "⌫") backspace(); else appendDigit(k); }}
+            style={{ padding: "14px 0", borderRadius: 4, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, color: C.paper, fontFamily: MONO_FONT, fontSize: 18, cursor: "pointer" }}
+          >
+            {k}
+          </button>
+        ))}
+      </div>
+      <button
+        onClick={onConfirm}
+        disabled={numericValue <= 0}
+        style={{
+          width: "100%", padding: "13px 0", borderRadius: 6, border: "none", cursor: numericValue > 0 ? "pointer" : "default",
+          backgroundColor: numericValue > 0 ? C.brass : C.panelBorder, color: numericValue > 0 ? "#FFFFFF" : C.textFaint,
+          fontWeight: 700, fontSize: 14,
+        }}
+      >
+        {confirmLabel}
+      </button>
+    </>
+  );
+}
+
 function AddSheet({ hourly, onClose, onAdd }) {
   const [step, setStep] = useState("category");
   const [category, setCategory] = useState(null);
   const [amount, setAmount] = useState(null);
+  const [amountStr, setAmountStr] = useState("");
 
   const handleAmount = (val) => {
     setAmount(val);
     setStep("done");
     playExpenseSound();
-    onAdd({ cat: category.label, iconId: category.id, euro: val, time: "adesso" });
+    onAdd({ id: Date.now() + Math.random(), cat: category.label, iconId: category.id, euro: val, time: "adesso" });
     setTimeout(onClose, 1400);
   };
 
@@ -1884,7 +2016,7 @@ function AddSheet({ hourly, onClose, onAdd }) {
               {CATEGORIES.map((c) => (
                 <button
                   key={c.id}
-                  onClick={() => { setCategory(c); setStep("amount"); }}
+                  onClick={() => { setCategory(c); setAmountStr(""); setStep("amount"); }}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "16px 0", cursor: "pointer" }}
                 >
                   <c.icon size={22} color={C.brass} />
@@ -1896,12 +2028,12 @@ function AddSheet({ hourly, onClose, onAdd }) {
         )}
         {step === "amount" && category && (
           <>
-            <button onClick={() => setStep("category")} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, marginBottom: 20, cursor: "pointer" }}>← indietro</button>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+            <button onClick={() => setStep("category")} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, marginBottom: 8, cursor: "pointer" }}>← indietro</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <category.icon size={20} color={C.brass} />
               <span style={{ color: C.paper, fontWeight: 700 }}>{category.label}</span>
             </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
               {[category.suggested, category.suggested ? category.suggested * 1.5 : null, category.suggested ? category.suggested * 0.6 : null]
                 .filter(Boolean)
                 .map((v, i) => (
@@ -1910,15 +2042,8 @@ function AddSheet({ hourly, onClose, onAdd }) {
                   </button>
                 ))}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-              {["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", ""].map((k, i) =>
-                k ? (
-                  <button key={i} onClick={() => handleAmount(Number(k))} style={{ padding: "12px 0", borderRadius: 4, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, color: C.paper, fontFamily: MONO_FONT, fontSize: 18, cursor: "pointer" }}>
-                    {k}
-                  </button>
-                ) : <div key={i} />
-              )}
-            </div>
+            <p style={{ fontSize: 10.5, color: C.textFainter, margin: "6px 0 0 0" }}>Tocca un importo suggerito per registrarlo subito, o componi il tuo con i tasti sotto.</p>
+            <AmountKeypad value={amountStr} onChange={setAmountStr} onConfirm={() => handleAmount(Number((amountStr || "0").replace(",", ".")))} />
           </>
         )}
         {step === "done" && amount && (
@@ -2777,6 +2902,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   const [showProgetti, setShowProgetti] = useState(false);
   const [showLockedProgetti, setShowLockedProgetti] = useState(false);
   const [addMenuDay, setAddMenuDay] = useState(null); // null = chiuso, Date = menu aperto per quel giorno
+  const [editingCalEntry, setEditingCalEntry] = useState(null); // { key, entry } della voce in modifica
   const [showAddRange, setShowAddRange] = useState(false);
   const [rangeForm, setRangeForm] = useState({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", lordoNetto: "netto", percentualeNettaManuale: "65", scadenzaPagamento: "", descrizione: "" });
   const [rangeResult, setRangeResult] = useState(null);
@@ -2928,6 +3054,11 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
     setShowAdd(false);
   };
   const removeEntry = (k, id) => setCalendario({ ...calendario, [k]: (calendario[k] || []).filter((e) => e.id !== id) });
+  const updateEntryValue = (k, id, newVal) =>
+    setCalendario({
+      ...calendario,
+      [k]: (calendario[k] || []).map((e) => (e.id === id ? { ...e, ...(e.tipo === "turno" ? { ore: newVal } : { importo: newVal }) } : e)),
+    });
   const toggleStato = (k, id) =>
     setCalendario({ ...calendario, [k]: (calendario[k] || []).map((e) => (e.id === id ? { ...e, stato: e.stato === "consuntivo" ? "pianificato" : "consuntivo" } : e)) });
 
@@ -3214,7 +3345,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                 <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {e.tipo === "turno" ? <Clock size={13} color={C.fixedBar} /> : e.tipo === "entrata" ? <TrendingUp size={13} color={C.green} /> : <TrendingDown size={13} color={C.rust} />}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <button onClick={() => setEditingCalEntry({ key: selectedKey, entry: e })} style={{ flex: 1, minWidth: 0, background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer" }}>
                   <div style={{ fontSize: 12.5, color: C.paper, fontWeight: 600 }}>
                     {e.tipo === "turno"
                       ? `Turno · ${e.ore}h`
@@ -3223,13 +3354,13 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                         : `Uscita · ${Number(e.importo).toFixed(0)}€ · ${euroToTime(Number(e.importo), hourlyEstimate)}`}
                     {e.descrizione ? ` — ${e.descrizione}` : ""}
                   </div>
-                  <button
-                    onClick={() => toggleStato(selectedKey, e.id)}
-                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 10.5, fontFamily: MONO_FONT, color: e.stato === "consuntivo" ? C.green : C.textFaint, marginTop: 2 }}
+                  <span
+                    onClick={(ev) => { ev.stopPropagation(); toggleStato(selectedKey, e.id); }}
+                    style={{ display: "inline-block", fontSize: 10.5, fontFamily: MONO_FONT, color: e.stato === "consuntivo" ? C.green : C.textFaint, marginTop: 2 }}
                   >
                     {e.stato === "consuntivo" ? "✓ consuntivo" : "○ pianificato — tocca per confermare"}
-                  </button>
-                </div>
+                  </span>
+                </button>
                 <button onClick={() => removeEntry(selectedKey, e.id)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={14} color={C.textDim} /></button>
                 {e.tipo === "uscita" && e.stato === "pianificato" && (
                   <button onClick={() => scaricaPromemoria({ ...e, date: selectedDay, dateStr: selectedKey })} style={{ background: "none", border: "none", cursor: "pointer" }} title="Aggiungi promemoria al telefono">
@@ -3238,6 +3369,25 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                 )}
               </div>
             ))}
+
+            {editingCalEntry && (
+              <div style={{ position: "fixed", inset: 0, zIndex: 65, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setEditingCalEntry(null)} />
+                <div style={{ position: "relative", backgroundColor: C.panel, borderTop: "1px solid #DED7C4", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
+                  <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>
+                      Modifica {editingCalEntry.entry.tipo === "turno" ? "turno" : editingCalEntry.entry.tipo === "entrata" ? "entrata" : "uscita"}
+                    </span>
+                    <button onClick={() => setEditingCalEntry(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
+                  </div>
+                  <EditCalEntryInline
+                    entry={editingCalEntry.entry}
+                    onConfirm={(newVal) => { updateEntryValue(editingCalEntry.key, editingCalEntry.entry.id, newVal); setEditingCalEntry(null); }}
+                  />
+                </div>
+              </div>
+            )}
 
             {showAdd ? (
               <div style={{ marginTop: 8 }}>
@@ -3499,6 +3649,24 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
         </span>
         <div style={{ fontSize: 18, fontWeight: 800, color: C.paper, marginBottom: 10, fontFamily: DISPLAY_FONT }}>{titolo}</div>
         <p style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.6, marginBottom: 20, maxWidth: 300, marginLeft: "auto", marginRight: "auto" }}>{descrizione}</p>
+
+        <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 16, textAlign: "left" }}>
+          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, marginBottom: 10 }}>
+            Cosa include ogni piano
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: C.brass, marginBottom: 4 }}>Premium</div>
+            {["Calendario", "Chiusura periodica", "Conti collegati e Rendiconto", "Import da file (CSV/PDF)", "Simulatore completo (anche a rate)", "Budget senza limite di obiettivi"].map((f) => (
+              <div key={f} style={{ fontSize: 12, color: C.textDim, padding: "2px 0" }}>· {f}</div>
+            ))}
+          </div>
+          <div>
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: "#171717", marginBottom: 4 }}>Elite <span style={{ fontWeight: 400, color: C.textFainter }}>(tutto Premium, più)</span></div>
+            {["Regime fiscale e calcolo del netto", "Progetti (tariffa oraria per lavoro)", "Tariffa oraria reale dallo storico"].map((f) => (
+              <div key={f} style={{ fontSize: 12, color: C.textDim, padding: "2px 0" }}>· {f}</div>
+            ))}
+          </div>
+        </div>
 
         <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 16, textAlign: "left" }}>
           <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
@@ -5025,6 +5193,8 @@ function MainApp({ currentUser, onChangeUser }) {
               onOpenGoal={() => setTab("goal")}
               onSimulateBankTx={() => setBankTx(generateFakeTransaction())}
               rateSource={data.redditoTipo === "variabile" ? (realRateInfo.ready ? "reale" : "stima") : null}
+              onDeleteEntry={(id) => setEntries(entries.filter((e) => e.id !== id))}
+              onEditEntry={(id, newEuro) => setEntries(entries.map((e) => (e.id === id ? { ...e, euro: newEuro } : e)))}
             />
           )}
           {tab === "sim" && <SimulatoreScreen hourly={hourlyRate} />}
