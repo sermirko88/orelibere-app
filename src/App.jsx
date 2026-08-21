@@ -49,6 +49,7 @@ const LIGHT_THEME = {
   sheetBorder: "#DED7C4",
   ticketBorder: "#E2DAC5",
   trackBg: "rgba(23,23,23,0.08)",
+  glow: "#FFFFFF",
 };
 
 const DARK_THEME = {
@@ -71,6 +72,7 @@ const DARK_THEME = {
   sheetBorder: "#4A4433",
   ticketBorder: "#3E3928",
   trackBg: "rgba(255,255,255,0.08)",
+  glow: "#2B2620",
 };
 
 // C resta lo stesso oggetto (stessa identità in memoria) per tutta la vita dell'app:
@@ -842,9 +844,24 @@ function WelcomeScreen({ onStart }) {
           Per risparmiare davvero, smetti di contare gli euro. Conta le ore della tua vita.
         </p>
 
-        <p style={{ ...P, marginBottom: 24 }}>
+        <p style={{ ...P, marginBottom: 20 }}>
           Scegli quanto vale la tua ora. L'app ti dirà se puoi permettertela davvero.
         </p>
+
+        {/* Posizionamento esplicito: due tester hanno confrontato OreLibere con
+            Satispay/PayPal chiedendo "ma come fa a farmi risparmiare?". Non lo fa:
+            non tocca i soldi, cambia solo l'unità con cui li guardi. */}
+        <div style={{ border: `1px solid ${C.panelBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 22, backgroundColor: C.panel }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: C.textFainter, fontFamily: MONO_FONT, marginBottom: 8 }}>
+            Mettiamo in chiaro una cosa
+          </div>
+          <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.6, margin: "0 0 8px 0" }}>
+            OreLibere <strong style={{ color: C.paper }}>non è un salvadanaio e non è una banca.</strong> Non tiene i tuoi soldi, non li sposta, non te ne mette da parte.
+          </p>
+          <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.6, margin: 0 }}>
+            Fa una cosa sola: ti mostra ogni spesa in <strong style={{ color: C.paper }}>ore della tua vita</strong>. Poi decidi tu. Il risparmio, se arriva, arriva da quello che scegli di non comprare più.
+          </p>
+        </div>
 
         <p style={{ fontSize: 13.5, color: C.brassDim, fontFamily: SANS_FONT, fontWeight: 700, marginBottom: 20 }}>
           Non pagare per sbaglio. Scegli il prezzo giusto.
@@ -861,7 +878,10 @@ function WelcomeScreen({ onStart }) {
 }
 
 function OnboardingIncome({ data, setData, onNext }) {
-  const [phase, setPhase] = useState(data.redditoTipo ? "form" : "choose");
+  // Parte sempre dalla scelta del tipo di reddito (vera "Passo 1"), anche quando si
+  // rientra per modificare dati già inseriti — altrimenti si salta dritti al form e
+  // per tornare alla scelta serve un tap in più su "← cambia tipo di reddito".
+  const [phase, setPhase] = useState("choose");
   const isVariabile = data.redditoTipo === "variabile";
 
   // Tariffa oraria: due percorsi diversi a seconda del tipo di reddito.
@@ -1069,18 +1089,30 @@ const QUICK_FIXED = [
 function OnboardingFixed({ data, setData, onNext, onBack }) {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ nome: "", tipo: "altro", importo: "", frequenza: "mensile" });
+  const [editingId, setEditingId] = useState(null);
   const list = data.fixedList;
   const monthlyTotal = list.reduce((s, f) => s + toMonthly(f), 0);
 
-  const addExpense = () => {
+  const closeModal = () => { setShowAdd(false); setEditingId(null); };
+  const saveExpense = () => {
     if (!form.nome || !form.importo) return;
-    setData({ ...data, fixedList: [...list, { id: Date.now(), ...form, importo: Number(form.importo) }] });
+    if (editingId) {
+      setData({ ...data, fixedList: list.map((f) => (f.id === editingId ? { ...f, ...form, importo: Number(form.importo) } : f)) });
+    } else {
+      setData({ ...data, fixedList: [...list, { id: Date.now(), ...form, importo: Number(form.importo) }] });
+    }
     setForm({ nome: "", tipo: "altro", importo: "", frequenza: "mensile" });
-    setShowAdd(false);
+    closeModal();
   };
   const remove = (id) => setData({ ...data, fixedList: list.filter((f) => f.id !== id) });
+  const startEdit = (f) => {
+    setForm({ nome: f.nome, tipo: f.tipo, importo: String(f.importo), frequenza: f.frequenza });
+    setEditingId(f.id);
+    setShowAdd(true);
+  };
   const quickAdd = (tipo, nome) => {
     setForm({ nome, tipo, importo: "", frequenza: "mensile" });
+    setEditingId(null);
     setShowAdd(true);
   };
 
@@ -1092,7 +1124,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
         <span style={{ fontSize: 9, fontFamily: MONO_FONT, color: C.textFainter, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "2px 8px" }}>opzionale</span>
       </div>
       <h1 style={{ fontSize: 21, fontWeight: 700, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>Spese fisse</h1>
-      <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 20 }}>Facoltativo, ma aiuta a capire quante ore "partono da sole" ogni mese. Puoi anche saltare e tornarci dopo dalle Impostazioni.</p>
+      <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 20 }}>Facoltativo, ma aiuta a capire quante ore "partono da sole" ogni mese. Tocca una voce per modificarla. Puoi anche saltare e tornarci dopo dalle Impostazioni.</p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
         {list.map((f) => {
@@ -1102,11 +1134,11 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
               <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Icon size={15} color={C.brass} />
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <button onClick={() => startEdit(f)} style={{ flex: 1, minWidth: 0, background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer" }}>
                 <div style={{ color: C.paper, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.nome}</div>
                 <div style={{ color: C.textDim, fontSize: 11, fontFamily: MONO_FONT }}>{f.importo.toFixed(2)}€ / {f.frequenza === "mensile" ? "mese" : f.frequenza === "settimanale" ? "sett" : f.frequenza === "annuale" ? "anno" : "giorno"}</div>
-              </div>
-              <button onClick={() => remove(f.id)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={15} color={C.textDim} /></button>
+              </button>
+              <button onClick={() => remove(f.id)} style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}><X size={15} color={C.textDim} /></button>
             </div>
           );
         })}
@@ -1132,7 +1164,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
       </div>
 
       <button
-        onClick={() => { setForm({ nome: "", tipo: "altro", importo: "", frequenza: "mensile" }); setShowAdd(true); }}
+        onClick={() => { setForm({ nome: "", tipo: "altro", importo: "", frequenza: "mensile" }); setEditingId(null); setShowAdd(true); }}
         style={{
           width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed ${C.panelBorder}`,
           background: "none", color: C.textFainter, fontSize: 13, fontWeight: 400,
@@ -1157,12 +1189,12 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
 
       {showAdd && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-          <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setShowAdd(false)} />
+          <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={closeModal} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
             <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Nuova spesa fissa</span>
-              <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
+              <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>{editingId ? "Modifica spesa fissa" : "Nuova spesa fissa"}</span>
+              <button onClick={closeModal} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
             </div>
 
             <div style={{ marginBottom: 4 }}><FieldLabel>Nome</FieldLabel></div>
@@ -1216,8 +1248,16 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
               </div>
             </div>
 
-            <button onClick={addExpense} style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-              Aggiungi
+            {editingId && (
+              <button
+                onClick={() => { remove(editingId); closeModal(); }}
+                style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.rust}`, backgroundColor: "transparent", color: C.rust, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10 }}
+              >
+                Elimina
+              </button>
+            )}
+            <button onClick={saveExpense} style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+              {editingId ? "Salva modifica" : "Aggiungi"}
             </button>
           </div>
         </div>
@@ -4284,6 +4324,42 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           </div>
         </div>
 
+        {!KICKSTARTER_BUILD && (() => {
+          const lockedItems = [
+            { key: "conti", show: !hasTier("premium"), icon: Landmark, label: "Conti collegati e Rendiconto", tier: "Premium" },
+            { key: "import", show: !hasTier("premium"), icon: ArrowRight, rotate: -90, label: "Importa spese da file", tier: "Premium" },
+            { key: "chiusura", show: !hasTier("premium"), icon: HandCoins, label: "Periodo di chiusura", tier: "Premium" },
+            { key: "regime", show: data.redditoTipo === "variabile" && !hasTier("elite"), icon: Calculator, label: "Regime fiscale e calcolo del netto", tier: "Elite" },
+          ].filter((i) => i.show);
+          if (lockedItems.length === 0) return null;
+          return (
+            <div style={{ border: `1px solid ${C.panelBorder}`, borderRadius: 8, marginBottom: 22, overflow: "hidden" }}>
+              <div style={{ padding: "12px 14px 8px 14px", fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter }}>
+                Funzioni da sbloccare
+              </div>
+              {lockedItems.map((item, i) => (
+                <button
+                  key={item.key}
+                  onClick={() => onOpenLocked(item.key)}
+                  style={{
+                    width: "100%", padding: "13px 14px", border: "none", borderTop: i > 0 ? `1px solid ${C.panelBorder}` : "none",
+                    background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", opacity: 0.75,
+                  }}
+                >
+                  <div style={{ position: "relative", flexShrink: 0 }}>
+                    <item.icon size={16} color={C.textFaint} style={item.rotate ? { transform: `rotate(${item.rotate}deg)` } : undefined} />
+                    <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
+                  </div>
+                  <div style={{ textAlign: "left", flex: 1 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>{item.label}</div>
+                    <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>{item.tier} · tocca per saperne di più</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          );
+        })()}
+
         {!KICKSTARTER_BUILD && (hasTier("premium") ? (
           <>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Conti collegati</div>
@@ -4336,24 +4412,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
               <BarChart3 size={15} /> Vedi rendiconto transazioni
             </button>
           </>
-        ) : (
-          <button
-            onClick={() => onOpenLocked("conti")}
-            style={{
-              width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none",
-              display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 24, opacity: 0.65,
-            }}
-          >
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <Landmark size={18} color={C.textFaint} />
-              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
-            </div>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Conti collegati e Rendiconto</div>
-              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Premium · tocca per saperne di più</div>
-            </div>
-          </button>
-        ))}
+        ) : null)}
 
         {KICKSTARTER_BUILD ? (
           <div style={{ width: "100%", padding: "12px 14px", borderRadius: 4, border: `1px dashed ${C.panelBorder}`, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
@@ -4363,21 +4422,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
               <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1, lineHeight: 1.4 }}>La stessa conversione da soldi a tempo, ma per tutto quello che hai già speso — in arrivo</div>
             </div>
           </div>
-        ) : !hasTier("premium") ? (
-          <button
-            onClick={() => onOpenLocked("import")}
-            style={{ width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 24, opacity: 0.65 }}
-          >
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <ArrowRight size={16} color={C.textFaint} style={{ transform: "rotate(-90deg)" }} />
-              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
-            </div>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Importa spese da file</div>
-              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Premium · tocca per saperne di più</div>
-            </div>
-          </button>
-        ) : (
+        ) : hasTier("premium") ? (
           <>
             <button
               id="tut-import-csv"
@@ -4400,7 +4445,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
               <ArrowRight size={14} color={C.brass} style={{ transform: "rotate(-90deg)" }} /> Importa spese da file (PDF)
             </button>
           </>
-        )}
+        ) : null}
 
         {hasTier("premium") && (
         <button
@@ -4453,21 +4498,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           })}
         </div>
         </>
-        ) : (
-          <button
-            onClick={() => onOpenLocked("chiusura")}
-            style={{ width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 24, opacity: 0.65 }}
-          >
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <HandCoins size={18} color={C.textFaint} />
-              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
-            </div>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Periodo di chiusura</div>
-              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Premium · tocca per saperne di più</div>
-            </div>
-          </button>
-        )}
+        ) : null}
 
         <button
           onClick={onFullOnboarding}
@@ -4482,21 +4513,6 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
             style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed ${C.sheetBorder}`, background: "none", color: C.textFainter, fontSize: 13, cursor: "pointer", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           >
             <Calculator size={14} /> Regime fiscale e calcolo del netto
-          </button>
-        )}
-        {data.redditoTipo === "variabile" && !hasTier("elite") && (
-          <button
-            onClick={() => onOpenLocked("regime")}
-            style={{ width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 10, opacity: 0.65 }}
-          >
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <Calculator size={16} color={C.textFaint} />
-              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
-            </div>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Regime fiscale e calcolo del netto</div>
-              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Elite · tocca per saperne di più</div>
-            </div>
           </button>
         )}
 
@@ -5393,7 +5409,7 @@ function MainApp({ currentUser, onChangeUser }) {
   }, [data, entries, txFeed, onboarded, cloudLoaded, currentUser]);
 
   const frameStyle = {
-    position: "relative", width: 380, height: 780, background: `radial-gradient(circle at 50% 0%, #FFFFFF 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
+    position: "relative", width: 380, height: 780, background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
     borderRadius: 36, overflow: "hidden", border: `4px solid ${C.panelBorder}`,
     boxShadow: "0 25px 60px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column",
   };
@@ -5839,7 +5855,7 @@ function AppInner() {
 
   const outerStyle = { minHeight: "100vh", backgroundColor: C.outerBg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, colorScheme: "light" };
   const frameStyle = {
-    position: "relative", width: 380, height: 780, background: `radial-gradient(circle at 50% 0%, #FFFFFF 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
+    position: "relative", width: 380, height: 780, background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
     borderRadius: 36, overflow: "hidden", border: `4px solid ${C.panelBorder}`,
     boxShadow: "0 25px 60px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column",
   };
