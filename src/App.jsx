@@ -2770,7 +2770,7 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
   );
 }
 
-function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti, setProgetti, redditoTipo, fatture, setFatture, regimeFiscale }) {
+function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti, setProgetti, redditoTipo, fatture, setFatture, regimeFiscale, data, setData }) {
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -2976,6 +2976,9 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
             titolo="Progetti"
             descrizione="Per ogni lavoro che accetti, inserisci prezzo di vendita e ore che ci impieghi: l'app ti dice la tua tariffa oraria reale su quel progetto, e ti avvisa se stai lavorando sotto la tua tariffa base."
             onBack={() => setShowLockedProgetti(false)}
+            data={data}
+            setData={setData}
+            onUnlocked={() => { setShowLockedProgetti(false); setShowProgetti(true); }}
           />
         </div>
       )}
@@ -3442,8 +3445,10 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 // Schermata "teaser" per una funzione bloccata dalla fascia: invece di far sparire la
 // voce di menu, resta visibile in grigio col lucchetto — tocchi e vedi cosa sblocchi,
 // senza dover indovinare che esiste.
-function LockedFeatureScreen({ titolo, descrizione, tier, onBack }) {
+function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData, onUnlocked }) {
   const isElite = tier === "elite";
+  const currentTier = data.tierOverride || TIER;
+  const giaSbloccata = TIER_RANK[currentTier] >= TIER_RANK[tier];
   return (
     <div style={{ flex: 1, overflowY: "auto", paddingBottom: 32 }}>
       <div style={{ padding: "8px 20px 4px 20px", display: "flex", alignItems: "center", gap: 8 }}>
@@ -3461,12 +3466,48 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack }) {
           {isElite ? "Elite" : "Premium"}
         </span>
         <div style={{ fontSize: 18, fontWeight: 800, color: C.paper, marginBottom: 10, fontFamily: DISPLAY_FONT }}>{titolo}</div>
-        <p style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.6, marginBottom: 28, maxWidth: 300, marginLeft: "auto", marginRight: "auto" }}>{descrizione}</p>
-        <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 10, padding: "14px 16px" }}>
-          <p style={{ fontSize: 12, color: C.textFainter, margin: 0, lineHeight: 1.5 }}>
-            Il passaggio a un piano superiore non è ancora attivo in questa versione di prova — questa schermata ti mostra in anteprima cosa troverai.
-          </p>
+        <p style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.6, marginBottom: 20, maxWidth: 300, marginLeft: "auto", marginRight: "auto" }}>{descrizione}</p>
+
+        <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 16, textAlign: "left" }}>
+          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
+            Cambia fascia (solo per questo test)
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {["free", "premium", "elite"].map((t) => {
+              const active = currentTier === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setData({ ...data, tierOverride: t })}
+                  style={{
+                    flex: 1, padding: "8px 0", borderRadius: 999, border: "none", cursor: "pointer",
+                    backgroundColor: active ? C.brass : C.bg, color: active ? "#FFFFFF" : C.textDim,
+                    fontSize: 11.5, fontWeight: 700, textTransform: "capitalize",
+                  }}
+                >
+                  {t === "free" ? "Free" : t === "premium" ? "Premium" : "Elite"}
+                </button>
+              );
+            })}
+          </div>
+
+          {giaSbloccata ? (
+            <button
+              onClick={onUnlocked}
+              style={{ width: "100%", padding: "11px 0", borderRadius: 6, border: "none", backgroundColor: C.green, color: "#FFFFFF", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 10 }}
+            >
+              Sbloccata ✓ — vai a "{titolo}"
+            </button>
+          ) : (
+            <p style={{ fontSize: 10.5, color: C.textFainter, lineHeight: 1.4, margin: "8px 0 0 0" }}>
+              Non è un vero acquisto — serve solo per provare cosa vede ciascun piano.
+            </p>
+          )}
         </div>
+
+        <p style={{ fontSize: 10.5, color: C.textFainter, lineHeight: 1.5, margin: 0 }}>
+          Questo cambia solo la fascia. Per passare a un altro profilo/utente, vai su Impostazioni → "Cambia utente".
+        </p>
       </div>
     </div>
   );
@@ -4966,6 +5007,8 @@ function MainApp({ currentUser, onChangeUser }) {
               fatture={data.fatture || []}
               setFatture={(list) => setData((d) => ({ ...d, fatture: list }))}
               regimeFiscale={data.regimeFiscale || {}}
+              data={data}
+              setData={setData}
             />
           )}
           {tab === "locked-calendario" && (
@@ -4974,6 +5017,9 @@ function MainApp({ currentUser, onChangeUser }) {
               titolo="Calendario"
               descrizione="Pianifica le spese extra che sai già che arriveranno — una multa, il bollo auto, una gita — e (se hai reddito variabile) registra i tuoi turni di lavoro con promemoria sui pagamenti in attesa."
               onBack={() => setTab("diario")}
+              data={data}
+              setData={setData}
+              onUnlocked={() => setTab("calendario")}
             />
           )}
           {tab === "locked-closure" && (
@@ -4982,6 +5028,9 @@ function MainApp({ currentUser, onChangeUser }) {
               titolo="Chiusura"
               descrizione="A fine settimana o mese, decidi cosa fare del risparmio avanzato: lo metti in uno dei tuoi obiettivi, o lo lasci libero. Un piccolo rituale periodico per non perdere di vista dove va il tuo risparmio."
               onBack={() => setTab("diario")}
+              data={data}
+              setData={setData}
+              onUnlocked={() => setTab("closure")}
             />
           )}
           {tab === "locked-transactions" && (
@@ -4990,6 +5039,9 @@ function MainApp({ currentUser, onChangeUser }) {
               titolo="Rendiconto"
               descrizione="Collega banca, Revolut o PayPal e ricevi le transazioni in automatico, pronte da categorizzare con un tocco invece di doverle scrivere a mano una per una."
               onBack={() => setTab("diario")}
+              data={data}
+              setData={setData}
+              onUnlocked={() => setTab("transactions")}
             />
           )}
           {tab === "report" && <ReportScreen hourly={hourlyRate} profile={profile} onBack={() => setTab("diario")} onOpenClosure={() => setTab("closure")} />}
@@ -5002,6 +5054,9 @@ function MainApp({ currentUser, onChangeUser }) {
               titolo="Conti collegati e Rendiconto"
               descrizione="Collega banca, Revolut o PayPal e ricevi le transazioni in automatico, pronte da categorizzare con un tocco invece di doverle scrivere a mano una per una."
               onBack={() => setTab("settings")}
+              data={data}
+              setData={setData}
+              onUnlocked={() => setTab("settings")}
             />
           )}
           {tab === "locked-import" && (
@@ -5010,6 +5065,9 @@ function MainApp({ currentUser, onChangeUser }) {
               titolo="Importa spese da file"
               descrizione="Carica il file CSV o Excel dei movimenti della tua banca: l'app li legge da sola e li trasforma in ore, invece di doverli inserire uno per uno a mano."
               onBack={() => setTab("settings")}
+              data={data}
+              setData={setData}
+              onUnlocked={() => setTab("settings")}
             />
           )}
           {tab === "locked-chiusura" && (
@@ -5018,6 +5076,9 @@ function MainApp({ currentUser, onChangeUser }) {
               titolo="Periodo di chiusura"
               descrizione="Scegli ogni quanto rivedere i tuoi dati e distribuire il risparmio tra gli obiettivi — settimanale, mensile o come preferisci."
               onBack={() => setTab("settings")}
+              data={data}
+              setData={setData}
+              onUnlocked={() => setTab("settings")}
             />
           )}
           {tab === "locked-regime" && (
@@ -5026,6 +5087,9 @@ function MainApp({ currentUser, onChangeUser }) {
               titolo="Regime fiscale e calcolo del netto"
               descrizione="Se hai partita IVA, stima quanto ti resta in tasca dopo tasse e contributi — e usa le tue aliquote vere per convertire automaticamente lordo in netto ovunque nell'app."
               onBack={() => setTab("settings")}
+              data={data}
+              setData={setData}
+              onUnlocked={() => setTab("regime")}
             />
           )}
           {tab === "regime" && <RegimeFiscaleScreen data={data} setData={setData} onBack={() => setTab("settings")} />}
