@@ -14,16 +14,18 @@ import {
 // `false` per riattivare le funzionalità di collegamento conto complete.
 const KICKSTARTER_BUILD = false;
 
-// ---- Fasce di abbonamento: Free, Premium, Elite. Cambia solo questa riga per
-// vedere/testare cosa mostra ciascuna fascia, prima di collegarla a un vero
-// sistema di pagamento.
+// ---- Fasce di abbonamento: Free, Premium, Elite. Questa riga resta il valore di
+// PARTENZA per ogni nuovo utente — ma ogni tester può cambiarla da solo, sul proprio
+// telefono, dalle Impostazioni → "Cambia fascia (solo test)", senza bisogno che il
+// codice venga ricaricato ogni volta.
 //   Free: Diario, tariffa oraria, Simulatore (Cash/3 rate), Budget (1 obiettivo)
 //   Premium: + Calendario, Chiusura, Rendiconto, Import file, Simulatore completo, Budget illimitato
 //   Elite: + Regime fiscale, Progetti, tariffa oraria reale dallo storico
-const TIER = "free"; // "free" | "premium" | "elite"
+const TIER = "free"; // "free" | "premium" | "elite" — valore di partenza
 const TIER_RANK = { free: 0, premium: 1, elite: 2 };
+let ACTIVE_TIER = TIER; // valore effettivo in uso, aggiornato da MainApp ad ogni render
 function hasTier(minTier) {
-  return TIER_RANK[TIER] >= TIER_RANK[minTier];
+  return TIER_RANK[ACTIVE_TIER] >= TIER_RANK[minTier];
 }
 
 // ---- Design tokens (applied via inline style, NOT via bg-[#..] classes) ----
@@ -3759,10 +3761,10 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           <span style={{
             fontSize: 10, fontFamily: MONO_FONT, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase",
             padding: "4px 10px", borderRadius: 999,
-            backgroundColor: TIER === "elite" ? "#171717" : TIER === "premium" ? "rgba(255,107,74,0.15)" : C.panelBorder,
-            color: TIER === "elite" ? "#F7F3EA" : TIER === "premium" ? C.brass : C.textDim,
+            backgroundColor: ACTIVE_TIER === "elite" ? "#171717" : ACTIVE_TIER === "premium" ? "rgba(255,107,74,0.15)" : C.panelBorder,
+            color: ACTIVE_TIER === "elite" ? "#F7F3EA" : ACTIVE_TIER === "premium" ? C.brass : C.textDim,
           }}>
-            {TIER === "elite" ? "Elite" : TIER === "premium" ? "Premium" : "Free"}
+            {ACTIVE_TIER === "elite" ? "Elite" : ACTIVE_TIER === "premium" ? "Premium" : "Free"}
           </span>
         }
       />
@@ -3791,6 +3793,33 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
             </p>
           </div>
         )}
+
+        <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 22 }}>
+          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
+            Cambia fascia (solo per questo test)
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {["free", "premium", "elite"].map((t) => {
+              const active = (data.tierOverride || TIER) === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setData({ ...data, tierOverride: t })}
+                  style={{
+                    flex: 1, padding: "8px 0", borderRadius: 999, border: "none", cursor: "pointer",
+                    backgroundColor: active ? C.brass : C.bg, color: active ? "#FFFFFF" : C.textDim,
+                    fontSize: 11.5, fontWeight: 700, textTransform: "capitalize",
+                  }}
+                >
+                  {t === "free" ? "Free" : t === "premium" ? "Premium" : "Elite"}
+                </button>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: 10.5, color: C.textFainter, lineHeight: 1.4, margin: "8px 0 0 0" }}>
+            Non è un vero acquisto — serve solo per provare cosa vede ciascun piano. Resta impostata su questo telefono finché non la cambi di nuovo.
+          </p>
+        </div>
 
         {!KICKSTARTER_BUILD && (hasTier("premium") ? (
           <>
@@ -4720,8 +4749,13 @@ function MainApp({ currentUser, onChangeUser }) {
     calendario: {}, // turni/entrate/uscite per data, principalmente per redditi variabili
     progetti: [], // progetti con prezzo di vendita e ore, per calcolare la tariffa oraria reale per lavoro
     fatture: [], // fatture/pagamenti in attesa, collegate a giorni di lavoro: arancio finché non pagate, verde dopo
+    tierOverride: null, // "free"|"premium"|"elite"|null — cambio fascia per i tester, sovrascrive TIER solo per questo utente
     regimeFiscale: {}, // parametri fiscali (forfettario/ordinario) per stimare il netto
   });
+
+  // Aggiorna la fascia attiva per QUESTO render — deve succedere prima che qualsiasi
+  // componente figlio chiami hasTier(), altrimenti vedrebbero il valore vecchio.
+  ACTIVE_TIER = data.tierOverride || TIER;
 
   const [cloudLoaded, setCloudLoaded] = useState(!supabaseConfigured);
   const [syncError, setSyncError] = useState(null);
@@ -5035,7 +5069,7 @@ function MainApp({ currentUser, onChangeUser }) {
           )}
         </div>
         {(tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
-          <div id="tut-tabbar" style={{ borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 16px" }}>
+          <div id="tut-tabbar" style={{ borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 6px" }}>
             <button onClick={() => setTab("diario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <Home size={20} color={tab === "diario" ? C.brass : "#A6A29A"} />
               <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "diario" ? C.brass : "#A6A29A" }}>Diario</span>
@@ -5056,7 +5090,7 @@ function MainApp({ currentUser, onChangeUser }) {
             )}
             <button id="tut-tab-sim" onClick={() => setTab("sim")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <Calculator size={20} color={tab === "sim" ? C.brass : "#A6A29A"} />
-              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "sim" ? C.brass : "#A6A29A" }}>Simulatore</span>
+              <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "sim" ? C.brass : "#A6A29A" }}>Simula</span>
             </button>
             <button id="tut-tab-goal" onClick={() => setTab("goal")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <PiggyBank size={20} color={tab === "goal" ? C.brass : "#A6A29A"} />
@@ -5095,7 +5129,7 @@ function MainApp({ currentUser, onChangeUser }) {
                       </span>
                     )}
                   </div>
-                  <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "transactions" ? C.brass : "#A6A29A" }}>Rendiconto</span>
+                  <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "transactions" ? C.brass : "#A6A29A" }}>Conti</span>
                 </button>
               )
             ) : (
@@ -5104,7 +5138,7 @@ function MainApp({ currentUser, onChangeUser }) {
                   <BarChart3 size={20} color="#A6A29A" />
                   <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
                 </div>
-                <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: "#A6A29A" }}>Rendiconto</span>
+                <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: "#A6A29A" }}>Conti</span>
               </button>
             )}
           </div>
