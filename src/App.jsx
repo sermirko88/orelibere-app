@@ -1679,17 +1679,56 @@ function TutorialOverlay({ step, steps, frameRef, onNext, onFinish }) {
   );
 }
 
-// Piccolo wrapper che riusa AmountKeypad per modificare un importo già esistente,
-// partendo precompilato dal valore attuale invece che da zero.
-function EditAmountInline({ initial, onConfirm }) {
+// Modifica di un importo già esistente: campo di testo semplice precompilato con il
+// valore attuale, conversione live in ore, e i due pulsanti Elimina / Salva modifica
+// affiancati — versione "pulita" richiesta al posto del tastierino calcolatrice.
+function EditAmountInline({ initial, hourly, onConfirm, onDelete }) {
   const [amountStr, setAmountStr] = useState(String(initial).replace(".", ","));
+  const numericValue = Number((amountStr || "0").replace(",", "."));
+
   return (
-    <AmountKeypad
-      value={amountStr}
-      onChange={setAmountStr}
-      onConfirm={() => onConfirm(Number((amountStr || "0").replace(",", ".")))}
-      confirmLabel="Salva modifica"
-    />
+    <>
+      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Importo</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 12px", marginBottom: 10 }}>
+        <span style={{ color: C.brass, fontFamily: MONO_FONT, fontSize: 18 }}>€</span>
+        <input
+          type="text"
+          inputMode="decimal"
+          autoFocus
+          value={amountStr}
+          onChange={(e) => {
+            const v = e.target.value.replace(/[^0-9,]/g, "");
+            if ((v.match(/,/g) || []).length > 1) return;
+            setAmountStr(v);
+          }}
+          style={{ flex: 1, border: "none", outline: "none", backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 20, fontWeight: 700 }}
+        />
+      </div>
+      {hourly ? (
+        <div style={{ fontFamily: MONO_FONT, color: C.brass, fontSize: 14, marginBottom: 18 }}>→ {euroToTime(numericValue, hourly)} del tuo tempo</div>
+      ) : null}
+      <div style={{ display: "flex", gap: 10 }}>
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            style={{ flex: 1, padding: "13px 0", borderRadius: 6, border: `1px solid ${C.rust}`, backgroundColor: "transparent", color: C.rust, fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+          >
+            Elimina
+          </button>
+        )}
+        <button
+          onClick={() => onConfirm(numericValue)}
+          disabled={numericValue <= 0}
+          style={{
+            flex: 2, padding: "13px 0", borderRadius: 6, border: "none", cursor: numericValue > 0 ? "pointer" : "default",
+            backgroundColor: numericValue > 0 ? C.panelBorder : C.inputBg, color: numericValue > 0 ? C.paper : C.textFaint,
+            fontWeight: 700, fontSize: 14,
+          }}
+        >
+          Salva modifica
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -1885,13 +1924,21 @@ function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpen
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setEditingEntry(null)} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTop: "1px solid #DED7C4", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
             <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Modifica "{editingEntry.cat}"</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {(() => {
+                  const EntryIcon = (typeof editingEntry.icon === "function" ? editingEntry.icon : null) || (CATEGORIES.find((c) => c.id === editingEntry.iconId)?.icon) || MoreHorizontal;
+                  return <EntryIcon size={20} color={C.brass} />;
+                })()}
+                <span style={{ color: C.paper, fontWeight: 700, fontSize: 16 }}>{editingEntry.cat}</span>
+              </div>
               <button onClick={() => setEditingEntry(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
             </div>
             <EditAmountInline
               initial={editingEntry.euro}
+              hourly={hourly}
               onConfirm={(newVal) => { onEditEntry(editingEntry.id, newVal); setEditingEntry(null); }}
+              onDelete={() => { onDeleteEntry(editingEntry.id); setEditingEntry(null); }}
             />
           </div>
         </div>
