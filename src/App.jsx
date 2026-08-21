@@ -4,7 +4,7 @@ import { supabase, supabaseConfigured } from "./supabaseClient.js";
 import {
   Home, Calculator, Plus, Coffee, UtensilsCrossed, Beer, Dumbbell, Car,
   MoreHorizontal, X, TrendingDown, Receipt, Zap, Building2, Fuel,
-  Cigarette, Wifi, ArrowRight, Settings2, CreditCard, ShoppingBag, Gift, HeartPulse, BarChart3, ChevronLeft, ChevronRight, Lightbulb, PiggyBank, Landmark, Bell, Info, HandCoins, ExternalLink, TriangleAlert, Calendar, TrendingUp, Clock, HelpCircle, ChevronDown
+  Cigarette, Wifi, ArrowRight, Settings2, CreditCard, ShoppingBag, Gift, HeartPulse, BarChart3, ChevronLeft, ChevronRight, Lightbulb, PiggyBank, Landmark, Bell, Info, HandCoins, ExternalLink, TriangleAlert, Calendar, TrendingUp, Clock, HelpCircle, ChevronDown, Lock
 } from "lucide-react";
 
 // ---- Versione Kickstarter/MVP: nasconde tutto ciò che è collegamento bancario,
@@ -2773,6 +2773,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   const [selectedDay, setSelectedDay] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showProgetti, setShowProgetti] = useState(false);
+  const [showLockedProgetti, setShowLockedProgetti] = useState(false);
   const [showAddRange, setShowAddRange] = useState(false);
   const [rangeForm, setRangeForm] = useState({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", lordoNetto: "netto", percentualeNettaManuale: "65", scadenzaPagamento: "", descrizione: "" });
   const [rangeResult, setRangeResult] = useState(null);
@@ -2951,10 +2952,13 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                   <span style={{ fontSize: 11, color: C.textDim, fontFamily: MONO_FONT }}>Progetti</span>
                 </button>
               ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "6px 10px" }}>
+                <button
+                  onClick={() => setShowLockedProgetti(true)}
+                  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "6px 10px", cursor: "pointer", opacity: 0.7 }}
+                >
                   <Receipt size={13} color={C.textFainter} />
                   <span style={{ fontSize: 11, color: C.textFainter, fontFamily: MONO_FONT }}>Progetti · Elite</span>
-                </div>
+                </button>
               )}
             </div>
           ) : null
@@ -2962,6 +2966,16 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
       />
       {hasTier("elite") && showProgetti && (
         <ProgettiScreen progetti={progetti} setProgetti={setProgetti} hourlyBaseline={hourlyEstimate} onBack={() => setShowProgetti(false)} />
+      )}
+      {!hasTier("elite") && showLockedProgetti && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 70, backgroundColor: C.bg, display: "flex", flexDirection: "column" }}>
+          <LockedFeatureScreen
+            tier="elite"
+            titolo="Progetti"
+            descrizione="Per ogni lavoro che accetti, inserisci prezzo di vendita e ore che ci impieghi: l'app ti dice la tua tariffa oraria reale su quel progetto, e ti avvisa se stai lavorando sotto la tua tariffa base."
+            onBack={() => setShowLockedProgetti(false)}
+          />
+        </div>
       )}
 
       <div style={{ padding: "0 20px", marginBottom: 14 }}>
@@ -3423,6 +3437,39 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   );
 }
 
+// Schermata "teaser" per una funzione bloccata dalla fascia: invece di far sparire la
+// voce di menu, resta visibile in grigio col lucchetto — tocchi e vedi cosa sblocchi,
+// senza dover indovinare che esiste.
+function LockedFeatureScreen({ titolo, descrizione, tier, onBack }) {
+  const isElite = tier === "elite";
+  return (
+    <div style={{ flex: 1, overflowY: "auto", paddingBottom: 32 }}>
+      <div style={{ padding: "8px 20px 4px 20px", display: "flex", alignItems: "center", gap: 8 }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}><ChevronLeft size={20} color={C.textDim} /></button>
+      </div>
+      <div style={{ padding: "36px 30px 30px 30px", textAlign: "center" }}>
+        <div style={{ width: 60, height: 60, borderRadius: "50%", backgroundColor: isElite ? "#171717" : "rgba(255,107,74,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px auto" }}>
+          <Lock size={24} color={isElite ? "#F7F3EA" : C.brass} />
+        </div>
+        <span style={{
+          display: "inline-block", fontSize: 10, fontFamily: MONO_FONT, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase",
+          padding: "4px 10px", borderRadius: 999, marginBottom: 12,
+          backgroundColor: isElite ? "#171717" : "rgba(255,107,74,0.15)", color: isElite ? "#F7F3EA" : C.brass,
+        }}>
+          {isElite ? "Elite" : "Premium"}
+        </span>
+        <div style={{ fontSize: 18, fontWeight: 800, color: C.paper, marginBottom: 10, fontFamily: DISPLAY_FONT }}>{titolo}</div>
+        <p style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.6, marginBottom: 28, maxWidth: 300, marginLeft: "auto", marginRight: "auto" }}>{descrizione}</p>
+        <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 10, padding: "14px 16px" }}>
+          <p style={{ fontSize: 12, color: C.textFainter, margin: 0, lineHeight: 1.5 }}>
+            Il passaggio a un piano superiore non è ancora attivo in questa versione di prova — questa schermata ti mostra in anteprima cosa troverai.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GuidaScreen({ onBack, redditoTipo }) {
   const [open, setOpen] = useState("concetto");
   const toggle = (id) => setOpen(open === id ? null : id);
@@ -3678,7 +3725,7 @@ function RegimeFiscaleScreen({ data, setData, onBack }) {
   );
 }
 
-function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransactions, onChangeUser, onOpenRegime, onOpenImport, onOpenImportPDF, onOpenGuida }) {
+function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransactions, onChangeUser, onOpenRegime, onOpenImport, onOpenImportPDF, onOpenGuida, onOpenLocked }) {
   const PERIOD_OPTIONS = [
     { id: "giorno", label: "Giorno", desc: "chiudi ogni giorno" },
     { id: "settimana", label: "Settimana", desc: "chiudi ogni settimana" },
@@ -3745,7 +3792,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           </div>
         )}
 
-        {!KICKSTARTER_BUILD && hasTier("premium") && (
+        {!KICKSTARTER_BUILD && (hasTier("premium") ? (
           <>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Conti collegati</div>
             <p style={{ fontSize: 12, color: C.textFainter, lineHeight: 1.5, marginTop: 0, marginBottom: 12 }}>
@@ -3797,7 +3844,24 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
               <BarChart3 size={15} /> Vedi rendiconto transazioni
             </button>
           </>
-        )}
+        ) : (
+          <button
+            onClick={() => onOpenLocked("conti")}
+            style={{
+              width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none",
+              display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 24, opacity: 0.65,
+            }}
+          >
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <Landmark size={18} color={C.textFaint} />
+              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Conti collegati e Rendiconto</div>
+              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Premium · tocca per saperne di più</div>
+            </div>
+          </button>
+        ))}
 
         {KICKSTARTER_BUILD ? (
           <div style={{ width: "100%", padding: "12px 14px", borderRadius: 4, border: `1px dashed ${C.panelBorder}`, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
@@ -3808,13 +3872,19 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
             </div>
           </div>
         ) : !hasTier("premium") ? (
-          <div style={{ width: "100%", padding: "12px 14px", borderRadius: 4, border: `1px dashed ${C.panelBorder}`, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-            <ArrowRight size={14} color={C.textFainter} style={{ transform: "rotate(-90deg)", flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: 13, color: C.textDim, fontWeight: 600 }}>Importa spese da file</div>
-              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Funzione Premium</div>
+          <button
+            onClick={() => onOpenLocked("import")}
+            style={{ width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 24, opacity: 0.65 }}
+          >
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <ArrowRight size={16} color={C.textFaint} style={{ transform: "rotate(-90deg)" }} />
+              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
             </div>
-          </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Importa spese da file</div>
+              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Premium · tocca per saperne di più</div>
+            </div>
+          </button>
         ) : (
           <>
             <button
@@ -3855,7 +3925,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
         </button>
         )}
 
-        {hasTier("premium") && (
+        {hasTier("premium") ? (
         <>
         <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Ogni quanto chiudere il periodo</div>
         <p style={{ fontSize: 12, color: C.textFainter, lineHeight: 1.5, marginTop: 0, marginBottom: 12 }}>
@@ -3891,6 +3961,20 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           })}
         </div>
         </>
+        ) : (
+          <button
+            onClick={() => onOpenLocked("chiusura")}
+            style={{ width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 24, opacity: 0.65 }}
+          >
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <HandCoins size={18} color={C.textFaint} />
+              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Periodo di chiusura</div>
+              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Premium · tocca per saperne di più</div>
+            </div>
+          </button>
         )}
 
         <button
@@ -3909,13 +3993,19 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           </button>
         )}
         {data.redditoTipo === "variabile" && !hasTier("elite") && (
-          <div style={{ width: "100%", padding: "12px 14px", borderRadius: 4, border: `1px dashed ${C.panelBorder}`, marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
-            <Calculator size={14} color={C.textFainter} style={{ flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: 13, color: C.textDim, fontWeight: 600 }}>Regime fiscale e calcolo del netto</div>
-              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Funzione Elite</div>
+          <button
+            onClick={() => onOpenLocked("regime")}
+            style={{ width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 10, opacity: 0.65 }}
+          >
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <Calculator size={16} color={C.textFaint} />
+              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
             </div>
-          </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Regime fiscale e calcolo del netto</div>
+              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Elite · tocca per saperne di più</div>
+            </div>
+          </button>
         )}
 
         <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.panelBorder}` }}>
@@ -4844,10 +4934,66 @@ function MainApp({ currentUser, onChangeUser }) {
               regimeFiscale={data.regimeFiscale || {}}
             />
           )}
+          {tab === "locked-calendario" && (
+            <LockedFeatureScreen
+              tier="premium"
+              titolo="Calendario"
+              descrizione="Pianifica le spese extra che sai già che arriveranno — una multa, il bollo auto, una gita — e (se hai reddito variabile) registra i tuoi turni di lavoro con promemoria sui pagamenti in attesa."
+              onBack={() => setTab("diario")}
+            />
+          )}
+          {tab === "locked-closure" && (
+            <LockedFeatureScreen
+              tier="premium"
+              titolo="Chiusura"
+              descrizione="A fine settimana o mese, decidi cosa fare del risparmio avanzato: lo metti in uno dei tuoi obiettivi, o lo lasci libero. Un piccolo rituale periodico per non perdere di vista dove va il tuo risparmio."
+              onBack={() => setTab("diario")}
+            />
+          )}
+          {tab === "locked-transactions" && (
+            <LockedFeatureScreen
+              tier="premium"
+              titolo="Rendiconto"
+              descrizione="Collega banca, Revolut o PayPal e ricevi le transazioni in automatico, pronte da categorizzare con un tocco invece di doverle scrivere a mano una per una."
+              onBack={() => setTab("diario")}
+            />
+          )}
           {tab === "report" && <ReportScreen hourly={hourlyRate} profile={profile} onBack={() => setTab("diario")} onOpenClosure={() => setTab("closure")} />}
           {tab === "closure" && <ClosureScreen hourly={hourlyRate} profile={profile} onBack={() => setTab("report")} onAllocate={addToGoalSaved} onCarryOver={setCarryOver} />}
           {tab === "goal" && <GoalScreen profile={profile} hourly={hourlyRate} onAddGoal={addGoal} />}
-          {tab === "settings" && <SettingsScreen data={data} setData={setData} onBack={() => setTab("diario")} onFullOnboarding={() => { setStep(0); setOnboarded(false); }} onOpenTransactions={() => setTab("transactions")} onChangeUser={onChangeUser} onOpenRegime={() => setTab("regime")} onOpenImport={() => setTab("importcsv")} onOpenImportPDF={() => setTab("importpdf")} onOpenGuida={() => setTab("guida")} />}
+          {tab === "settings" && <SettingsScreen data={data} setData={setData} onBack={() => setTab("diario")} onFullOnboarding={() => { setStep(0); setOnboarded(false); }} onOpenTransactions={() => setTab("transactions")} onChangeUser={onChangeUser} onOpenRegime={() => setTab("regime")} onOpenImport={() => setTab("importcsv")} onOpenImportPDF={() => setTab("importpdf")} onOpenGuida={() => setTab("guida")} onOpenLocked={(key) => setTab("locked-" + key)} />}
+          {tab === "locked-conti" && (
+            <LockedFeatureScreen
+              tier="premium"
+              titolo="Conti collegati e Rendiconto"
+              descrizione="Collega banca, Revolut o PayPal e ricevi le transazioni in automatico, pronte da categorizzare con un tocco invece di doverle scrivere a mano una per una."
+              onBack={() => setTab("settings")}
+            />
+          )}
+          {tab === "locked-import" && (
+            <LockedFeatureScreen
+              tier="premium"
+              titolo="Importa spese da file"
+              descrizione="Carica il file CSV o Excel dei movimenti della tua banca: l'app li legge da sola e li trasforma in ore, invece di doverli inserire uno per uno a mano."
+              onBack={() => setTab("settings")}
+            />
+          )}
+          {tab === "locked-chiusura" && (
+            <LockedFeatureScreen
+              tier="premium"
+              titolo="Periodo di chiusura"
+              descrizione="Scegli ogni quanto rivedere i tuoi dati e distribuire il risparmio tra gli obiettivi — settimanale, mensile o come preferisci."
+              onBack={() => setTab("settings")}
+            />
+          )}
+          {tab === "locked-regime" && (
+            <LockedFeatureScreen
+              tier="elite"
+              titolo="Regime fiscale e calcolo del netto"
+              descrizione="Se hai partita IVA, stima quanto ti resta in tasca dopo tasse e contributi — e usa le tue aliquote vere per convertire automaticamente lordo in netto ovunque nell'app."
+              onBack={() => setTab("settings")}
+            />
+          )}
           {tab === "regime" && <RegimeFiscaleScreen data={data} setData={setData} onBack={() => setTab("settings")} />}
           {tab === "guida" && <GuidaScreen onBack={() => setTab("settings")} redditoTipo={data.redditoTipo} />}
           {tab === "importcsv" && (
@@ -4888,16 +5034,24 @@ function MainApp({ currentUser, onChangeUser }) {
             />
           )}
         </div>
-        {(tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario") && (
+        {(tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
           <div id="tut-tabbar" style={{ borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 16px" }}>
             <button onClick={() => setTab("diario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <Home size={20} color={tab === "diario" ? C.brass : "#A6A29A"} />
               <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "diario" ? C.brass : "#A6A29A" }}>Diario</span>
             </button>
-            {hasTier("premium") && (
+            {hasTier("premium") ? (
               <button id="tut-tab-calendario" onClick={() => setTab("calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
                 <Calendar size={20} color={tab === "calendario" ? C.brass : "#A6A29A"} />
                 <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "calendario" ? C.brass : "#A6A29A" }}>Calendario</span>
+              </button>
+            ) : (
+              <button onClick={() => setTab("locked-calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.5 }}>
+                <div style={{ position: "relative" }}>
+                  <Calendar size={20} color="#A6A29A" />
+                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
+                </div>
+                <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: "#A6A29A" }}>Calendario</span>
               </button>
             )}
             <button id="tut-tab-sim" onClick={() => setTab("sim")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
@@ -4908,29 +5062,49 @@ function MainApp({ currentUser, onChangeUser }) {
               <PiggyBank size={20} color={tab === "goal" ? C.brass : "#A6A29A"} />
               <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "goal" ? C.brass : "#A6A29A" }}>Budget</span>
             </button>
-            {hasTier("premium") && closurePool > 0 && (
-              <button id="tut-tab-closure" onClick={() => setTab("closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
+            {hasTier("premium") ? (
+              closurePool > 0 && (
+                <button id="tut-tab-closure" onClick={() => setTab("closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
+                  <div style={{ position: "relative" }}>
+                    <HandCoins size={20} color={tab === "closure" ? C.brass : "#A6A29A"} />
+                    <span style={{ position: "absolute", top: -3, right: -4, width: 8, height: 8, borderRadius: "50%", backgroundColor: C.rust, border: `1.5px solid ${C.bg}` }} />
+                  </div>
+                  <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "closure" ? C.brass : "#A6A29A" }}>Chiusura</span>
+                </button>
+              )
+            ) : (
+              <button onClick={() => setTab("locked-closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.5 }}>
                 <div style={{ position: "relative" }}>
-                  <HandCoins size={20} color={tab === "closure" ? C.brass : "#A6A29A"} />
-                  <span style={{ position: "absolute", top: -3, right: -4, width: 8, height: 8, borderRadius: "50%", backgroundColor: C.rust, border: `1.5px solid ${C.bg}` }} />
+                  <HandCoins size={20} color="#A6A29A" />
+                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
                 </div>
-                <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "closure" ? C.brass : "#A6A29A" }}>Chiusura</span>
+                <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: "#A6A29A" }}>Chiusura</span>
               </button>
             )}
-            {hasTier("premium") && hasAnyAccountConnected && (
-              <button onClick={() => setTab("transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
+            {hasTier("premium") ? (
+              hasAnyAccountConnected && (
+                <button onClick={() => setTab("transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
+                  <div style={{ position: "relative" }}>
+                    <BarChart3 size={20} color={tab === "transactions" ? C.brass : "#A6A29A"} />
+                    {pendingTxCount > 0 && (
+                      <span style={{
+                        position: "absolute", top: -6, right: -8, minWidth: 14, height: 14, borderRadius: 999, backgroundColor: C.brass,
+                        border: `1.5px solid ${C.bg}`, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px",
+                      }}>
+                        <span style={{ fontSize: 8.5, fontFamily: MONO_FONT, color: C.ink, fontWeight: 800 }}>{pendingTxCount}</span>
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "transactions" ? C.brass : "#A6A29A" }}>Rendiconto</span>
+                </button>
+              )
+            ) : (
+              <button onClick={() => setTab("locked-transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.5 }}>
                 <div style={{ position: "relative" }}>
-                  <BarChart3 size={20} color={tab === "transactions" ? C.brass : "#A6A29A"} />
-                  {pendingTxCount > 0 && (
-                    <span style={{
-                      position: "absolute", top: -6, right: -8, minWidth: 14, height: 14, borderRadius: 999, backgroundColor: C.brass,
-                      border: `1.5px solid ${C.bg}`, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px",
-                    }}>
-                      <span style={{ fontSize: 8.5, fontFamily: MONO_FONT, color: C.ink, fontWeight: 800 }}>{pendingTxCount}</span>
-                    </span>
-                  )}
+                  <BarChart3 size={20} color="#A6A29A" />
+                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
                 </div>
-                <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "transactions" ? C.brass : "#A6A29A" }}>Rendiconto</span>
+                <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: "#A6A29A" }}>Rendiconto</span>
               </button>
             )}
           </div>
