@@ -237,6 +237,45 @@ function euroToDaysHours(euro, hourlyRate, dailyHours = 8) {
   if (hours === 0) return `${days} g`;
   return `${days} g ${hours}h`;
 }
+// Sul web l'app è mostrata dentro una finta cornice da telefono (380x780), che rende
+// bene la demo su schermo grande. Dentro l'APK, però, quella cornice diventa un
+// "telefono dentro il telefono": su schermi stretti la togliamo e usiamo tutto lo spazio.
+function useShellStyles() {
+  const [isSmall, setIsSmall] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 480 : false));
+
+  useEffect(() => {
+    const onResize = () => setIsSmall(window.innerWidth < 480);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+
+  if (isSmall) {
+    return {
+      outerStyle: { minHeight: "100dvh", backgroundColor: C.bg, colorScheme: "light" },
+      frameStyle: {
+        position: "relative", width: "100%", minHeight: "100dvh",
+        background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
+        overflow: "hidden", display: "flex", flexDirection: "column",
+        paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)",
+      },
+    };
+  }
+
+  return {
+    outerStyle: { minHeight: "100vh", backgroundColor: C.outerBg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, colorScheme: "light" },
+    frameStyle: {
+      position: "relative", width: 380, height: 780,
+      background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
+      borderRadius: 36, overflow: "hidden", border: `4px solid ${C.panelBorder}`,
+      boxShadow: "0 25px 60px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column",
+    },
+  };
+}
+
 function euroToTime(euro, hourlyRate) {
   if (!hourlyRate || !isFinite(hourlyRate) || hourlyRate <= 0) return "—";
   const totalMinutes = (euro / hourlyRate) * 60;
@@ -5408,12 +5447,7 @@ function MainApp({ currentUser, onChangeUser }) {
     return () => clearTimeout(saveTimer.current);
   }, [data, entries, txFeed, onboarded, cloudLoaded, currentUser]);
 
-  const frameStyle = {
-    position: "relative", width: 380, height: 780, background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
-    borderRadius: 36, overflow: "hidden", border: `4px solid ${C.panelBorder}`,
-    boxShadow: "0 25px 60px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column",
-  };
-  const outerStyle = { minHeight: "100vh", backgroundColor: C.outerBg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, colorScheme: "light" };
+  const { frameStyle, outerStyle } = useShellStyles();
   const tutorialSteps = buildTutorialSteps(data.redditoTipo === "variabile");
 
   const finishOnboarding = () => {
@@ -5853,12 +5887,7 @@ function AppInner() {
     setCurrentUser(null);
   };
 
-  const outerStyle = { minHeight: "100vh", backgroundColor: C.outerBg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, colorScheme: "light" };
-  const frameStyle = {
-    position: "relative", width: 380, height: 780, background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
-    borderRadius: 36, overflow: "hidden", border: `4px solid ${C.panelBorder}`,
-    boxShadow: "0 25px 60px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column",
-  };
+  const { frameStyle, outerStyle } = useShellStyles();
 
   if (!currentUser) {
     return (
