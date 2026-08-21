@@ -44,6 +44,25 @@ jobs:
           npx cap add android || echo "cartella android già presente"
           npx cap sync android
 
+      # Capacitor porta kotlin-stdlib 1.8.22, ma alcune librerie trascinano ancora
+      # kotlin-stdlib-jdk7/jdk8 1.6.21: le stesse classi finiscono due volte nell'APK
+      # e Gradle si ferma con "Duplicate class". Qui forziamo tutto sulla stessa versione.
+      - name: Allinea le versioni di Kotlin
+        run: |
+          cat >> android/build.gradle << 'EOF'
+
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22"
+                  }
+              }
+          }
+          EOF
+
       - name: Compila l'APK di debug
         working-directory: android
         run: |
