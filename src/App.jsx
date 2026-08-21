@@ -211,6 +211,82 @@ function euroToTime(euro, hourlyRate) {
   return `${h}h ${m}min`;
 }
 
+// Il PIN non viene mai salvato in chiaro: lo trasformiamo in un hash (SHA-256, incluso
+// nel browser) e confrontiamo gli hash. Protezione di base, non equivalente a un vero
+// login — ma sufficiente per la fase di test, evitando di intercettare i dati altrui
+// per sbaglio o curiosità scegliendo il nome sbagliato dalla lista.
+async function hashPin(pin) {
+  const enc = new TextEncoder().encode(pin);
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Campo per inserire un PIN a 4 cifre, usato sia per crearlo che per verificarlo.
+function PinInput({ value, onChange, autoFocus }) {
+  return (
+    <input
+      type="tel"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      maxLength={4}
+      autoFocus={autoFocus}
+      value={value}
+      onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+      style={{
+        width: "100%", boxSizing: "border-box", textAlign: "center", fontFamily: MONO_FONT, fontSize: 28, fontWeight: 800,
+        letterSpacing: "0.6em", color: C.paper, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`,
+        borderRadius: 8, padding: "14px 0 14px 0.6em", outline: "none",
+      }}
+    />
+  );
+}
+
+// Schermata "imposta un PIN" per chi torna sullo stesso dispositivo (nome già ricordato
+// in locale) ma non ne ha ancora uno salvato lato server — migrazione automatica, una
+// volta sola, prima di entrare nell'app.
+function PinMigratePrompt({ name, onDone }) {
+  const [pin, setPin] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const ready = pin.length === 4 && pinConfirm.length === 4;
+
+  const save = async () => {
+    if (!ready) return;
+    if (pin !== pinConfirm) { setError("I due PIN non coincidono"); setPinConfirm(""); return; }
+    setSaving(true);
+    const h = await hashPin(pin);
+    const { error: err } = await supabase.from("orelibere_users").upsert({ name, pin_hash: h }, { onConflict: "name" });
+    if (err) { setError("Errore salvataggio: " + err.message); setSaving(false); return; }
+    onDone();
+  };
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, color: C.paper, marginBottom: 6 }}>Ciao {name}, imposta un PIN</div>
+        <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5 }}>Non ne avevi ancora uno: da ora servirà per proteggere i tuoi dati.</div>
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>PIN</div>
+        <PinInput value={pin} onChange={(v) => { setPin(v); setError(""); }} autoFocus />
+      </div>
+      <div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Ripeti il PIN</div>
+        <PinInput value={pinConfirm} onChange={(v) => { setPinConfirm(v); setError(""); }} />
+      </div>
+      {error && <div style={{ color: C.rust, fontSize: 12, textAlign: "center", marginTop: 10 }}>{error}</div>}
+      <button
+        onClick={save}
+        disabled={!ready || saving}
+        style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: ready ? C.brass : C.panelBorder, color: ready ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: ready ? "pointer" : "default" }}
+      >
+        {saving ? "Salvo..." : "Conferma PIN"}
+      </button>
+    </div>
+  );
+}
+
 // ---- Calendario: entrate/uscite/turni, principalmente per redditi variabili ----
 const MESI_IT = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
 const GIORNI_IT = ["L", "M", "M", "G", "V", "S", "D"];
@@ -4942,26 +5018,135 @@ function SimulatoreScreen({ hourly }) {
 
 function UserPickerScreen({ onSelect }) {
   const [name, setName] = useState("");
-  const [knownUsers, setKnownUsers] = useState([]);
+  const [knownUsers, setKnownUsers] = useState([]); // [{ name, pin_hash }]
   const [loading, setLoading] = useState(supabaseConfigured);
+  const [step, setStep] = useState("pick"); // pick | verify | setpin
+  const [targetName, setTargetName] = useState("");
+  const [pinMode, setPinMode] = useState("create"); // create | migrate — solo per step "setpin"
+  const [pin, setPin] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!supabaseConfigured) return;
     supabase
       .from("orelibere_users")
-      .select("name")
+      .select("name, pin_hash")
       .order("updated_at", { ascending: false })
       .then(({ data, error }) => {
-        if (!error && data) setKnownUsers(data.map((r) => r.name));
+        if (!error && data) setKnownUsers(data);
         setLoading(false);
       });
   }, []);
 
-  const confirm = (chosenName) => {
-    const trimmed = chosenName.trim();
-    if (!trimmed) return;
-    onSelect(trimmed);
+  const resetPinFlow = () => {
+    setStep("pick"); setTargetName(""); setPin(""); setPinConfirm(""); setPinError(""); setSaving(false);
   };
+
+  const pickExisting = (chosenName) => {
+    const found = knownUsers.find((u) => u.name === chosenName);
+    setTargetName(chosenName);
+    setPin(""); setPinError("");
+    if (!supabaseConfigured || !found || !found.pin_hash) {
+      // Utente "vecchio" senza PIN ancora impostato (o salvataggio online non collegato): glielo facciamo creare ora.
+      setPinMode("migrate");
+      setStep("setpin");
+    } else {
+      setStep("verify");
+    }
+  };
+
+  const pickNew = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setTargetName(trimmed);
+    setPin(""); setPinConfirm(""); setPinError("");
+    setPinMode("create");
+    setStep("setpin");
+  };
+
+  const verifyPin = async () => {
+    if (pin.length !== 4) return;
+    const found = knownUsers.find((u) => u.name === targetName);
+    const h = await hashPin(pin);
+    if (found && h === found.pin_hash) {
+      onSelect(targetName);
+    } else {
+      setPinError("PIN sbagliato, riprova");
+      setPin("");
+    }
+  };
+
+  const savePin = async () => {
+    if (pin.length !== 4) return;
+    if (pin !== pinConfirm) { setPinError("I due PIN non coincidono"); setPinConfirm(""); return; }
+    setSaving(true);
+    const h = await hashPin(pin);
+    if (supabaseConfigured) {
+      const { error } = await supabase.from("orelibere_users").upsert({ name: targetName, pin_hash: h }, { onConflict: "name" });
+      if (error) { setPinError("Errore salvataggio: " + error.message); setSaving(false); return; }
+    }
+    onSelect(targetName);
+  };
+
+  if (step === "verify") {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
+        <button onClick={resetPinFlow} style={{ alignSelf: "flex-start", background: "none", border: "none", color: C.textDim, fontSize: 13, marginBottom: 20, cursor: "pointer" }}>← indietro</button>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, color: C.paper, marginBottom: 6 }}>Ciao {targetName}</div>
+          <div style={{ fontSize: 13, color: C.textDim }}>Inserisci il tuo PIN per continuare</div>
+        </div>
+        <PinInput value={pin} onChange={(v) => { setPin(v); setPinError(""); }} autoFocus />
+        {pinError && <div style={{ color: C.rust, fontSize: 12, textAlign: "center", marginTop: 10 }}>{pinError}</div>}
+        <button
+          onClick={verifyPin}
+          disabled={pin.length !== 4}
+          style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: pin.length === 4 ? C.brass : C.panelBorder, color: pin.length === 4 ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: pin.length === 4 ? "pointer" : "default" }}
+        >
+          Entra
+        </button>
+      </div>
+    );
+  }
+
+  if (step === "setpin") {
+    const ready = pin.length === 4 && pinConfirm.length === 4;
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
+        {pinMode === "create" && (
+          <button onClick={resetPinFlow} style={{ alignSelf: "flex-start", background: "none", border: "none", color: C.textDim, fontSize: 13, marginBottom: 20, cursor: "pointer" }}>← indietro</button>
+        )}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, color: C.paper, marginBottom: 6 }}>
+            {pinMode === "migrate" ? `Ciao ${targetName}, imposta un PIN` : "Scegli un PIN"}
+          </div>
+          <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5 }}>
+            {pinMode === "migrate"
+              ? "Non ne avevi ancora uno: da ora servirà per proteggere i tuoi dati."
+              : "4 cifre, ti serviranno per ritrovare i tuoi dati."}
+          </div>
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>PIN</div>
+          <PinInput value={pin} onChange={(v) => { setPin(v); setPinError(""); }} autoFocus />
+        </div>
+        <div>
+          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Ripeti il PIN</div>
+          <PinInput value={pinConfirm} onChange={(v) => { setPinConfirm(v); setPinError(""); }} />
+        </div>
+        {pinError && <div style={{ color: C.rust, fontSize: 12, textAlign: "center", marginTop: 10 }}>{pinError}</div>}
+        <button
+          onClick={savePin}
+          disabled={!ready || saving}
+          style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: ready ? C.brass : C.panelBorder, color: ready ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: ready ? "pointer" : "default" }}
+        >
+          {saving ? "Salvo..." : "Conferma PIN"}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
@@ -4989,11 +5174,11 @@ function UserPickerScreen({ onSelect }) {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 20 }}>
               {knownUsers.map((u) => (
                 <button
-                  key={u}
-                  onClick={() => confirm(u)}
+                  key={u.name}
+                  onClick={() => pickExisting(u.name)}
                   style={{ padding: "10px 18px", borderRadius: 999, border: `1px solid ${C.panelBorder}`, backgroundColor: C.panel, color: C.paper, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
                 >
-                  {u}
+                  {u.name}
                 </button>
               ))}
             </div>
@@ -5004,12 +5189,12 @@ function UserPickerScreen({ onSelect }) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && confirm(name)}
+              onKeyDown={(e) => e.key === "Enter" && pickNew()}
               placeholder="Scrivi il tuo nome"
               style={{ flex: 1, backgroundColor: C.inputBg, color: C.paper, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", fontSize: 15, outline: "none" }}
             />
             <button
-              onClick={() => confirm(name)}
+              onClick={pickNew}
               disabled={!name.trim()}
               style={{ padding: "12px 16px", borderRadius: 8, border: "none", backgroundColor: name.trim() ? C.brass : C.panelBorder, color: C.ink, fontWeight: 700, cursor: name.trim() ? "pointer" : "default" }}
             >
@@ -5502,6 +5687,30 @@ function AppInner() {
     }
   });
 
+  // Chi torna con il nome già ricordato su questo dispositivo salta la schermata "Chi sei?"
+  // (e quindi anche la verifica del PIN lì presente): controlliamo qui, una volta sola per
+  // sessione, se quel nome ha già un PIN salvato lato server — altrimenti lo facciamo creare
+  // ora, prima di entrare, così anche gli utenti "vecchi" vengono migrati automaticamente.
+  const [pinChecked, setPinChecked] = useState(!supabaseConfigured);
+  const [needsPinSetup, setNeedsPinSetup] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser || !supabaseConfigured) { setPinChecked(true); return; }
+    setPinChecked(false);
+    let cancelled = false;
+    supabase
+      .from("orelibere_users")
+      .select("pin_hash")
+      .eq("name", currentUser)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setNeedsPinSetup(!error && (!data || !data.pin_hash));
+        setPinChecked(true);
+      });
+    return () => { cancelled = true; };
+  }, [currentUser]);
+
   const handleSelectUser = (name) => {
     try {
       localStorage.setItem("orelibere_user", name);
@@ -5533,6 +5742,28 @@ function AppInner() {
       <div style={outerStyle}>
         <div style={frameStyle}>
           <UserPickerScreen onSelect={handleSelectUser} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!pinChecked) {
+    return (
+      <div style={outerStyle}>
+        <div style={frameStyle}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: C.textFaint, fontSize: 13 }}>Carico...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (needsPinSetup) {
+    return (
+      <div style={outerStyle}>
+        <div style={frameStyle}>
+          <PinMigratePrompt name={currentUser} onDone={() => setNeedsPinSetup(false)} />
         </div>
       </div>
     );
