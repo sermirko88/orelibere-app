@@ -4081,7 +4081,7 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
             ))}
           </div>
           <div>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: "#171717", marginBottom: 4 }}>Elite <span style={{ fontWeight: 400, color: C.textFainter }}>(tutto Premium, più)</span></div>
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: C.paper, marginBottom: 4 }}>Elite <span style={{ fontWeight: 400, color: C.textFainter }}>(tutto Premium, più)</span></div>
             {["Regime fiscale e calcolo del netto", "Progetti (tariffa oraria per lavoro)", "Tariffa oraria reale dallo storico"].map((f) => (
               <div key={f} style={{ fontSize: 12, color: C.textDim, padding: "2px 0" }}>· {f}</div>
             ))}
