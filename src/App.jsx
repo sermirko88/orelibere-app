@@ -48,8 +48,8 @@ const KICKSTARTER_BUILD = false;
 // PARTENZA per ogni nuovo utente — ma ogni tester può cambiarla da solo, sul proprio
 // telefono, dalle Impostazioni → "Cambia fascia (solo test)", senza bisogno che il
 // codice venga ricaricato ogni volta.
-//   Free: Diario, tariffa oraria, Simulatore (Cash/3 rate), Budget (1 obiettivo)
-//   Premium: + Calendario, Chiusura, Rendiconto, Import file, Simulatore completo, Budget illimitato
+//   Free: Convertitore (cash/3 rate), Diario, tariffa oraria, Budget (1 obiettivo)
+//   Premium: + Calendario, Chiusura, Rendiconto, Import file, confronto finanziamenti, Budget illimitato
 //   Elite: + Regime fiscale, Progetti, tariffa oraria reale dallo storico
 const TIER = "free"; // "free" | "premium" | "elite" — valore di partenza
 const TIER_RANK = { free: 0, premium: 1, elite: 2 };
@@ -1986,8 +1986,8 @@ function buildTutorialSteps(isVariabile) {
     {
       tab: "diario", targetId: "tut-tabbar", radius: 12,
       text: hasTier("premium")
-        ? "Da questa barra passi tra le sezioni dell'app. Converti, Diario, Calendario, Confronta e Budget ci sono sempre; le altre compaiono quando servono."
-        : "Da questa barra passi tra le sezioni dell'app: Converti, Diario, Confronta e Budget. Con Premium si aggiungono anche Calendario e Chiusura.",
+        ? "Da questa barra passi tra le sezioni dell'app. Converti, Diario, Calendario e Budget ci sono sempre; Chiusura e Conti compaiono quando servono."
+        : "Da questa barra passi tra le sezioni dell'app: Converti, Diario e Budget. Con Premium si aggiungono anche Calendario e Chiusura.",
     },
   ];
 
@@ -2001,10 +2001,10 @@ function buildTutorialSteps(isVariabile) {
   }
 
   steps.push({
-    tab: "sim", targetId: "tut-tab-sim", radius: 16,
+    tab: "converti", targetId: null,
     text: hasTier("premium")
-      ? "Il Simulatore ti mostra il costo reale di un acquisto prima di farlo: cash, a rate senza interessi, o a rate finanziate — confronta le ore che ti costa ciascuna opzione."
-      : "Il Simulatore ti mostra il costo reale di un acquisto prima di farlo: cash o a rate senza interessi, sempre confrontato in ore. Con Premium si aggiunge anche il confronto con i finanziamenti a rate.",
+      ? "E se stai pensando di pagarlo a rate, nella stessa schermata tocca \"E se non lo paghi subito?\": confronta cash, tre rate senza interessi e finanziamento, e ti dice quante ore di lavoro in più ti costano gli interessi."
+      : "E se stai pensando di pagarlo a rate, nella stessa schermata tocca \"E se non lo paghi subito?\": confronta cash e tre rate senza interessi. Con Premium si aggiunge anche il confronto con i finanziamenti.",
   });
   steps.push({
     tab: "goal", targetId: "tut-tab-goal", radius: 16,
@@ -4286,7 +4286,7 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
           </div>
           <div style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 13.5, fontWeight: 800, color: C.brassText, marginBottom: 4 }}>Premium</div>
-            {["Calendario", "Chiusura periodica", "Conti collegati e Rendiconto", "Import da file (CSV/PDF)", "Simulatore completo (anche a rate)", "Budget senza limite di obiettivi"].map((f) => (
+            {["Calendario", "Chiusura periodica", "Conti collegati e Rendiconto", "Import da file (CSV/PDF)", "Confronto con i finanziamenti a rate", "Budget senza limite di obiettivi"].map((f) => (
               <div key={f} style={{ fontSize: 12, color: C.textDim, padding: "2px 0" }}>· {f}</div>
             ))}
           </div>
@@ -4368,7 +4368,7 @@ function GuidaScreen({ onBack, redditoTipo }) {
     },
     {
       id: "simulatore",
-      titolo: "Simulatore — prima di un acquisto",
+      titolo: "E se lo paghi a rate",
       minTier: "free",
       esempio: hasTier("premium")
         ? "Il Convertitore ti dice quanto costa una cosa in ore. Questa schermata ti dice quanto cambia a seconda di come la paghi. Scrivi il prezzo e confronta: subito, a tre rate PayPal, o con un finanziamento. Si parte sempre da \"Cash subito\", che è il termine di paragone. Serve soprattutto a vedere gli interessi per quello che sono: non una percentuale, ma giornate intere di lavoro in più."
@@ -4702,7 +4702,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           <div style={{ backgroundColor: "#171717", borderRadius: 8, padding: "14px 16px", marginBottom: 22, textAlign: "center" }}>
             <div style={{ color: "#F7F3EA", fontSize: 13.5, fontWeight: 700, marginBottom: 4 }}>Sei sul piano Free</div>
             <p style={{ fontSize: 13.5, color: "#DED7C4", lineHeight: 1.5, margin: 0 }}>
-              Con Premium sblocchi Calendario, Chiusura, il collegamento dei conti, l'import da file e il Simulatore completo.
+              Con Premium sblocchi Calendario, Chiusura, il collegamento dei conti, l'import da file e il confronto con i finanziamenti.
             </p>
           </div>
         )}
@@ -5408,1023 +5408,19 @@ function GoalScreen({ profile, hourly, onAddGoal }) {
   return <GoalListScreen goals={profile.goals} profile={profile} hourly={hourly} onSelect={setSelectedId} onAddGoal={onAddGoal} />;
 }
 
-function SimulatoreScreen({ hourly }) {
-  const [modo, setModo] = useState("cash"); // cash | paypal3 | finanziato — si parte sempre dal pagamento immediato
-  const [prezzo, setPrezzo] = useState(1000);
-  const [rata, setRata] = useState(95);
-  const [numRate, setNumRate] = useState(14);
-  const [inputFinanziato, setInputFinanziato] = useState("rata"); // rata | tasso
-  const [tasso, setTasso] = useState(9.9); // TAN annuo %
-
-  const oreCash = prezzo / hourly;
-
-  // Se si conosce il tasso (TAN annuo) invece della rata, la calcoliamo con la
-  // formula standard di ammortamento francese (piano a rate costanti).
-  const rataDaTasso = (() => {
-    const i = (Number(tasso) || 0) / 100 / 12; // tasso mensile
-    const n = Number(numRate) || 0;
-    if (n <= 0) return 0;
-    if (i === 0) return prezzo / n;
-    return (prezzo * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
-  })();
-  const rataEffettiva = inputFinanziato === "tasso" ? rataDaTasso : rata;
-
-  let costoTotale, interessi, rataMostrata, numRateMostrate;
-  if (modo === "cash") {
-    costoTotale = prezzo;
-    interessi = 0;
-    rataMostrata = prezzo;
-    numRateMostrate = 1;
-  } else if (modo === "paypal3") {
-    costoTotale = prezzo;
-    interessi = 0;
-    rataMostrata = prezzo / 3;
-    numRateMostrate = 3;
-  } else {
-    costoTotale = rataEffettiva * numRate;
-    interessi = costoTotale - prezzo;
-    rataMostrata = rataEffettiva;
-    numRateMostrate = numRate;
-  }
-
-  const oreReali = costoTotale / hourly;
-  const oreDiff = oreReali - oreCash;
-
-  const MODES = [
-    { id: "cash", label: "Cash subito" },
-    { id: "paypal3", label: "3 rate PayPal" },
-    ...(hasTier("premium") ? [{ id: "finanziato", label: "Finanziamento" }] : []),
-  ];
-
-  return (
-    <div style={{ flex: 1, overflowY: "auto", paddingBottom: 96 }}>
-      <ScreenHeader eyebrow="Prima di firmare" title="Simulatore" />
-      <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ display: "flex", gap: 6, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: 4 }}>
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setModo(m.id)}
-              style={{
-                flex: 1, padding: "8px 6px", borderRadius: 999, border: "none", cursor: "pointer",
-                backgroundColor: modo === m.id ? C.brass : "transparent",
-                color: modo === m.id ? C.ink : C.textFaint,
-                fontSize: 13.5, fontWeight: 700, fontFamily: MONO_FONT,
-              }}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-        {!hasTier("premium") && (
-          <p style={{ fontSize: 13, color: C.textFainter, textAlign: "center", margin: "-8px 0 0 0" }}>
-            Con Premium confronti anche i finanziamenti a rate, con il calcolo degli interessi in ore.
-          </p>
-        )}
-
-        <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: 16, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <FieldLabel>Prezzo oggetto</FieldLabel>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, borderBottom: `1px solid ${C.sheetBorder}`, paddingBottom: 4 }}>
-              <span style={{ color: C.brassText, fontFamily: MONO_FONT, fontSize: 20 }}>€</span>
-              <input type="number" value={prezzo} onChange={(e) => setPrezzo(Number(e.target.value))}
-                style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 20, width: "100%", border: "none", outline: "none" }} />
-            </div>
-          </div>
-
-          {modo === "finanziato" && (
-            <>
-              <div style={{ display: "flex", gap: 6, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: 4 }}>
-                <button
-                  onClick={() => setInputFinanziato("rata")}
-                  style={{ flex: 1, padding: "7px 6px", borderRadius: 999, border: "none", cursor: "pointer", backgroundColor: inputFinanziato === "rata" ? C.brass : "transparent", color: inputFinanziato === "rata" ? "#FFFFFF" : C.textFaint, fontSize: 13, fontWeight: 700 }}
-                >
-                  Conosco la rata
-                </button>
-                <button
-                  onClick={() => setInputFinanziato("tasso")}
-                  style={{ flex: 1, padding: "7px 6px", borderRadius: 999, border: "none", cursor: "pointer", backgroundColor: inputFinanziato === "tasso" ? C.brass : "transparent", color: inputFinanziato === "tasso" ? "#FFFFFF" : C.textFaint, fontSize: 13, fontWeight: 700 }}
-                >
-                  Conosco il tasso
-                </button>
-              </div>
-
-              {inputFinanziato === "rata" ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div>
-                    <FieldLabel>Rata/mese</FieldLabel>
-                    <input type="number" value={rata} onChange={(e) => setRata(Number(e.target.value))}
-                      style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
-                  </div>
-                  <div>
-                    <FieldLabel>N. rate</FieldLabel>
-                    <input type="number" value={numRate} onChange={(e) => setNumRate(Number(e.target.value))}
-                      style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <FieldLabel>Tasso annuo (TAN) %</FieldLabel>
-                      <input type="number" value={tasso} onChange={(e) => setTasso(Number(e.target.value))}
-                        style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
-                    </div>
-                    <div>
-                      <FieldLabel>N. rate</FieldLabel>
-                      <input type="number" value={numRate} onChange={(e) => setNumRate(Number(e.target.value))}
-                        style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 12, color: C.textFaint, display: "flex", justifyContent: "space-between" }}>
-                    <span>Rata calcolata</span>
-                    <span style={{ fontFamily: MONO_FONT, color: C.paper, fontWeight: 700 }}>{rataDaTasso.toFixed(2)}€/mese</span>
-                  </div>
-                  <p style={{ fontSize: 13, color: C.textFainter, lineHeight: 1.4, margin: 0 }}>
-                    Trovi il TAN nel documento del finanziamento — è il tasso di interesse puro, diverso dal TAEG che include anche le spese.
-                  </p>
-                </>
-              )}
-            </>
-          )}
-
-          {modo === "cash" && (
-            <div style={{ fontSize: 12, color: C.textFaint, lineHeight: 1.5 }}>
-              Pagamento unico, oggi. Nessuna rata da seguire.
-            </div>
-          )}
-
-          {modo === "paypal3" && (
-            <div style={{ fontSize: 12, color: C.textFaint, lineHeight: 1.5 }}>
-              3 rate mensili uguali, senza interessi: {(prezzo / 3).toFixed(0)}€ al mese.
-            </div>
-          )}
-        </div>
-
-        <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
-          <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 12 }}>Il costo reale</div>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-            <span style={{ fontSize: 13, color: C.textFaint }}>
-              {modo === "finanziato" ? "Costo totale finanziamento" : modo === "paypal3" ? "Costo totale (3 rate)" : "Costo totale"}
-            </span>
-            <span style={{ fontFamily: MONO_FONT, fontSize: 18, fontWeight: 800 }}>{costoTotale.toFixed(0)}€</span>
-          </div>
-
-          {modo === "paypal3" && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-              <span style={{ fontSize: 13, color: C.textFaint }}>{numRateMostrate} rate da</span>
-              <span style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.paper }}>{rataMostrata.toFixed(0)}€/mese</span>
-            </div>
-          )}
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, color: C.textFaint }}>di cui interessi</span>
-            {interessi > 0 ? (
-              <span style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.rust }}>+{interessi.toFixed(0)}€</span>
-            ) : (
-              <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.greenText, fontWeight: 700 }}>zero</span>
-            )}
-          </div>
-
-          <div style={{ borderTop: `1px dashed ${C.sheetBorder}`, paddingTop: 16 }}>
-            <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, fontFamily: MONO_FONT, marginBottom: 4 }}>Ore di lavoro</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <div style={{ fontFamily: MONO_FONT, fontSize: 30, fontWeight: 800 }}>{Math.round(oreReali)}h</div>
-              <div style={{ fontFamily: MONO_FONT, fontSize: 15, color: C.textFaint }}>≈ {euroToDaysHours(costoTotale, hourly)}</div>
-            </div>
-            {modo === "finanziato" ? (
-              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>
-                vs {Math.round(oreCash)}h se pagato subito — <span style={{ color: C.rust, fontWeight: 700 }}>{Math.round(oreDiff)}h in più</span> per gli interessi
-              </div>
-            ) : modo === "paypal3" ? (
-              <div style={{ fontSize: 12, color: C.greenText, marginTop: 4 }}>
-                stesse ore del pagamento cash, solo divise in 3 tranche da {(oreCash / 3).toFixed(1)}h ciascuna
-              </div>
-            ) : (
-              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>
-                nessun costo aggiuntivo: paghi esattamente il prezzo di oggi
-              </div>
-            )}
-          </div>
-        </PunchTicket>
-
-        {modo === "finanziato" && oreDiff > 0 && (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px", borderRadius: 4, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}` }}>
-            <TriangleAlert size={14} color={C.rust} style={{ marginTop: 1, flexShrink: 0 }} />
-            <span style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.5 }}>
-              Confrontalo con "3 rate PayPal" o "Cash subito" qui sopra: potresti evitare {Math.round(oreDiff)}h di lavoro in più.
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function UserPickerScreen({ onSelect }) {
-  const [name, setName] = useState("");
-  const [knownUsers, setKnownUsers] = useState([]); // [{ name, pin_hash }]
-  const [loading, setLoading] = useState(supabaseConfigured);
-  const [step, setStep] = useState("pick"); // pick | verify | setpin
-  const [targetName, setTargetName] = useState("");
-  const [pinMode, setPinMode] = useState("create"); // create | migrate — solo per step "setpin"
-  const [pin, setPin] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
-  const [pinError, setPinError] = useState("");
-  const [saving, setSaving] = useState(false);
-  // Chi arriva da un telefono nuovo (o dopo aver svuotato i dati) non ha nessun profilo qui:
-  // può ripartire da un file di backup invece di reinserire tutto a mano.
-  const [pendingBackup, setPendingBackup] = useState(null);
-  const [backupError, setBackupError] = useState("");
-  const backupFileRef = useRef(null);
-
-  const caricaBackup = (file) => {
-    if (!file) return;
-    setBackupError("");
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const b = parseBackup(String(reader.result));
-        setPendingBackup(b);
-        setTargetName((b.nome || "").trim() || "Il mio profilo");
-        setPin(""); setPinConfirm(""); setPinError("");
-        setPinMode("create");
-        setStep("setpin");
-      } catch (e) {
-        setBackupError(e.message);
-      }
-    };
-    reader.onerror = () => setBackupError("Non sono riuscito a leggere il file.");
-    reader.readAsText(file);
-  };
-
-  useEffect(() => {
-    if (!supabaseConfigured) return;
-    // Con l'RLS attivo questa select restituisce soltanto i profili di questo dispositivo,
-    // non più l'elenco di tutti gli utenti dell'app.
-    ensureAuth()
-      .then(() =>
-        supabase
-          .from("orelibere_users")
-          .select("name, pin_hash")
-          .order("updated_at", { ascending: false })
-      )
-      .then(({ data, error }) => {
-        if (!error && data) setKnownUsers(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  const resetPinFlow = () => {
-    setStep("pick"); setTargetName(""); setPin(""); setPinConfirm(""); setPinError(""); setSaving(false); setPendingBackup(null); setBackupError("");
-  };
-
-  const pickExisting = (chosenName) => {
-    const found = knownUsers.find((u) => u.name === chosenName);
-    setTargetName(chosenName);
-    setPin(""); setPinError("");
-    if (!supabaseConfigured || !found || !found.pin_hash) {
-      // Utente "vecchio" senza PIN ancora impostato (o salvataggio online non collegato): glielo facciamo creare ora.
-      setPinMode("migrate");
-      setStep("setpin");
-    } else {
-      setStep("verify");
-    }
-  };
-
-  const pickNew = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setTargetName(trimmed);
-    setPin(""); setPinConfirm(""); setPinError("");
-    setPinMode("create");
-    setStep("setpin");
-  };
-
-  const verifyPin = async () => {
-    if (pin.length !== 4) return;
-    const found = knownUsers.find((u) => u.name === targetName);
-    const h = await hashPin(pin);
-    if (found && h === found.pin_hash) {
-      onSelect(targetName);
-    } else {
-      setPinError("PIN sbagliato, riprova");
-      setPin("");
-    }
-  };
-
-  const savePin = async () => {
-    if (pin.length !== 4) return;
-    if (pin !== pinConfirm) { setPinError("I due PIN non coincidono"); setPinConfirm(""); return; }
-    setSaving(true);
-    const h = await hashPin(pin);
-    if (supabaseConfigured) {
-      let error = null;
-      try {
-        const uid = await ensureAuth();
-        const riga = { user_id: uid, name: targetName, pin_hash: h };
-        if (pendingBackup) {
-          // Il profilo nasce già pieno: i dati del backup vengono scritti insieme al PIN,
-          // così quando l'app li rilegge trova tutto al suo posto.
-          riga.data = pendingBackup.data;
-          riga.entries = stampEntryDates(pendingBackup.entries || []);
-          riga.tx_feed = pendingBackup.tx_feed || null;
-          riga.onboarded = true;
-          riga.updated_at = new Date().toISOString();
-        }
-        ({ error } = await supabase.from("orelibere_users").upsert(riga, { onConflict: "user_id,name" }));
-      } catch (e) { error = e; }
-      if (error) { setPinError("Errore salvataggio: " + error.message); setSaving(false); return; }
-    }
-    onSelect(targetName);
-  };
-
-  if (step === "verify") {
-    return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
-        <button onClick={resetPinFlow} style={{ alignSelf: "flex-start", background: "none", border: "none", color: C.textDim, fontSize: 13, marginBottom: 20, cursor: "pointer" }}>← indietro</button>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, color: C.paper, marginBottom: 6 }}>Ciao {targetName}</div>
-          <div style={{ fontSize: 13, color: C.textDim }}>Inserisci il tuo PIN per continuare</div>
-        </div>
-        <PinInput value={pin} onChange={(v) => { setPin(v); setPinError(""); }} autoFocus />
-        {pinError && <div style={{ color: C.rust, fontSize: 12, textAlign: "center", marginTop: 10 }}>{pinError}</div>}
-        <button
-          onClick={verifyPin}
-          disabled={pin.length !== 4}
-          style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: pin.length === 4 ? C.brass : C.panelBorder, color: pin.length === 4 ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: pin.length === 4 ? "pointer" : "default" }}
-        >
-          Entra
-        </button>
-      </div>
-    );
-  }
-
-  if (step === "setpin") {
-    const ready = pin.length === 4 && pinConfirm.length === 4;
-    return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
-        {pinMode === "create" && (
-          <button onClick={resetPinFlow} style={{ alignSelf: "flex-start", background: "none", border: "none", color: C.textDim, fontSize: 13, marginBottom: 20, cursor: "pointer" }}>← indietro</button>
-        )}
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, color: C.paper, marginBottom: 6 }}>
-            {pendingBackup ? `Bentornato ${targetName}` : pinMode === "migrate" ? `Ciao ${targetName}, imposta un PIN` : "Scegli un PIN"}
-          </div>
-          <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5 }}>
-            {pendingBackup
-              ? `Backup del ${new Date(pendingBackup.creato).toLocaleDateString("it-IT")} pronto da ripristinare. Scegli un PIN e ritrovi tutto com'era.`
-              : pinMode === "migrate"
-              ? "Non ne avevi ancora uno: da ora servirà per proteggere i tuoi dati."
-              : "4 cifre, ti serviranno per ritrovare i tuoi dati."}
-          </div>
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>PIN</div>
-          <PinInput value={pin} onChange={(v) => { setPin(v); setPinError(""); }} autoFocus />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Ripeti il PIN</div>
-          <PinInput value={pinConfirm} onChange={(v) => { setPinConfirm(v); setPinError(""); }} />
-        </div>
-        {pinError && <div style={{ color: C.rust, fontSize: 12, textAlign: "center", marginTop: 10 }}>{pinError}</div>}
-        <button
-          onClick={savePin}
-          disabled={!ready || saving}
-          style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: ready ? C.brass : C.panelBorder, color: ready ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: ready ? "pointer" : "default" }}
-        >
-          {saving ? "Salvo..." : "Conferma PIN"}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
-      <div style={{ textAlign: "center", marginBottom: 32 }}>
-        <div style={{ fontFamily: DISPLAY_FONT, fontSize: 24, color: C.paper, marginBottom: 6 }}>Chi sei?</div>
-        <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5 }}>
-          Scegli il tuo nome se l'hai già usata, o scrivine uno nuovo. Servirà a ritrovare i tuoi dati la prossima volta.
-        </div>
-      </div>
-
-      {!supabaseConfigured && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px", borderRadius: 4, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, marginBottom: 20 }}>
-          <TriangleAlert size={14} color={C.brassDim} style={{ marginTop: 1, flexShrink: 0 }} />
-          <span style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.5 }}>
-            Il salvataggio online non è ancora collegato: per ora i dati restano solo su questo dispositivo.
-          </span>
-        </div>
-      )}
-
-      {loading ? (
-        <div style={{ textAlign: "center", color: C.textFaint, fontSize: 13 }}>Carico...</div>
-      ) : (
-        <>
-          {knownUsers.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 20 }}>
-              {knownUsers.map((u) => (
-                <button
-                  key={u.name}
-                  onClick={() => pickExisting(u.name)}
-                  style={{ padding: "10px 18px", borderRadius: 999, border: `1px solid ${C.panelBorder}`, backgroundColor: C.panel, color: C.paper, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
-                >
-                  {u.name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && pickNew()}
-              placeholder="Scrivi il tuo nome"
-              style={{ flex: 1, backgroundColor: C.inputBg, color: C.paper, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", fontSize: 15, outline: "none" }}
-            />
-            <button
-              onClick={pickNew}
-              disabled={!name.trim()}
-              style={{ padding: "12px 16px", borderRadius: 8, border: "none", backgroundColor: name.trim() ? C.brass : C.panelBorder, color: C.ink, fontWeight: 700, cursor: name.trim() ? "pointer" : "default" }}
-            >
-              <ArrowRight size={18} />
-            </button>
-          </div>
-
-          <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${C.panelBorder}` }}>
-            <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5, marginBottom: 10 }}>
-              Hai cambiato telefono o cancellato i dati del browser? Se avevi scaricato una copia
-              del profilo, rimettila qui invece di ricominciare da capo.
-            </div>
-            <input
-              ref={backupFileRef}
-              type="file"
-              accept="application/json,.json"
-              style={{ display: "none" }}
-              onChange={(e) => { caricaBackup(e.target.files && e.target.files[0]); e.target.value = ""; }}
-            />
-            <button
-              onClick={() => backupFileRef.current && backupFileRef.current.click()}
-              style={{
-                width: "100%", padding: "11px 0", borderRadius: 8, border: `1px solid ${C.panelBorder}`,
-                background: "none", color: C.textDim, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              }}
-            >
-              <ArrowRight size={15} color={C.textFaint} style={{ transform: "rotate(-90deg)" }} /> Riprendi da un backup
-            </button>
-            {backupError && (
-              <div style={{ marginTop: 8, fontSize: 12.5, color: C.rust, lineHeight: 1.45 }}>{backupError}</div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
-  const [onboarded, setOnboarded] = useState(false);
-  const [welcomeDone, setWelcomeDone] = useState(false);
-  const [tutorialDone, setTutorialDone] = useState(true); // true di default: chi torna con onboarding già fatto non deve rivederlo
-  const [tutorialStep, setTutorialStep] = useState(0);
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState({
-    // Se ha già scritto quanto guadagna nel convertitore, non glielo si richiede da capo
-    stipendio: rateIniziale > 0 ? String(Math.round(rateIniziale * 4.33 * 40)) : "", oreSettimana: "40",
-    fixedList: [], // niente preset: ogni tester parte da zero e inserisce le proprie spese fisse
-    goals: [], // nessun obiettivo demo: si imposta nel Passo 3 dell'onboarding
-    closurePeriod: "settimana", // giorno | settimana | mese
-    carryOver: 0, // quanto non è stato allocato nell'ultima chiusura, si somma al prossimo periodo
-    connectedAccounts: {}, // { banca: true, revolut: false, paypal: true }
-    calendario: {}, // turni/entrate/uscite per data, principalmente per redditi variabili
-    progetti: [], // progetti con prezzo di vendita e ore, per calcolare la tariffa oraria reale per lavoro
-    fatture: [], // fatture/pagamenti in attesa, collegate a giorni di lavoro: arancio finché non pagate, verde dopo
-    tierOverride: null, // "free"|"premium"|"elite"|null — cambio fascia per i tester, sovrascrive TIER solo per questo utente
-    regimeFiscale: {}, // parametri fiscali (forfettario/ordinario) per stimare il netto
-    theme: "light", // "light" | "dark"
-  });
-
-  // Aggiorna la fascia attiva per QUESTO render — deve succedere prima che qualsiasi
-  // componente figlio chiami hasTier(), altrimenti vedrebbero il valore vecchio.
-  ACTIVE_TIER = data.tierOverride || TIER;
-  // Stessa logica per il tema: aggiorna i colori di C PRIMA che qualsiasi componente
-  // figlio venga renderizzato in questo giro, altrimenti vedrebbero ancora i colori vecchi.
-  applyTheme(data.theme || "light");
-
-  const [cloudLoaded, setCloudLoaded] = useState(!supabaseConfigured);
-  const [syncError, setSyncError] = useState(null);
-  const saveTimer = useRef(null);
-  const frameRef = useRef(null); // per misurare la posizione reale dei pulsanti nel tutorial
-
-  const [tab, setTab] = useState("converti");
-  const [addOpen, setAddOpen] = useState(false);
-  const [bankTx, setBankTx] = useState(null); // transazione simulata in attesa
-  const [categorizeOpen, setCategorizeOpen] = useState(false);
-  const [txFeed, setTxFeed] = useState(null); // elenco transazioni del Rendiconto, persistente tra i cambi di tab
-  const [entries, setEntries] = useState([]); // nessuna spesa demo: si parte da un diario vuoto
-
-  // Ogni spesa nasce con la data di oggi. Il Diario mostra solo quelle di oggi — così ogni mattina
-  // riparte pulito, con le sole ore fisse — mentre lo storico resta e viene ricontato in Chiusura.
-  const oggiKey = todayKey();
-  const addEntry = (e) => setEntries((prev) => [{ ...e, date: e.date || todayKey() }, ...prev]);
-  const todayEntries = entries.filter((e) => (e.date || oggiKey) === oggiKey);
-
-  // Carica i dati salvati per questo utente (se il salvataggio online è collegato)
-  useEffect(() => {
-    if (!supabaseConfigured) return;
-    let cancelled = false;
-    ensureAuth()
-      .then(() =>
-        supabase
-          .from("orelibere_users")
-          .select("data, entries, tx_feed, onboarded")
-          .eq("name", currentUser)
-          .maybeSingle()
-      )
-      .then(({ data: row, error }) => {
-        if (cancelled) return;
-        if (error) {
-          setSyncError("Caricamento: " + error.message);
-        } else if (row) {
-          if (row.data) setData(row.data);
-          if (row.entries) setEntries(stampEntryDates(row.entries));
-          if (row.tx_feed) setTxFeed(row.tx_feed);
-          if (row.onboarded) setOnboarded(true);
-        }
-        setCloudLoaded(true);
-      })
-      .catch((e) => {
-        if (cancelled) return;
-        setSyncError("Accesso: " + e.message);
-        setCloudLoaded(true);
-      });
-    return () => { cancelled = true; };
-  }, [currentUser]);
-
-  // Salva automaticamente su Supabase, con un piccolo ritardo per non scrivere ad ogni singola modifica
-  useEffect(() => {
-    if (!supabaseConfigured || !cloudLoaded) return;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      ensureAuth()
-        .then((uid) =>
-          supabase
-            .from("orelibere_users")
-            .upsert(
-              { user_id: uid, name: currentUser, data, entries, tx_feed: txFeed, onboarded, updated_at: new Date().toISOString() },
-              { onConflict: "user_id,name" }
-            )
-        )
-        .then(({ error }) => {
-          setSyncError(error ? "Salvataggio: " + error.message : null);
-        })
-        .catch((e) => setSyncError("Salvataggio: " + e.message));
-    }, 1200);
-    return () => clearTimeout(saveTimer.current);
-  }, [data, entries, txFeed, onboarded, cloudLoaded, currentUser]);
-
-  const { frameStyle, outerStyle } = useShellStyles();
-  const tutorialSteps = buildTutorialSteps(data.redditoTipo === "variabile");
-
-  const finishOnboarding = () => {
-    setOnboarded(true);
-    setTutorialDone(false); // subito dopo il primo onboarding, mostra il tutorial guidato una volta
-    setTutorialStep(0);
-    setTab(tutorialSteps[0].tab);
-  };
-
-  const advanceTutorial = () => {
-    const nextStep = tutorialStep + 1;
-    if (nextStep >= tutorialSteps.length) {
-      setTutorialDone(true);
-      setTab("diario");
-    } else {
-      setTutorialStep(nextStep);
-      setTab(tutorialSteps[nextStep].tab);
-    }
-  };
-
-  const skipTutorial = () => {
-    setTutorialDone(true);
-    setTab("diario");
-  };
-
-  if (!cloudLoaded) {
-    return (
-      <div style={outerStyle}>
-        <div style={{ ...frameStyle, alignItems: "center", justifyContent: "center" }}>
-          <span style={{ color: C.textFaint, fontSize: 13, fontFamily: MONO_FONT }}>Carico i tuoi dati...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!onboarded) {
-    if (!welcomeDone) {
-      return (
-        <div style={outerStyle}>
-          <div style={frameStyle}>
-            <WelcomeScreen onStart={() => setWelcomeDone(true)} />
-          </div>
-        </div>
-      );
-    }
-    const steps = [
-      <OnboardingIncome data={data} setData={setData} onNext={() => setStep(1)} />,
-      <OnboardingFixed data={data} setData={setData} onNext={() => setStep(2)} onBack={() => setStep(0)} />,
-      <OnboardingGoal data={data} setData={setData} onNext={finishOnboarding} onBack={() => setStep(1)} />,
-    ];
-    return (
-      <div style={outerStyle}>
-        <div style={frameStyle}>
-          {syncError && (
-            <div style={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 90, backgroundColor: C.rust, color: "#fff", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, lineHeight: 1.4, display: "flex", alignItems: "flex-start", gap: 8 }}>
-              <span style={{ flex: 1 }}>⚠ Sincronizzazione: {syncError}</span>
-              <button onClick={() => setSyncError(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontWeight: 700, padding: 0 }}>✕</button>
-            </div>
-          )}
-          {steps[step]}
-        </div>
-      </div>
-    );
-  }
-
-  const estimatedHourlyRate = data.redditoTipo === "variabile" && data.usaOraria
-    ? tariffaOrariaLordaDa(data) * ((Number(data.percentualeNetta) || 100) / 100)
-    : (Number(data.stipendio) / 4.33) / Number(data.oreSettimana);
-  const realRateInfo = data.redditoTipo === "variabile" && hasTier("elite") ? computeRealRate(data.calendario) : { ready: false };
-  const hourlyRate = realRateInfo.ready ? realRateInfo.rate : estimatedHourlyRate;
-  // Il reddito mensile "spendibile" va spalmato sui mesi realmente lavorati (se sono meno di 12) —
-  // la tariffa oraria invece NO, resta quella vera di quando si lavora, altrimenti risulterebbe
-  // artificialmente bassa e le spese sembrerebbero costare meno ore di quanto costino davvero.
-  const mesiFrazione = data.redditoTipo === "variabile" ? Math.min(Math.max(Number(data.mesiLavorati) || 12, 1), 12) / 12 : 1;
-  const monthlyIncomeQuandoLavora = data.redditoTipo === "variabile" && data.usaOraria
-    ? estimatedHourlyRate * (Number(data.oreSettimana) || 0) * 4.33
-    : Number(data.stipendio) || 0;
-  const derivedMonthlyIncome = monthlyIncomeQuandoLavora * mesiFrazione;
-  const profile = { hourlyRate, monthlyIncome: derivedMonthlyIncome, fixedList: data.fixedList, goals: data.goals, closurePeriod: data.closurePeriod, carryOver: data.carryOver };
-
-  const addToGoalSaved = (goalId, amount) => {
-    setData((d) => ({
-      ...d,
-      goals: d.goals.map((g) => (g.id === goalId ? { ...g, saved: g.saved + amount } : g)),
-    }));
-  };
-
-  const addGoal = (newGoal) => {
-    setData((d) => ({ ...d, goals: [...d.goals, { id: Date.now(), saved: 0, ...newGoal }] }));
-  };
-
-  const setCarryOver = (amount) => {
-    setData((d) => ({ ...d, carryOver: amount }));
-  };
-
-  const { pool: closurePool } = computeClosurePool(profile, hourlyRate, entries);
-
-  const connectedAccounts = data.connectedAccounts || {};
-  const hasAnyAccountConnected = !KICKSTARTER_BUILD && Object.values(connectedAccounts).some(Boolean);
-  // Genera il feed una sola volta, la prima volta che serve, così resta stabile tra i cambi di tab
-  if (hasAnyAccountConnected && txFeed === null) {
-    setTxFeed(generateTransactionFeed(connectedAccounts));
-  }
-  const pendingTxCount = txFeed ? txFeed.length : 0;
-
-  return (
-    <div style={outerStyle}>
-      <div style={frameStyle} ref={frameRef}>
-        {!tutorialDone && <TutorialOverlay step={tutorialStep} steps={tutorialSteps} frameRef={frameRef} onNext={advanceTutorial} onFinish={skipTutorial} />}
-        {syncError && (
-          <div style={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 90, backgroundColor: C.rust, color: "#fff", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, lineHeight: 1.4, display: "flex", alignItems: "flex-start", gap: 8 }}>
-            <span style={{ flex: 1 }}>⚠ Sincronizzazione: {syncError}</span>
-            <button onClick={() => setSyncError(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontWeight: 700, padding: 0 }}>✕</button>
-          </div>
-        )}
-        <div style={{ padding: "16px 20px 4px 20px" }}>
-          <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.textDim, letterSpacing: "0.08em" }}>ORELIBERE</span>
-        </div>
-        <div style={{ padding: "0 20px 12px 20px" }}>
-          <span style={{ fontFamily: SERIF_FONT, fontStyle: "italic", fontWeight: 500, fontSize: 12.5, color: C.textFainter }}>
-            Gli euro si rifanno. Le ore che hai lavorato per averli, no.
-          </span>
-        </div>
-        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
-          {tab === "converti" && (
-            <ConvertitoreScreen
-              hourly={hourlyRate}
-              showEntra={false}
-              onAggiungiSpesa={(euro) => {
-                addEntry({ id: Date.now() + Math.random(), cat: "Altro", iconId: "altro", euro, time: "adesso" });
-                setTab("diario");
-              }}
-            />
-          )}
-          {tab === "diario" && (
-            <DiarioScreen
-              profile={profile}
-              todayEntries={todayEntries}
-              hasAnyEntry={entries.length > 0}
-              onOpenAdd={() => setAddOpen(true)}
-              onOpenSettings={() => setTab("settings")}
-              onOpenReport={() => setTab("report")}
-              onOpenGoal={() => setTab("goal")}
-              onSimulateBankTx={() => setBankTx(generateFakeTransaction())}
-              rateSource={data.redditoTipo === "variabile" ? (realRateInfo.ready ? "reale" : "stima") : null}
-              onDeleteEntry={(id) => setEntries(entries.filter((e) => e.id !== id))}
-              onEditEntry={(id, newEuro) => setEntries(entries.map((e) => (e.id === id ? { ...e, euro: newEuro } : e)))}
-            />
-          )}
-          {tab === "sim" && <SimulatoreScreen hourly={hourlyRate} />}
-          {tab === "calendario" && (
-            <CalendarioScreen
-              calendario={data.calendario || {}}
-              setCalendario={(cal) => setData((d) => ({ ...d, calendario: cal }))}
-              hourlyEstimate={hourlyRate}
-              progetti={data.progetti || []}
-              setProgetti={(list) => setData((d) => ({ ...d, progetti: list }))}
-              redditoTipo={data.redditoTipo}
-              fatture={data.fatture || []}
-              setFatture={(list) => setData((d) => ({ ...d, fatture: list }))}
-              regimeFiscale={data.regimeFiscale || {}}
-              data={data}
-              setData={setData}
-            />
-          )}
-          {tab === "locked-calendario" && (
-            <LockedFeatureScreen
-              tier="premium"
-              titolo="Calendario"
-              descrizione="Pianifica le spese extra che sai già che arriveranno — una multa, il bollo auto, una gita — e (se hai reddito variabile) registra i tuoi turni di lavoro con promemoria sui pagamenti in attesa."
-              onBack={() => setTab("diario")}
-              data={data}
-              setData={setData}
-              onUnlocked={() => setTab("calendario")}
-            />
-          )}
-          {tab === "locked-closure" && (
-            <LockedFeatureScreen
-              tier="premium"
-              titolo="Chiusura"
-              descrizione="A fine settimana o mese, decidi cosa fare del risparmio avanzato: lo metti in uno dei tuoi obiettivi, o lo lasci libero. Un piccolo rituale periodico per non perdere di vista dove va il tuo risparmio."
-              onBack={() => setTab("diario")}
-              data={data}
-              setData={setData}
-              onUnlocked={() => setTab("closure")}
-            />
-          )}
-          {tab === "locked-transactions" && (
-            <LockedFeatureScreen
-              tier="premium"
-              titolo="Rendiconto"
-              descrizione="Collega banca, Revolut o PayPal e ricevi le transazioni in automatico, pronte da categorizzare con un tocco invece di doverle scrivere a mano una per una."
-              onBack={() => setTab("diario")}
-              data={data}
-              setData={setData}
-              onUnlocked={() => setTab("transactions")}
-            />
-          )}
-          {tab === "report" && <ReportScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("diario")} onOpenClosure={() => setTab("closure")} />}
-          {tab === "closure" && <ClosureScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("report")} onAllocate={addToGoalSaved} onCarryOver={setCarryOver} />}
-          {tab === "goal" && <GoalScreen profile={profile} hourly={hourlyRate} onAddGoal={addGoal} />}
-          {tab === "settings" && (
-            <SettingsScreen
-              data={data}
-              setData={setData}
-              onBack={() => setTab("diario")}
-              onFullOnboarding={() => { setStep(0); setOnboarded(false); }}
-              onOpenTransactions={() => setTab("transactions")}
-              onChangeUser={onChangeUser}
-              onOpenRegime={() => setTab("regime")}
-              onOpenImport={() => setTab("importcsv")}
-              onOpenImportPDF={() => setTab("importpdf")}
-              onOpenGuida={() => setTab("guida")}
-              onOpenLocked={(key) => setTab("locked-" + key)}
-              currentUser={currentUser}
-              entries={entries}
-              txFeed={txFeed}
-              onRestore={(b) => {
-                setData(b.data);
-                setEntries(stampEntryDates(b.entries || []));
-                setTxFeed(b.tx_feed || null);
-                setOnboarded(true);
-              }}
-            />
-          )}
-          {tab === "locked-conti" && (
-            <LockedFeatureScreen
-              tier="premium"
-              titolo="Conti collegati e Rendiconto"
-              descrizione="Collega banca, Revolut o PayPal e ricevi le transazioni in automatico, pronte da categorizzare con un tocco invece di doverle scrivere a mano una per una."
-              onBack={() => setTab("settings")}
-              data={data}
-              setData={setData}
-              onUnlocked={() => setTab("settings")}
-            />
-          )}
-          {tab === "locked-import" && (
-            <LockedFeatureScreen
-              tier="premium"
-              titolo="Importa spese da file"
-              descrizione="Carica il file CSV o Excel dei movimenti della tua banca: l'app li legge da sola e li trasforma in ore, invece di doverli inserire uno per uno a mano."
-              onBack={() => setTab("settings")}
-              data={data}
-              setData={setData}
-              onUnlocked={() => setTab("settings")}
-            />
-          )}
-          {tab === "locked-chiusura" && (
-            <LockedFeatureScreen
-              tier="premium"
-              titolo="Periodo di chiusura"
-              descrizione="Scegli ogni quanto rivedere i tuoi dati e distribuire il risparmio tra gli obiettivi — settimanale, mensile o come preferisci."
-              onBack={() => setTab("settings")}
-              data={data}
-              setData={setData}
-              onUnlocked={() => setTab("settings")}
-            />
-          )}
-          {tab === "locked-regime" && (
-            <LockedFeatureScreen
-              tier="elite"
-              titolo="Regime fiscale e calcolo del netto"
-              descrizione="Se hai partita IVA, stima quanto ti resta in tasca dopo tasse e contributi — e usa le tue aliquote vere per convertire automaticamente lordo in netto ovunque nell'app."
-              onBack={() => setTab("settings")}
-              data={data}
-              setData={setData}
-              onUnlocked={() => setTab("regime")}
-            />
-          )}
-          {tab === "regime" && <RegimeFiscaleScreen data={data} setData={setData} onBack={() => setTab("settings")} />}
-          {tab === "guida" && <GuidaScreen onBack={() => setTab("settings")} redditoTipo={data.redditoTipo} />}
-          {tab === "importcsv" && (
-            <ImportEstrattoContoScreen
-              calendario={data.calendario || {}}
-              setCalendario={(cal) => setData((d) => ({ ...d, calendario: cal }))}
-              onBack={() => setTab("settings")}
-            />
-          )}
-          {tab === "importpdf" && (
-            <ImportPDFScreen
-              calendario={data.calendario || {}}
-              setCalendario={(cal) => setData((d) => ({ ...d, calendario: cal }))}
-              onBack={() => setTab("settings")}
-            />
-          )}
-          {tab === "transactions" && (
-            <TransactionsScreen
-              hourly={hourlyRate}
-              connectedAccounts={connectedAccounts}
-              feed={txFeed || []}
-              setFeed={setTxFeed}
-              onBack={() => setTab("diario")}
-              onOpenSettings={() => setTab("settings")}
-              onCategorize={addEntry}
-            />
-          )}
-          {addOpen && <AddSheet hourly={hourlyRate} onClose={() => setAddOpen(false)} onAdd={addEntry} />}
-          {bankTx && !categorizeOpen && (
-            <BankNotificationBanner tx={bankTx} onTap={() => setCategorizeOpen(true)} onDismiss={() => setBankTx(null)} />
-          )}
-          {bankTx && categorizeOpen && (
-            <OneTapCategorizeSheet
-              tx={bankTx}
-              hourly={hourlyRate}
-              onClose={() => { setCategorizeOpen(false); setBankTx(null); }}
-              onConfirm={addEntry}
-            />
-          )}
-        </div>
-        {(tab === "converti" || tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
-          <div id="tut-tabbar" style={{ flexShrink: 0, borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 6px" }}>
-            <button onClick={() => setTab("converti")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <Calculator size={20} color={tab === "converti" ? C.brassText : C.textFaint} />
-              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "converti" ? C.brassText : C.textFaint }}>Converti</span>
-            </button>
-            <button onClick={() => setTab("diario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <Home size={20} color={tab === "diario" ? C.brassText : C.textFaint} />
-              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "diario" ? C.brassText : C.textFaint }}>Diario</span>
-            </button>
-            {hasTier("premium") ? (
-              <button id="tut-tab-calendario" onClick={() => setTab("calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-                <Calendar size={20} color={tab === "calendario" ? C.brassText : C.textFaint} />
-                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "calendario" ? C.brassText : C.textFaint }}>Calendario</span>
-              </button>
-            ) : (
-              <button onClick={() => setTab("locked-calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
-                <div style={{ position: "relative" }}>
-                  <Calendar size={20} color={C.textFaint} />
-                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: C.textFaint }}>Calendario</span>
-              </button>
-            )}
-            <button id="tut-tab-sim" onClick={() => setTab("sim")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <CreditCard size={20} color={tab === "sim" ? C.brassText : C.textFaint} />
-              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "sim" ? C.brassText : C.textFaint }}>Confronta</span>
-            </button>
-            <button id="tut-tab-goal" onClick={() => setTab("goal")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <PiggyBank size={20} color={tab === "goal" ? C.brassText : C.textFaint} />
-              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "goal" ? C.brassText : C.textFaint }}>Budget</span>
-            </button>
-            {hasTier("premium") ? (
-              closurePool > 0 && (
-                <button id="tut-tab-closure" onClick={() => setTab("closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
-                  <div style={{ position: "relative" }}>
-                    <HandCoins size={20} color={tab === "closure" ? C.brassText : C.textFaint} />
-                    <span style={{ position: "absolute", top: -3, right: -4, width: 8, height: 8, borderRadius: "50%", backgroundColor: C.rust, border: `1.5px solid ${C.bg}` }} />
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "closure" ? C.brassText : C.textFaint }}>Chiusura</span>
-                </button>
-              )
-            ) : (
-              <button onClick={() => setTab("locked-closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
-                <div style={{ position: "relative" }}>
-                  <HandCoins size={20} color={C.textFaint} />
-                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: C.textFaint }}>Chiusura</span>
-              </button>
-            )}
-            {hasTier("premium") ? (
-              hasAnyAccountConnected && (
-                <button onClick={() => setTab("transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
-                  <div style={{ position: "relative" }}>
-                    <BarChart3 size={20} color={tab === "transactions" ? C.brassText : C.textFaint} />
-                    {pendingTxCount > 0 && (
-                      <span style={{
-                        position: "absolute", top: -6, right: -8, minWidth: 14, height: 14, borderRadius: 999, backgroundColor: C.brass,
-                        border: `1.5px solid ${C.bg}`, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px",
-                      }}>
-                        <span style={{ fontSize: 9.5, fontFamily: MONO_FONT, color: C.ink, fontWeight: 800 }}>{pendingTxCount}</span>
-                      </span>
-                    )}
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "transactions" ? C.brassText : C.textFaint }}>Conti</span>
-                </button>
-              )
-            ) : (
-              <button onClick={() => setTab("locked-transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
-                <div style={{ position: "relative" }}>
-                  <BarChart3 size={20} color={C.textFaint} />
-                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: C.textFaint }}>Conti</span>
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { error: null };
-  }
-  static getDerivedStateFromError(error) {
-    return { error };
-  }
-  render() {
-    if (this.state.error) {
-      return (
-        <div style={{ minHeight: "100vh", backgroundColor: "#F7F3EA", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ maxWidth: 380, backgroundColor: "#fff", border: "1px solid #E7E1D2", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, color: "#171717", marginBottom: 8 }}>Qualcosa è andato storto</div>
-            <div style={{ fontSize: 12.5, color: "#6B6B68", lineHeight: 1.5, marginBottom: 14, wordBreak: "break-word" }}>
-              {String(this.state.error && this.state.error.message ? this.state.error.message : this.state.error)}
-            </div>
-            <button
-              onClick={() => { this.setState({ error: null }); }}
-              style={{ padding: "10px 16px", borderRadius: 8, border: "none", backgroundColor: "#FF6B4A", color: "#171717", fontWeight: 700, cursor: "pointer" }}
-            >
-              Riprova
-            </button>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-// ---- Convertitore euro → ore ----
-// È il gesto che distingue OreLibere da un'app di spese: sei davanti a una cosa che
-// vorresti, digiti il prezzo, e vedi quanto devi lavorare per permettertela — PRIMA
-// di comprarla. Per questo è la prima cosa che si vede, e per questo chiede soltanto
-// la tariffa oraria: tutto il resto (spese fisse, obiettivi) serve al Diario, non a
-// questo conto, e chiederlo qui vorrebbe dire mettere sei schermate prima del primo
-// momento in cui l'app dimostra di servire a qualcosa.
 function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, showEntra = true }) {
   const [modo, setModo] = useState("ora"); // ora | mese — due modi di dichiarare quanto si guadagna
   const [oraStr, setOraStr] = useState(hourly > 0 ? String(Number(hourly.toFixed(2))) : "");
   const [meseStr, setMeseStr] = useState("");
   const [prezzoStr, setPrezzoStr] = useState("");
+  // Il confronto tra modi di pagare è la stessa domanda vista da un'altra angolazione,
+  // sullo stesso prezzo: sta qui sotto, chiuso, e si apre solo se serve.
+  const [apriRate, setApriRate] = useState(false);
+  const [modoPag, setModoPag] = useState("cash"); // cash | paypal3 | finanziato
+  const [rata, setRata] = useState(95);
+  const [numRate, setNumRate] = useState(14);
+  const [inputFinanziato, setInputFinanziato] = useState("rata"); // rata | tasso
+  const [tasso, setTasso] = useState(9.9); // TAN annuo %
 
   // Da stipendio mensile a tariffa oraria: 4,33 settimane al mese per 40 ore.
   const tariffa = modo === "ora"
@@ -6432,6 +5428,34 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
     : (Number(String(meseStr).replace(",", ".")) || 0) / (4.33 * 40);
   const prezzo = Number(String(prezzoStr).replace(",", ".")) || 0;
   const pronto = tariffa > 0 && prezzo > 0;
+
+  // Rata calcolata dal TAN annuo con l'ammortamento francese (piano a rate costanti)
+  const rataDaTasso = (() => {
+    const i = (Number(tasso) || 0) / 100 / 12;
+    const n = Number(numRate) || 0;
+    if (n <= 0) return 0;
+    if (i === 0) return prezzo / n;
+    return (prezzo * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+  })();
+  const rataEffettiva = inputFinanziato === "tasso" ? rataDaTasso : Number(rata) || 0;
+
+  let costoTotale = prezzo, interessi = 0, rataMostrata = prezzo, numRateMostrate = 1;
+  if (modoPag === "paypal3") {
+    rataMostrata = prezzo / 3;
+    numRateMostrate = 3;
+  } else if (modoPag === "finanziato") {
+    costoTotale = rataEffettiva * (Number(numRate) || 0);
+    interessi = costoTotale - prezzo;
+    rataMostrata = rataEffettiva;
+    numRateMostrate = Number(numRate) || 0;
+  }
+  const oreDiff = tariffa > 0 ? (costoTotale - prezzo) / tariffa : 0;
+
+  const MODI_PAG = [
+    { id: "cash", label: "Subito" },
+    { id: "paypal3", label: "3 rate" },
+    ...(hasTier("premium") ? [{ id: "finanziato", label: "Finanziam." }] : []),
+  ];
 
   useEffect(() => {
     if (tariffa > 0 && onSetHourly) onSetHourly(tariffa);
@@ -6519,6 +5543,101 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
               Gli euro si rifanno. Le ore che hai lavorato per averli, no.
             </div>
           </PunchTicket>
+
+          {/* Confronto tra modi di pagare: stesso prezzo, stessa domanda, altra angolazione */}
+          <button
+            onClick={() => setApriRate(!apriRate)}
+            style={{
+              width: "100%", padding: "11px 14px", borderRadius: 8, marginBottom: apriRate ? 10 : 18,
+              border: `1px solid ${C.panelBorder}`, background: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 13.5, color: C.paper, fontWeight: 600 }}>E se non lo paghi subito?</span>
+            <span style={{ fontSize: 12.5, color: C.textDim, fontWeight: 600 }}>{apriRate ? "chiudi" : "confronta"}</span>
+          </button>
+
+          {apriRate && (
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ display: "flex", gap: 6, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: 4, marginBottom: 12 }}>
+                {MODI_PAG.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => setModoPag(m.id)}
+                    style={{
+                      flex: 1, padding: "8px 4px", borderRadius: 999, border: "none", cursor: "pointer",
+                      backgroundColor: modoPag === m.id ? C.brass : "transparent",
+                      color: modoPag === m.id ? C.ink : C.textDim,
+                      fontSize: 12.5, fontWeight: 700, fontFamily: MONO_FONT,
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+
+              {modoPag === "finanziato" && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                    {[{ id: "rata", label: "Conosco la rata" }, { id: "tasso", label: "Conosco il tasso" }].map((o) => (
+                      <button
+                        key={o.id}
+                        onClick={() => setInputFinanziato(o.id)}
+                        style={{
+                          flex: 1, padding: "8px 4px", borderRadius: 999, cursor: "pointer",
+                          border: `1px solid ${inputFinanziato === o.id ? C.brass : C.panelBorder}`,
+                          backgroundColor: inputFinanziato === o.id ? "rgba(255,107,74,0.10)" : "transparent",
+                          color: C.textDim, fontSize: 12.5, fontWeight: 600,
+                        }}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ ...etichetta, fontSize: 11 }}>{inputFinanziato === "rata" ? "Rata/mese" : "TAN annuo %"}</div>
+                      <input
+                        type="number" inputMode="decimal"
+                        value={inputFinanziato === "rata" ? rata : tasso}
+                        onChange={(e) => (inputFinanziato === "rata" ? setRata(e.target.value) : setTasso(e.target.value))}
+                        style={{ ...campo, fontSize: 15, padding: "11px 12px" }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ ...etichetta, fontSize: 11 }}>N. rate</div>
+                      <input
+                        type="number" inputMode="numeric" value={numRate}
+                        onChange={(e) => setNumRate(e.target.value)}
+                        style={{ ...campo, fontSize: 15, padding: "11px 12px" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <PunchTicket style={{ padding: "16px 18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, marginBottom: 6 }}>
+                  <span>{numRateMostrate > 1 ? `${numRateMostrate} rate da ${rataMostrata.toFixed(0)}€` : "Pagato subito"}</span>
+                  <strong style={{ fontFamily: MONO_FONT }}>{costoTotale.toFixed(0)}€</strong>
+                </div>
+                {interessi > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.rust, marginBottom: 6 }}>
+                    <span>di cui interessi</span>
+                    <strong style={{ fontFamily: MONO_FONT }}>+{interessi.toFixed(0)}€</strong>
+                  </div>
+                )}
+                <div style={{ borderTop: `1px dashed ${C.sheetBorder}`, paddingTop: 10, marginTop: 8 }}>
+                  <div style={{ fontFamily: SERIF_FONT, fontSize: 26, fontWeight: 700 }}>{euroToTime(costoTotale, tariffa)}</div>
+                  <div style={{ fontSize: 13, color: oreDiff > 0.05 ? C.rust : C.textDim, marginTop: 4, lineHeight: 1.45 }}>
+                    {oreDiff > 0.05
+                      ? `${euroToTime(costoTotale - prezzo, tariffa)} di lavoro in più solo per gli interessi.`
+                      : "Nessun interesse: costa quanto pagarlo subito."}
+                  </div>
+                </div>
+              </PunchTicket>
+            </div>
+          )}
 
           <div style={{ fontSize: 14, color: C.paper, fontWeight: 700, textAlign: "center", marginBottom: 10 }}>
             Ti conviene?
