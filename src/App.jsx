@@ -666,6 +666,44 @@ function downloadBlob(content, filename, mimeType) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+// ---- Backup del profilo ----
+// Il profilo vive sul dispositivo: se svuoti i dati del browser o reinstalli l'app,
+// non c'è modo di riprendertelo. Finché non ci sarà l'accesso con email, questo file
+// è la sola rete di sicurezza: contiene tutto quello che hai inserito.
+const BACKUP_VERSION = 1;
+function buildBackup(nome, data, entries, txFeed) {
+  return JSON.stringify(
+    {
+      app: "OreLibere",
+      versione: BACKUP_VERSION,
+      creato: new Date().toISOString(),
+      nome: nome || "",
+      data,
+      entries: entries || [],
+      tx_feed: txFeed || null,
+    },
+    null,
+    2
+  );
+}
+// Legge un file di backup e ne verifica la forma prima di restituirlo: meglio un errore
+// chiaro che un profilo mezzo sovrascritto con contenuto che non c'entra nulla.
+function parseBackup(testo) {
+  let b;
+  try {
+    b = JSON.parse(testo);
+  } catch {
+    throw new Error("Il file non è leggibile: assicurati di aver scelto il backup scaricato da OreLibere.");
+  }
+  if (!b || b.app !== "OreLibere" || !b.data) {
+    throw new Error("Questo non sembra un backup di OreLibere.");
+  }
+  if (Number(b.versione) > BACKUP_VERSION) {
+    throw new Error("Il backup è stato creato con una versione più recente dell'app: aggiorna l'app e riprova.");
+  }
+  return b;
+}
+
 // Esporta tutto lo storico entrate/uscite/turni come CSV, utile per backup o per fare
 // analisi proprie fuori dall'app.
 function exportCalendarioCSV(calendario) {
@@ -1968,6 +2006,9 @@ function buildTutorialSteps(isVariabile) {
   }
 
   steps.push({ tab: "settings", targetId: "tut-guida", radius: 8, text: "E se in futuro ti dimentichi come funziona qualcosa, torna qui: nella Guida trovi un esempio semplice per ogni parte dell'app, sempre a portata di mano." });
+  // Il backup è l'unica difesa contro la perdita del profilo: meglio dirlo subito,
+  // non quando i dati sono già spariti.
+  steps.push({ tab: "settings", targetId: "tut-backup", radius: 8, text: "Ultima cosa, ma importante: il tuo profilo è legato a questo dispositivo. Da qui scarichi una copia di tutto in un file — fallo appena hai finito di inserire le spese fisse. Se un giorno ti ritrovi l'app vuota, da quel file rimetti tutto com'era." });
 
   return steps;
 }
@@ -4348,6 +4389,14 @@ function GuidaScreen({ onBack, redditoTipo }) {
     });
   }
 
+  // Vale per tutti i piani: è la rete di sicurezza sui propri dati.
+  SEZIONI.push({
+    id: "backup",
+    titolo: "Copia di sicurezza",
+    minTier: "free",
+    esempio: "Il tuo profilo è salvato online, ma è legato a questo dispositivo: l'app ti riconosce grazie a un'impronta che il browser tiene da parte. Se svuoti i dati di Chrome, cambi telefono o reinstalli l'app, quell'impronta sparisce e il profilo non è più recuperabile — nemmeno da chi ha fatto l'app. Per questo in Impostazioni trovi \"Scarica una copia del profilo\": ti salva un file con dentro tutto (reddito, spese fisse, obiettivi, spese registrate, calendario). Tienilo dove tieni le altre cose importanti. Se un giorno ti ritrovi con l'app vuota, da Impostazioni scegli \"Ripristina da un backup\", selezioni quel file e torna tutto com'era. Attenzione: il ripristino sostituisce quello che c'è, quindi fallo su un profilo nuovo o quando sei sicuro. Consiglio: scaricane uno appena hai finito di inserire le spese fisse, che è la parte più noiosa da rifare.",
+  });
+
   return (
     <div style={{ flex: 1, overflowY: "auto", paddingBottom: 32 }}>
       <div style={{ padding: "8px 20px 4px 20px", display: "flex", alignItems: "center", gap: 8 }}>
@@ -4536,7 +4585,35 @@ function RegimeFiscaleScreen({ data, setData, onBack }) {
   );
 }
 
-function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransactions, onChangeUser, onOpenRegime, onOpenImport, onOpenImportPDF, onOpenGuida, onOpenLocked }) {
+function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransactions, onChangeUser, onOpenRegime, onOpenImport, onOpenImportPDF, onOpenGuida, onOpenLocked, currentUser, entries, txFeed, onRestore }) {
+  const [restoreMsg, setRestoreMsg] = useState(null); // { ok: bool, testo: string }
+  const backupFileRef = useRef(null);
+
+  const scaricaBackup = () => {
+    downloadBlob(
+      buildBackup(currentUser, data, entries, txFeed),
+      `orelibere-backup-${currentUser || "profilo"}-${todayKey()}.json`,
+      "application/json"
+    );
+    setRestoreMsg({ ok: true, testo: "Backup scaricato. Tienilo da parte: serve a rimettere in piedi il profilo se lo perdi." });
+  };
+
+  const caricaBackup = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const b = parseBackup(String(reader.result));
+        onRestore(b);
+        setRestoreMsg({ ok: true, testo: `Profilo ripristinato dal backup del ${new Date(b.creato).toLocaleDateString("it-IT")}.` });
+      } catch (e) {
+        setRestoreMsg({ ok: false, testo: e.message });
+      }
+    };
+    reader.onerror = () => setRestoreMsg({ ok: false, testo: "Non sono riuscito a leggere il file." });
+    reader.readAsText(file);
+  };
+
   const PERIOD_OPTIONS = [
     { id: "giorno", label: "Giorno", desc: "chiudi ogni giorno" },
     { id: "settimana", label: "Settimana", desc: "chiudi ogni settimana" },
@@ -4791,6 +4868,59 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           <ArrowRight size={14} color={C.brassText} style={{ transform: "rotate(90deg)" }} /> Scarica il tuo storico (CSV)
         </button>
         )}
+
+        <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Copia di sicurezza</div>
+        <p style={{ fontSize: 12.5, color: C.textFainter, lineHeight: 1.5, marginTop: 0, marginBottom: 12 }}>
+          Il tuo profilo vive su questo dispositivo. Se svuoti i dati del browser, cambi telefono o
+          reinstalli l'app, non c'è modo di riprendertelo. Scarica ogni tanto un file di backup:
+          è l'unico modo per rimettere tutto com'era.
+        </p>
+
+        <button
+          id="tut-backup"
+          onClick={scaricaBackup}
+          style={{
+            width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.brass}`,
+            backgroundColor: "rgba(255,107,74,0.08)", color: C.paper, fontSize: 13.5, fontWeight: 700,
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8,
+          }}
+        >
+          <ArrowRight size={15} color={C.brassText} style={{ transform: "rotate(90deg)" }} /> Scarica una copia del profilo
+        </button>
+
+        <input
+          ref={backupFileRef}
+          type="file"
+          accept="application/json,.json"
+          style={{ display: "none" }}
+          onChange={(e) => { caricaBackup(e.target.files && e.target.files[0]); e.target.value = ""; }}
+        />
+        <button
+          onClick={() => backupFileRef.current && backupFileRef.current.click()}
+          style={{
+            width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, background: "none",
+            color: C.textDim, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8,
+          }}
+        >
+          <ArrowRight size={15} color={C.textFaint} style={{ transform: "rotate(-90deg)" }} /> Ripristina da un backup
+        </button>
+
+        <p style={{ fontSize: 11.5, color: C.textFainter, lineHeight: 1.45, margin: "0 0 12px 0" }}>
+          Il ripristino sostituisce tutto quello che c'è ora in questo profilo.
+        </p>
+
+        {restoreMsg && (
+          <div style={{
+            border: `1px solid ${restoreMsg.ok ? C.green : C.rust}`,
+            backgroundColor: restoreMsg.ok ? "rgba(124,179,66,0.10)" : "rgba(201,62,34,0.10)",
+            borderRadius: 4, padding: "10px 12px", marginBottom: 22,
+            fontSize: 12.5, color: C.paper, lineHeight: 1.45,
+          }}>
+            {restoreMsg.testo}
+          </div>
+        )}
+        {!restoreMsg && <div style={{ marginBottom: 22 }} />}
 
         {hasTier("premium") ? (
         <>
@@ -5476,6 +5606,31 @@ function UserPickerScreen({ onSelect }) {
   const [pinConfirm, setPinConfirm] = useState("");
   const [pinError, setPinError] = useState("");
   const [saving, setSaving] = useState(false);
+  // Chi arriva da un telefono nuovo (o dopo aver svuotato i dati) non ha nessun profilo qui:
+  // può ripartire da un file di backup invece di reinserire tutto a mano.
+  const [pendingBackup, setPendingBackup] = useState(null);
+  const [backupError, setBackupError] = useState("");
+  const backupFileRef = useRef(null);
+
+  const caricaBackup = (file) => {
+    if (!file) return;
+    setBackupError("");
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const b = parseBackup(String(reader.result));
+        setPendingBackup(b);
+        setTargetName((b.nome || "").trim() || "Il mio profilo");
+        setPin(""); setPinConfirm(""); setPinError("");
+        setPinMode("create");
+        setStep("setpin");
+      } catch (e) {
+        setBackupError(e.message);
+      }
+    };
+    reader.onerror = () => setBackupError("Non sono riuscito a leggere il file.");
+    reader.readAsText(file);
+  };
 
   useEffect(() => {
     if (!supabaseConfigured) return;
@@ -5496,7 +5651,7 @@ function UserPickerScreen({ onSelect }) {
   }, []);
 
   const resetPinFlow = () => {
-    setStep("pick"); setTargetName(""); setPin(""); setPinConfirm(""); setPinError(""); setSaving(false);
+    setStep("pick"); setTargetName(""); setPin(""); setPinConfirm(""); setPinError(""); setSaving(false); setPendingBackup(null); setBackupError("");
   };
 
   const pickExisting = (chosenName) => {
@@ -5542,7 +5697,17 @@ function UserPickerScreen({ onSelect }) {
       let error = null;
       try {
         const uid = await ensureAuth();
-        ({ error } = await supabase.from("orelibere_users").upsert({ user_id: uid, name: targetName, pin_hash: h }, { onConflict: "user_id,name" }));
+        const riga = { user_id: uid, name: targetName, pin_hash: h };
+        if (pendingBackup) {
+          // Il profilo nasce già pieno: i dati del backup vengono scritti insieme al PIN,
+          // così quando l'app li rilegge trova tutto al suo posto.
+          riga.data = pendingBackup.data;
+          riga.entries = stampEntryDates(pendingBackup.entries || []);
+          riga.tx_feed = pendingBackup.tx_feed || null;
+          riga.onboarded = true;
+          riga.updated_at = new Date().toISOString();
+        }
+        ({ error } = await supabase.from("orelibere_users").upsert(riga, { onConflict: "user_id,name" }));
       } catch (e) { error = e; }
       if (error) { setPinError("Errore salvataggio: " + error.message); setSaving(false); return; }
     }
@@ -5579,10 +5744,12 @@ function UserPickerScreen({ onSelect }) {
         )}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, color: C.paper, marginBottom: 6 }}>
-            {pinMode === "migrate" ? `Ciao ${targetName}, imposta un PIN` : "Scegli un PIN"}
+            {pendingBackup ? `Bentornato ${targetName}` : pinMode === "migrate" ? `Ciao ${targetName}, imposta un PIN` : "Scegli un PIN"}
           </div>
           <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5 }}>
-            {pinMode === "migrate"
+            {pendingBackup
+              ? `Backup del ${new Date(pendingBackup.creato).toLocaleDateString("it-IT")} pronto da ripristinare. Scegli un PIN e ritrovi tutto com'era.`
+              : pinMode === "migrate"
               ? "Non ne avevi ancora uno: da ora servirà per proteggere i tuoi dati."
               : "4 cifre, ti serviranno per ritrovare i tuoi dati."}
           </div>
@@ -5659,6 +5826,33 @@ function UserPickerScreen({ onSelect }) {
             >
               <ArrowRight size={18} />
             </button>
+          </div>
+
+          <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${C.panelBorder}` }}>
+            <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5, marginBottom: 10 }}>
+              Hai cambiato telefono o cancellato i dati del browser? Se avevi scaricato una copia
+              del profilo, rimettila qui invece di ricominciare da capo.
+            </div>
+            <input
+              ref={backupFileRef}
+              type="file"
+              accept="application/json,.json"
+              style={{ display: "none" }}
+              onChange={(e) => { caricaBackup(e.target.files && e.target.files[0]); e.target.value = ""; }}
+            />
+            <button
+              onClick={() => backupFileRef.current && backupFileRef.current.click()}
+              style={{
+                width: "100%", padding: "11px 0", borderRadius: 8, border: `1px solid ${C.panelBorder}`,
+                background: "none", color: C.textDim, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              }}
+            >
+              <ArrowRight size={15} color={C.textFaint} style={{ transform: "rotate(-90deg)" }} /> Riprendi da un backup
+            </button>
+            {backupError && (
+              <div style={{ marginTop: 8, fontSize: 12.5, color: C.rust, lineHeight: 1.45 }}>{backupError}</div>
+            )}
           </div>
         </>
       )}
@@ -5958,7 +6152,30 @@ function MainApp({ currentUser, onChangeUser }) {
           {tab === "report" && <ReportScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("diario")} onOpenClosure={() => setTab("closure")} />}
           {tab === "closure" && <ClosureScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("report")} onAllocate={addToGoalSaved} onCarryOver={setCarryOver} />}
           {tab === "goal" && <GoalScreen profile={profile} hourly={hourlyRate} onAddGoal={addGoal} />}
-          {tab === "settings" && <SettingsScreen data={data} setData={setData} onBack={() => setTab("diario")} onFullOnboarding={() => { setStep(0); setOnboarded(false); }} onOpenTransactions={() => setTab("transactions")} onChangeUser={onChangeUser} onOpenRegime={() => setTab("regime")} onOpenImport={() => setTab("importcsv")} onOpenImportPDF={() => setTab("importpdf")} onOpenGuida={() => setTab("guida")} onOpenLocked={(key) => setTab("locked-" + key)} />}
+          {tab === "settings" && (
+            <SettingsScreen
+              data={data}
+              setData={setData}
+              onBack={() => setTab("diario")}
+              onFullOnboarding={() => { setStep(0); setOnboarded(false); }}
+              onOpenTransactions={() => setTab("transactions")}
+              onChangeUser={onChangeUser}
+              onOpenRegime={() => setTab("regime")}
+              onOpenImport={() => setTab("importcsv")}
+              onOpenImportPDF={() => setTab("importpdf")}
+              onOpenGuida={() => setTab("guida")}
+              onOpenLocked={(key) => setTab("locked-" + key)}
+              currentUser={currentUser}
+              entries={entries}
+              txFeed={txFeed}
+              onRestore={(b) => {
+                setData(b.data);
+                setEntries(stampEntryDates(b.entries || []));
+                setTxFeed(b.tx_feed || null);
+                setOnboarded(true);
+              }}
+            />
+          )}
           {tab === "locked-conti" && (
             <LockedFeatureScreen
               tier="premium"
