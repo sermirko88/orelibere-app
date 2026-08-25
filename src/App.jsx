@@ -5895,7 +5895,7 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
         </div>
         <div style={{ padding: "0 20px 12px 20px" }}>
           <span style={{ fontFamily: SERIF_FONT, fontStyle: "italic", fontWeight: 500, fontSize: 12.5, color: C.textFainter }}>
-            Gli euro si rifanno. Le ore che hai lavorato per averli, no.
+            I soldi vanno e vengono. Il tempo va e basta.
           </span>
         </div>
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
@@ -6339,8 +6339,11 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
               {euroToTime(prezzo, tariffa)}
             </div>
             <div style={{ fontSize: 14, color: C.textDim, marginTop: 6 }}>{scalaUmana(prezzo, tariffa)}</div>
-            <div style={{ fontFamily: SERIF_FONT, fontStyle: "italic", fontSize: 13.5, color: C.textFaint, marginTop: 14, lineHeight: 1.5 }}>
-              Gli euro si rifanno. Le ore che hai lavorato per averli, no.
+            {/* Il punto non è quanto hai già lavorato — quelle ore sono passate comunque —
+                ma quante dovrai lavorarne ancora per rimettere a posto quei soldi. */}
+            <div style={{ fontSize: 13.5, color: C.textFaint, marginTop: 14, lineHeight: 1.55, borderTop: `1px dashed ${C.sheetBorder}`, paddingTop: 12 }}>
+              Quei soldi li hai. Se li spendi, per riaverli dovrai lavorarne
+              <strong style={{ color: C.paper }}> altre {euroToTime(prezzo, tariffa)}</strong>.
             </div>
           </PunchTicket>
 
