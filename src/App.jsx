@@ -6339,11 +6339,12 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
               {euroToTime(prezzo, tariffa)}
             </div>
             <div style={{ fontSize: 14, color: C.textDim, marginTop: 6 }}>{scalaUmana(prezzo, tariffa)}</div>
-            {/* Il punto non è quanto hai già lavorato — quelle ore sono passate comunque —
-                ma quante dovrai lavorarne ancora per rimettere a posto quei soldi. */}
+            {/* Il fatto, senza commento: quelle ore sono già state spese al lavoro.
+                Parlare di "riaverli lavorando ancora" farebbe sembrare la cosa rimediabile,
+                e non lo è — anche quelle ore future se ne andrebbero comunque. */}
             <div style={{ fontSize: 13.5, color: C.textFaint, marginTop: 14, lineHeight: 1.55, borderTop: `1px dashed ${C.sheetBorder}`, paddingTop: 12 }}>
-              Quei soldi li hai. Se li spendi, per riaverli dovrai lavorarne
-              <strong style={{ color: C.paper }}> altre {euroToTime(prezzo, tariffa)}</strong>.
+              Per questi soldi hai già passato
+              <strong style={{ color: C.paper }}> {euroToTime(prezzo, tariffa)}</strong> al lavoro.
             </div>
           </PunchTicket>
 
