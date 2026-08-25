@@ -43,9 +43,9 @@ const LIGHT_THEME = {
   rust: "#C93E22",
   green: "#7CB342",       // riempimenti (barre, pallini)
   greenText: "#4F7D24",   // testo/icone verdi: la versione chiara spariva sul fondo crema
-  textDim: "#4A4842",
-  textFaint: "#6E6B62",
-  textFainter: "#8B887D",
+  textDim: "#3E3C37",
+  textFaint: "#5A574F",
+  textFainter: "#75726A",
   fixedBar: "#3D4550",
   outerBg: "#EDE7D8",
   sheetBorder: "#DED7C4",
@@ -68,9 +68,9 @@ const DARK_THEME = {
   rust: "#FF6B52",
   green: "#8FCB55",
   greenText: "#A2D96E",
-  textDim: "#C8C3B4",
-  textFaint: "#9C9789",
-  textFainter: "#7A7566",
+  textDim: "#DAD5C6",
+  textFaint: "#B2AD9E",
+  textFainter: "#948F80",
   fixedBar: "#6C7684",
   outerBg: "#0F0D09",
   sheetBorder: "#4A4433",
@@ -347,11 +347,11 @@ function PinMigratePrompt({ name, onDone }) {
         <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5 }}>Non ne avevi ancora uno: da ora servirà per proteggere i tuoi dati.</div>
       </div>
       <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>PIN</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>PIN</div>
         <PinInput value={pin} onChange={(v) => { setPin(v); setError(""); }} autoFocus />
       </div>
       <div>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Ripeti il PIN</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Ripeti il PIN</div>
         <PinInput value={pinConfirm} onChange={(v) => { setPinConfirm(v); setError(""); }} />
       </div>
       {error && <div style={{ color: C.rust, fontSize: 12, textAlign: "center", marginTop: 10 }}>{error}</div>}
@@ -796,7 +796,7 @@ function ScreenHeader({ eyebrow, title, right }) {
   return (
     <div style={{ padding: "8px 20px 16px 20px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
       <div>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.brassText, fontFamily: MONO_FONT, marginBottom: 4 }}>{eyebrow}</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.brassText, fontFamily: MONO_FONT, marginBottom: 4 }}>{eyebrow}</div>
         <h1 style={{ fontSize: 26, lineHeight: 1.2, fontWeight: 800, color: C.paper, fontFamily: DISPLAY_FONT, margin: 0 }}>{title}</h1>
       </div>
       {right}
@@ -829,7 +829,7 @@ function TextInput({ value, onChange, placeholder, type = "text", prefix, suffix
 }
 
 function FieldLabel({ children }) {
-  return <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", color: C.textDim, fontFamily: MONO_FONT }}>{children}</label>;
+  return <label style={{ fontSize: 11, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em", color: C.textDim, fontFamily: MONO_FONT }}>{children}</label>;
 }
 
 // Bottone "tieni premuto" — richiede una pressione continua di `holdMs` millisecondi
@@ -919,7 +919,7 @@ function WelcomeScreen({ onStart }) {
 
       {/* Banda "poster" scura, per non far sembrare la schermata un testo su un foglio */}
       <div style={{ backgroundColor: C.ink, padding: "36px 24px 30px 24px", borderRadius: "0 0 24px 24px" }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", color: C.brassText, fontFamily: SANS_FONT, fontWeight: 700, marginBottom: 16, animation: "wsFadeUp 0.6s ease 0ms both" }}>OreLibere</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", color: C.brass, fontFamily: SANS_FONT, fontWeight: 700, marginBottom: 16, animation: "wsFadeUp 0.6s ease 0ms both" }}>OreLibere</div>
         <h1 style={{ fontSize: 27, fontWeight: 800, color: "#FFFFFF", fontFamily: DISPLAY_FONT, margin: "0 0 8px 0", lineHeight: 1.2, animation: "wsFadeUp 0.6s ease 120ms both" }}>
           Non hai mai pagato il prezzo giusto.
         </h1>
@@ -957,7 +957,7 @@ function WelcomeScreen({ onStart }) {
             Satispay/PayPal chiedendo "ma come fa a farmi risparmiare?". Non lo fa:
             non tocca i soldi, cambia solo l'unità con cui li guardi. */}
         <div style={{ border: `1px solid ${C.panelBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 22, backgroundColor: C.panel }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, fontFamily: MONO_FONT, marginBottom: 8 }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, fontFamily: MONO_FONT, marginBottom: 8 }}>
             Mettiamo in chiaro una cosa
           </div>
           <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.6, margin: "0 0 8px 0" }}>
@@ -1000,7 +1000,7 @@ function OnboardingIncome({ data, setData, onNext }) {
   if (phase === "choose") {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "24px 20px 32px 20px" }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.brassText, fontFamily: MONO_FONT, marginBottom: 4 }}>Passo 1 di 3</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.brassText, fontFamily: MONO_FONT, marginBottom: 4 }}>Passo 1 di 3</div>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>Come guadagni?</h1>
         <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 24 }}>Serve per calcolare la tua tariffa oraria nel modo giusto per te — dipendenti e autonomi hanno entrate diverse.</p>
 
@@ -1036,7 +1036,7 @@ function OnboardingIncome({ data, setData, onNext }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "24px 20px 32px 20px", overflowY: "auto" }}>
       <button onClick={() => setPhase("choose")} style={{ background: "none", border: "none", color: C.textDim, fontSize: 12, marginBottom: 12, alignSelf: "flex-start", cursor: "pointer" }}>← cambia tipo di reddito</button>
-      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.brassText, fontFamily: MONO_FONT, marginBottom: 4 }}>Passo 1 di 3</div>
+      <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.brassText, fontFamily: MONO_FONT, marginBottom: 4 }}>Passo 1 di 3</div>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>Quanto vale il tuo tempo</h1>
       <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 24 }}>Serve per convertire ogni spesa in ore di lavoro.</p>
 
@@ -1150,7 +1150,7 @@ function OnboardingIncome({ data, setData, onNext }) {
 
       {hourly ? (
         <PunchTicket style={{ borderRadius: 8, padding: 20, border: `1px solid ${C.brass}` }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>La tua ora di lavoro vale</div>
+          <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>La tua ora di lavoro vale</div>
           <div style={{ fontFamily: SERIF_FONT, fontSize: 36, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>{hourly.toFixed(2)}€/ora</div>
           <p style={{ fontSize: 11.5, color: C.textDim, lineHeight: 1.5, margin: 0 }}>
             {isVariabile
@@ -1225,7 +1225,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "24px 20px 32px 20px", position: "relative", overflowY: "auto" }}>
       <button onClick={onBack} style={{ background: "none", border: "none", color: C.textDim, fontSize: 12, marginBottom: 12, alignSelf: "flex-start", cursor: "pointer" }}>← indietro</button>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT }}>Passo 2 di 3</span>
+        <span style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT }}>Passo 2 di 3</span>
         <span style={{ fontSize: 9, fontFamily: MONO_FONT, color: C.textFainter, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "2px 8px" }}>opzionale</span>
       </div>
       <h1 style={{ fontSize: 21, fontWeight: 700, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>Spese fisse</h1>
@@ -1249,7 +1249,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
         })}
       </div>
 
-      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>Aggiunta rapida</div>
+      <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>Aggiunta rapida</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
         {QUICK_FIXED.map(([key, label]) => {
           const Icon = FIXED_ICONS[key];
@@ -1280,7 +1280,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
       </button>
 
       <PunchTicket style={{ borderRadius: 4, padding: 16 }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 4 }}>Totale mensile impegnato</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 4 }}>Totale mensile impegnato</div>
         <div style={{ fontFamily: MONO_FONT, fontSize: 24, fontWeight: 800 }}>{monthlyTotal.toFixed(0)}€</div>
       </PunchTicket>
 
@@ -1406,7 +1406,7 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "24px 20px 32px 20px", position: "relative", overflowY: "auto" }}>
       <button onClick={onBack} style={{ background: "none", border: "none", color: C.textDim, fontSize: 12, marginBottom: 12, alignSelf: "flex-start", cursor: "pointer" }}>← indietro</button>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT }}>Passo 3 di 3</span>
+        <span style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT }}>Passo 3 di 3</span>
         <span style={{ fontSize: 9, fontFamily: MONO_FONT, color: C.textFainter, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "2px 8px" }}>opzionale</span>
       </div>
       <h1 style={{ fontSize: 21, fontWeight: 700, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>I tuoi obiettivi</h1>
@@ -1566,12 +1566,12 @@ function SpendingBar({ fixedHours, extraHours, capHours, hourly }) {
     <div style={{ width: "100%" }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFaint, marginBottom: 4 }}>Ore spese oggi</span>
+          <span style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFaint, marginBottom: 4 }}>Ore spese oggi</span>
           <span style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em", color: over ? C.rust : C.ink }}>{spentHours.toFixed(1)}h</span>
           {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(spentHours * hourly).toFixed(0)}€</span> : null}
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFaint, marginBottom: 4 }}>Ore disponibili</span>
+          <span style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFaint, marginBottom: 4 }}>Ore disponibili</span>
           <span style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em", color: C.greenText }}>{remainingHours.toFixed(1)}h</span>
           {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(remainingHours * hourly).toFixed(0)}€</span> : null}
         </div>
@@ -1584,7 +1584,7 @@ function SpendingBar({ fixedHours, extraHours, capHours, hourly }) {
         )}
       </div>
       <div style={{ textAlign: "right", marginTop: 6 }}>
-        <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFainter, fontFamily: MONO_FONT }}>su {capHours}h oggi</span>
+        <span style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFainter, fontFamily: MONO_FONT }}>su {capHours}h oggi</span>
       </div>
     </div>
   );
@@ -1649,7 +1649,7 @@ function OneTapCategorizeSheet({ tx, hourly, onClose, onConfirm }) {
             </div>
             <div style={{ fontSize: 13, color: C.textFainter, marginBottom: 18 }}>{tx.merchant}</div>
 
-            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>
+            <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>
               Un tap per etichettare{suggested ? " — suggerito evidenziato" : ""}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
@@ -1742,7 +1742,7 @@ function TransactionsScreen({ hourly, connectedAccounts, feed, setFeed, onBack, 
 
       <div style={{ padding: "0 20px" }}>
         <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}`, marginBottom: 16 }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>
             Totale da {activeSources.length} cont{activeSources.length === 1 ? "o" : "i"} collegat{activeSources.length === 1 ? "o" : "i"}
           </div>
           {feed.length > 0 ? (
@@ -1758,7 +1758,7 @@ function TransactionsScreen({ hourly, connectedAccounts, feed, setFeed, onBack, 
 
         {activeSources.length > 0 && (
           <>
-            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Spaccato per conto</div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Spaccato per conto</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
               {activeSources.map((sourceId) => {
                 const src = ACCOUNT_SOURCES[sourceId];
@@ -1791,7 +1791,7 @@ function TransactionsScreen({ hourly, connectedAccounts, feed, setFeed, onBack, 
             <div key={sourceId} style={{ marginBottom: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                 <src.icon size={13} color={C.textDim} />
-                <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textDim, fontFamily: MONO_FONT }}>{src.label}</span>
+                <span style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textDim, fontFamily: MONO_FONT }}>{src.label}</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {txs.map((tx) => {
@@ -1951,7 +1951,7 @@ function TutorialOverlay({ step, steps, frameRef, onNext, onFinish }) {
       )}
 
       <div style={cardStyle}>
-        <div style={{ fontSize: 10, fontFamily: MONO_FONT, color: C.brassText, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+        <div style={{ fontSize: 10, fontFamily: MONO_FONT, color: C.brassText, marginBottom: 6, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em" }}>
           {step + 1} / {steps.length}
         </div>
         <p style={{ fontSize: 13, color: C.paper, lineHeight: 1.5, margin: "0 0 14px 0" }}>{current.text}</p>
@@ -1980,7 +1980,7 @@ function EditAmountInline({ initial, hourly, onConfirm, onDelete }) {
 
   return (
     <>
-      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Importo</div>
+      <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Importo</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 12px", marginBottom: 10 }}>
         <span style={{ color: C.brassText, fontFamily: MONO_FONT, fontSize: 18 }}>€</span>
         <input
@@ -2082,7 +2082,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
 
       <div style={{ padding: "0 20px", marginBottom: 14, display: "flex", justifyContent: "center" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "6px 8px 6px 14px" }}>
-          <span style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em" }}>La tua ora di lavoro vale</span>
+          <span style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em" }}>La tua ora di lavoro vale</span>
           <span style={{ fontFamily: MONO_FONT, fontSize: 13, fontWeight: 800, color: C.brassText }}>{hourly.toFixed(2)}€/h</span>
           {rateSource && (
             <span style={{ fontSize: 9, fontFamily: MONO_FONT, color: rateSource === "reale" ? C.greenText : C.textFainter, border: `1px solid ${rateSource === "reale" ? C.green : C.panelBorder}`, borderRadius: 999, padding: "1px 6px" }}>
@@ -2126,7 +2126,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
 
       {primaryGoal ? (
         <div style={{ padding: "0 20px", marginTop: 16 }}>
-          <div style={{ fontSize: 9.5, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, fontFamily: MONO_FONT, marginBottom: 6 }}>
+          <div style={{ fontSize: 9.5, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, fontFamily: MONO_FONT, marginBottom: 6 }}>
             Obiettivo principale{otherGoalsCount > 0 ? ` · +${otherGoalsCount} altri` : ""}
           </div>
           <button
@@ -2147,7 +2147,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
             <div style={{ fontSize: 10.5, color: C.brassText, fontFamily: MONO_FONT, marginBottom: 6 }}>
               → ancora {euroToTime(Math.max(primaryGoal.importo - primaryGoal.saved, 0), hourly)} di lavoro
             </div>
-            <div style={{ fontSize: 10.5, color: C.textFainter }}>vai a tutti i budget →</div>
+            <div style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>vai a tutti i budget →</div>
           </button>
         </div>
       ) : null}
@@ -2174,7 +2174,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
       </div>
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 8 }}>Timbrature di oggi</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 8 }}>Timbrature di oggi</div>
         {todayEntries.length === 0 ? (
           <div style={{ color: C.textFaint, fontSize: 13, fontStyle: "italic", padding: "16px 0", textAlign: "center", border: `1px dashed ${C.panelBorder}`, borderRadius: 4 }}>Nessuna spesa registrata oggi</div>
         ) : (
@@ -2470,7 +2470,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
 
       <div style={{ padding: "0 20px" }}>
         <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Tempo extra totale</div>
+          <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Tempo extra totale</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{totalHours.toFixed(1)}h</div>
             <div style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.textFaint }}>{totalEuro.toFixed(0)}€</div>
@@ -2488,7 +2488,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
       </div>
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Spesa extra · ultimi 7 giorni</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Spesa extra · ultimi 7 giorni</div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 128, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 12px 10px 12px" }}>
           {dayBars.map((d, i) => {
             const h = Math.max((d.extra / maxDayExtra) * 58, 4);
@@ -2497,7 +2497,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
               <div key={d.key ?? i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                 <div style={{ width: "100%", maxWidth: 22, height: h, borderRadius: 2, backgroundColor: isCritical ? C.rust : C.brass, opacity: isCritical ? 1 : 0.75 }} />
                 <span style={{ fontSize: 10, color: isCritical ? C.rust : C.textFaint, fontFamily: MONO_FONT, fontWeight: isCritical ? 700 : 400 }}>{d.day}</span>
-                <span style={{ fontSize: 9, color: C.textFaint, fontFamily: MONO_FONT, opacity: 0.8 }}>{d.extra.toFixed(0)}€</span>
+                <span style={{ fontSize: 9.5, color: C.textFaint, fontFamily: MONO_FONT, fontWeight: 600 }}>{d.extra.toFixed(0)}€</span>
               </div>
             );
           })}
@@ -2513,7 +2513,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
       </div>
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Dove va il tuo tempo</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Dove va il tuo tempo</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {categoryList.map((c, i) => {
             const Icon = CAT_ICON_MAP[c.cat] || MoreHorizontal;
@@ -2619,7 +2619,7 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
         {!confirmed ? (
           <>
             <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}`, marginBottom: 14 }}>
-              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Disponibile da distribuire</div>
+              <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Disponibile da distribuire</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                 <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{pool}€</div>
                 <div style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.textFaint }}>{euroToTime(pool, hourly)}</div>
@@ -2634,7 +2634,7 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
             {giorniSpesa.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT }}>Spese extra del periodo</span>
+                  <span style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT }}>Spese extra del periodo</span>
                   <span style={{ fontFamily: MONO_FONT, fontSize: 12, color: C.textFaint }}>{totaleExtraPeriodo.toFixed(2)}€ · {euroToTime(totaleExtraPeriodo, hourly)}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -3569,12 +3569,12 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
           <div style={{ display: "grid", gridTemplateColumns: redditoTipo === "variabile" ? "1fr 1fr" : "1fr", gap: 12, marginBottom: 10 }}>
             {redditoTipo === "variabile" && (
               <div>
-                <div style={{ fontSize: 10, textTransform: "uppercase", color: C.textDim, letterSpacing: "0.1em", marginBottom: 2 }}>Ore lavorate</div>
+                <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, color: C.textDim, letterSpacing: "0.1em", marginBottom: 2 }}>Ore lavorate</div>
                 <div style={{ fontFamily: SERIF_FONT, fontSize: 22, fontWeight: 700, color: C.ink }}>{monthOre.toFixed(1)}h</div>
               </div>
             )}
             <div>
-              <div style={{ fontSize: 10, textTransform: "uppercase", color: C.textDim, letterSpacing: "0.1em", marginBottom: 2 }}>Saldo</div>
+              <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, color: C.textDim, letterSpacing: "0.1em", marginBottom: 2 }}>Saldo</div>
               <div style={{ fontFamily: SERIF_FONT, fontSize: 22, fontWeight: 700, color: monthEntrate - monthUscite >= 0 ? C.greenText : C.rust }}>{(monthEntrate - monthUscite).toFixed(0)}€</div>
               <div style={{ fontSize: 10.5, color: C.textFaint, marginTop: 1 }}>{euroToTime(Math.abs(monthEntrate - monthUscite), hourlyEstimate)}</div>
             </div>
@@ -4069,7 +4069,7 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
         <p style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.6, marginBottom: 20, maxWidth: 300, marginLeft: "auto", marginRight: "auto" }}>{descrizione}</p>
 
         <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 16, textAlign: "left" }}>
-          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, marginBottom: 10 }}>
+          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, marginBottom: 10 }}>
             Cosa include ogni piano
           </div>
           <div style={{ marginBottom: 10 }}>
@@ -4087,7 +4087,7 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
         </div>
 
         <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 16, textAlign: "left" }}>
-          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
+          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
             Cambia fascia (solo per questo test)
           </div>
           <div style={{ display: "flex", gap: 6 }}>
@@ -4354,7 +4354,7 @@ function RegimeFiscaleScreen({ data, setData, onBack }) {
 
         {redditoLordo > 0 && (
           <PunchTicket style={{ borderRadius: 8, padding: 18, marginBottom: 20 }}>
-            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textDim, marginBottom: 10 }}>Il tuo netto stimato</div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textDim, marginBottom: 10 }}>Il tuo netto stimato</div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12.5 }}>
               <span style={{ color: C.textDim }}>Contributi INPS</span>
               <span style={{ fontFamily: MONO_FONT, color: C.ink }}>-{contributiINPS.toFixed(0)}€</span>
@@ -4454,7 +4454,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
         )}
 
         <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 22 }}>
-          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
+          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
             Cambia fascia (solo per questo test)
           </div>
           <div style={{ display: "flex", gap: 6 }}>
@@ -4481,7 +4481,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
         </div>
 
         <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 22 }}>
-          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
+          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
             Tema
           </div>
           <div style={{ display: "flex", gap: 6 }}>
@@ -4514,7 +4514,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           if (lockedItems.length === 0) return null;
           return (
             <div style={{ border: `1px solid ${C.panelBorder}`, borderRadius: 8, marginBottom: 22, overflow: "hidden" }}>
-              <div style={{ padding: "12px 14px 8px 14px", fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter }}>
+              <div style={{ padding: "12px 14px 8px 14px", fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter }}>
                 Funzioni da sbloccare
               </div>
               {lockedItems.map((item, i) => (
@@ -4523,7 +4523,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
                   onClick={() => onOpenLocked(item.key)}
                   style={{
                     width: "100%", padding: "13px 14px", border: "none", borderTop: i > 0 ? `1px solid ${C.panelBorder}` : "none",
-                    background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", opacity: 0.75,
+                    background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", opacity: 0.9,
                   }}
                 >
                   <div style={{ position: "relative", flexShrink: 0 }}>
@@ -4542,7 +4542,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
 
         {!KICKSTARTER_BUILD && (hasTier("premium") ? (
           <>
-            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Conti collegati</div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Conti collegati</div>
             <p style={{ fontSize: 12, color: C.textFainter, lineHeight: 1.5, marginTop: 0, marginBottom: 12 }}>
               Collega i tuoi conti per ricevere le transazioni in automatico invece di inserirle a mano.
             </p>
@@ -4644,7 +4644,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
 
         {hasTier("premium") ? (
         <>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Ogni quanto chiudere il periodo</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Ogni quanto chiudere il periodo</div>
         <p style={{ fontSize: 12, color: C.textFainter, lineHeight: 1.5, marginTop: 0, marginBottom: 12 }}>
           Determina la cadenza di Resoconto e Chiusura: quanto spesso rivedi i dati e distribuisci il risparmio tra i tuoi obiettivi.
         </p>
@@ -4736,7 +4736,7 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
 
         <div style={{ padding: "0 20px" }}>
           <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
-            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Accumulato</div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Accumulato</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 2 }}>
               <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{saved.toFixed(0)}€</div>
               <div style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.textFaint }}>/ {importo.toFixed(0)}€</div>
@@ -4795,7 +4795,7 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
 
       <div style={{ padding: "0 20px" }}>
         <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Accumulato</div>
+          <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Accumulato</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 2 }}>
             <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{saved.toFixed(0)}€</div>
             <div style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.textFaint }}>/ {importo.toFixed(0)}€</div>
@@ -4810,13 +4810,13 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
 
       <div style={{ padding: "0 20px", marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: 14 }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Ti mancano</div>
+          <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Ti mancano</div>
           <div style={{ fontFamily: MONO_FONT, fontSize: 20, fontWeight: 800, color: C.paper }}>{remainingHours.toFixed(0)}h</div>
           <div style={{ fontFamily: MONO_FONT, fontSize: 12, color: C.textFaint }}>{remainingEuro.toFixed(0)}€</div>
         </div>
         <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textDim, fontFamily: MONO_FONT }}>Target</span>
+            <span style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textDim, fontFamily: MONO_FONT }}>Target</span>
             <select
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
@@ -4853,7 +4853,7 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
       ) : null}
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Ritmo di accumulo mensile</div>
+        <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Ritmo di accumulo mensile</div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 110, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 12px 10px 12px", position: "relative" }}>
           <div style={{ position: "absolute", left: 12, right: 12, bottom: `${18 + (monthlyTarget / maxPace) * 58}px`, borderTop: `1px dashed ${C.brass}`, opacity: 0.6 }} />
           {monthlyPace.map((m, i) => {
@@ -4863,7 +4863,7 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                 <div style={{ width: "100%", maxWidth: 28, height: h, borderRadius: 2, backgroundColor: below ? C.rust : C.green, opacity: 0.85 }} />
                 <span style={{ fontSize: 10, color: C.textFaint, fontFamily: MONO_FONT }}>{m.mese}</span>
-                <span style={{ fontSize: 9, color: C.textFaint, fontFamily: MONO_FONT, opacity: 0.8 }}>{m.risparmiato}€</span>
+                <span style={{ fontSize: 9.5, color: C.textFaint, fontFamily: MONO_FONT, fontWeight: 600 }}>{m.risparmiato}€</span>
               </div>
             );
           })}
@@ -5255,7 +5255,7 @@ function SimulatoreScreen({ hourly }) {
         </div>
 
         <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 12 }}>Il costo reale</div>
+          <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 12 }}>Il costo reale</div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
             <span style={{ fontSize: 13, color: C.textFaint }}>
@@ -5281,7 +5281,7 @@ function SimulatoreScreen({ hourly }) {
           </div>
 
           <div style={{ borderTop: `1px dashed ${C.sheetBorder}`, paddingTop: 16 }}>
-            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, fontFamily: MONO_FONT, marginBottom: 4 }}>Il tuo tempo</div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, fontFamily: MONO_FONT, marginBottom: 4 }}>Il tuo tempo</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
               <div style={{ fontFamily: MONO_FONT, fontSize: 30, fontWeight: 800 }}>{Math.round(oreReali)}h</div>
               <div style={{ fontFamily: MONO_FONT, fontSize: 15, color: C.textFaint }}>≈ {euroToDaysHours(costoTotale, hourly)}</div>
@@ -5428,11 +5428,11 @@ function UserPickerScreen({ onSelect }) {
           </div>
         </div>
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>PIN</div>
+          <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>PIN</div>
           <PinInput value={pin} onChange={(v) => { setPin(v); setPinError(""); }} autoFocus />
         </div>
         <div>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Ripeti il PIN</div>
+          <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Ripeti il PIN</div>
           <PinInput value={pinConfirm} onChange={(v) => { setPinConfirm(v); setPinError(""); }} />
         </div>
         {pinError && <div style={{ color: C.rust, fontSize: 12, textAlign: "center", marginTop: 10 }}>{pinError}</div>}
@@ -5884,7 +5884,7 @@ function MainApp({ currentUser, onChangeUser }) {
                 <span style={{ fontSize: 10, fontFamily: MONO_FONT, color: tab === "calendario" ? C.brassText : C.textFaint }}>Calendario</span>
               </button>
             ) : (
-              <button onClick={() => setTab("locked-calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.5 }}>
+              <button onClick={() => setTab("locked-calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
                 <div style={{ position: "relative" }}>
                   <Calendar size={20} color={C.textFaint} />
                   <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
@@ -5911,7 +5911,7 @@ function MainApp({ currentUser, onChangeUser }) {
                 </button>
               )
             ) : (
-              <button onClick={() => setTab("locked-closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.5 }}>
+              <button onClick={() => setTab("locked-closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
                 <div style={{ position: "relative" }}>
                   <HandCoins size={20} color={C.textFaint} />
                   <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
@@ -5937,7 +5937,7 @@ function MainApp({ currentUser, onChangeUser }) {
                 </button>
               )
             ) : (
-              <button onClick={() => setTab("locked-transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.5 }}>
+              <button onClick={() => setTab("locked-transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
                 <div style={{ position: "relative" }}>
                   <BarChart3 size={20} color={C.textFaint} />
                   <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
