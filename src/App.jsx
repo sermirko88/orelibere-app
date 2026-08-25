@@ -247,26 +247,73 @@ function euroToDaysHours(euro, hourlyRate, dailyHours = 8) {
 // bene la demo su schermo grande. Dentro l'APK, però, quella cornice diventa un
 // "telefono dentro il telefono": su schermi stretti la togliamo e usiamo tutto lo spazio.
 function useShellStyles() {
+  const readVh = () => {
+    if (typeof window === "undefined") return 0;
+    // visualViewport è l'unica misura che tiene conto della barra del browser che si apre e
+    // si chiude e della tastiera: "100dvh" su Android a volte vale più dell'area davvero
+    // visibile, e in quel caso è la pagina intera a scorrere, portandosi via la barra in basso.
+    return (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  };
   const [isSmall, setIsSmall] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 480 : false));
+  const [vh, setVh] = useState(readVh);
 
   useEffect(() => {
-    const onResize = () => setIsSmall(window.innerWidth < 480);
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
+    const sync = () => {
+      setIsSmall(window.innerWidth < 480);
+      setVh(readVh());
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener("resize", sync);
+      vv.addEventListener("scroll", sync);
+    }
     return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
+      if (vv) {
+        vv.removeEventListener("resize", sync);
+        vv.removeEventListener("scroll", sync);
+      }
     };
   }, []);
 
+  // Su telefono la pagina non deve scorrere: scorre solo il contenuto dentro l'app,
+  // così la barra dei pulsanti resta incollata in basso invece di scivolare via.
+  useEffect(() => {
+    if (!isSmall) return;
+    const html = document.documentElement, body = document.body;
+    const prev = {
+      htmlOverflow: html.style.overflow, bodyOverflow: body.style.overflow,
+      bodyMargin: body.style.margin, overscroll: body.style.overscrollBehavior,
+    };
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.margin = "0";
+    body.style.overscrollBehavior = "none";
+    return () => {
+      html.style.overflow = prev.htmlOverflow;
+      body.style.overflow = prev.bodyOverflow;
+      body.style.margin = prev.bodyMargin;
+      body.style.overscrollBehavior = prev.overscroll;
+    };
+  }, [isSmall]);
+
   if (isSmall) {
+    const h = vh ? `${vh}px` : "100dvh";
     return {
-      outerStyle: { minHeight: "100dvh", backgroundColor: C.bg, colorScheme: "light" },
+      outerStyle: {
+        position: "fixed", top: 0, left: 0, right: 0, height: h,
+        backgroundColor: C.bg, colorScheme: "light", overflow: "hidden",
+      },
       frameStyle: {
-        position: "relative", width: "100%", minHeight: "100dvh",
+        position: "relative", width: "100%", height: "100%",
         background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
         overflow: "hidden", display: "flex", flexDirection: "column",
         paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)",
+        boxSizing: "border-box",
       },
     };
   }
@@ -5720,7 +5767,7 @@ function MainApp({ currentUser, onChangeUser }) {
             I soldi vanno e vengono. Il tuo tempo no — scorre e basta.
           </span>
         </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
           {tab === "diario" && (
             <DiarioScreen
               profile={profile}
@@ -5874,7 +5921,7 @@ function MainApp({ currentUser, onChangeUser }) {
           )}
         </div>
         {(tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
-          <div id="tut-tabbar" style={{ borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 6px" }}>
+          <div id="tut-tabbar" style={{ flexShrink: 0, borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 6px" }}>
             <button onClick={() => setTab("diario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <Home size={20} color={tab === "diario" ? C.brassText : C.textFaint} />
               <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "diario" ? C.brassText : C.textFaint }}>Diario</span>
