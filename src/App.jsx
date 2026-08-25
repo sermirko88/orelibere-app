@@ -6298,7 +6298,7 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
             />
           )}
         </div>
-        {(tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
+        {(tab === "converti" || tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
           <div id="tut-tabbar" style={{ flexShrink: 0, borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 6px" }}>
             <button onClick={() => setTab("converti")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <Calculator size={20} color={tab === "converti" ? C.brassText : C.textFaint} />
