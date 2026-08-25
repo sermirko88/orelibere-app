@@ -248,25 +248,57 @@ function euroToDaysHours(euro, hourlyRate, dailyHours = 8) {
 // "telefono dentro il telefono": su schermi stretti la togliamo e usiamo tutto lo spazio.
 function useShellStyles() {
   const [isSmall, setIsSmall] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 480 : false));
+  // Altezza dell'area davvero visibile. "100dvh" su Chrome Android a volte vale più di
+  // quello che si vede: l'app risulta più lunga dello schermo e a scorrere è la pagina
+  // intera, portandosi via la barra in basso. visualViewport dà la misura giusta.
+  const [vh, setVh] = useState(0);
 
   useEffect(() => {
-    const onResize = () => setIsSmall(window.innerWidth < 480);
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
+    const sync = () => {
+      setIsSmall(window.innerWidth < 480);
+      const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight || 0;
+      setVh(h > 200 ? Math.round(h) : 0); // sotto i 200px la misura non è attendibile: si resta su dvh
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
+    const vv = window.visualViewport;
+    if (vv) vv.addEventListener("resize", sync);
     return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
+      if (vv) vv.removeEventListener("resize", sync);
     };
   }, []);
 
+  // Su telefono deve scorrere solo il contenuto dentro l'app, non la pagina:
+  // così la barra dei pulsanti resta incollata in basso invece di scivolare via.
+  useEffect(() => {
+    if (!isSmall) return;
+    const html = document.documentElement, body = document.body;
+    const prev = { h: html.style.overflow, b: body.style.overflow, m: body.style.margin, o: body.style.overscrollBehavior };
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.margin = "0";
+    body.style.overscrollBehavior = "none";
+    return () => {
+      html.style.overflow = prev.h;
+      body.style.overflow = prev.b;
+      body.style.margin = prev.m;
+      body.style.overscrollBehavior = prev.o;
+    };
+  }, [isSmall]);
+
   if (isSmall) {
+    const h = vh > 0 ? `${vh}px` : "100dvh";
     return {
-      outerStyle: { minHeight: "100dvh", backgroundColor: C.bg, colorScheme: "light" },
+      outerStyle: { height: h, minHeight: 320, backgroundColor: C.bg, colorScheme: "light", overflow: "hidden" },
       frameStyle: {
-        position: "relative", width: "100%", minHeight: "100dvh",
+        position: "relative", width: "100%", height: "100%", minHeight: 320,
         background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
         overflow: "hidden", display: "flex", flexDirection: "column",
         paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)",
+        boxSizing: "border-box",
       },
     };
   }
@@ -5720,7 +5752,7 @@ function MainApp({ currentUser, onChangeUser }) {
             I soldi vanno e vengono. Il tuo tempo no — scorre e basta.
           </span>
         </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
           {tab === "diario" && (
             <DiarioScreen
               profile={profile}
@@ -5874,7 +5906,7 @@ function MainApp({ currentUser, onChangeUser }) {
           )}
         </div>
         {(tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
-          <div id="tut-tabbar" style={{ borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 6px" }}>
+          <div id="tut-tabbar" style={{ flexShrink: 0, borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 6px" }}>
             <button onClick={() => setTab("diario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <Home size={20} color={tab === "diario" ? C.brassText : C.textFaint} />
               <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "diario" ? C.brassText : C.textFaint }}>Diario</span>
