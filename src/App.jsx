@@ -5606,6 +5606,31 @@ function UserPickerScreen({ onSelect }) {
   const [pinConfirm, setPinConfirm] = useState("");
   const [pinError, setPinError] = useState("");
   const [saving, setSaving] = useState(false);
+  // Chi arriva da un telefono nuovo (o dopo aver svuotato i dati) non ha nessun profilo qui:
+  // può ripartire da un file di backup invece di reinserire tutto a mano.
+  const [pendingBackup, setPendingBackup] = useState(null);
+  const [backupError, setBackupError] = useState("");
+  const backupFileRef = useRef(null);
+
+  const caricaBackup = (file) => {
+    if (!file) return;
+    setBackupError("");
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const b = parseBackup(String(reader.result));
+        setPendingBackup(b);
+        setTargetName((b.nome || "").trim() || "Il mio profilo");
+        setPin(""); setPinConfirm(""); setPinError("");
+        setPinMode("create");
+        setStep("setpin");
+      } catch (e) {
+        setBackupError(e.message);
+      }
+    };
+    reader.onerror = () => setBackupError("Non sono riuscito a leggere il file.");
+    reader.readAsText(file);
+  };
 
   useEffect(() => {
     if (!supabaseConfigured) return;
@@ -5626,7 +5651,7 @@ function UserPickerScreen({ onSelect }) {
   }, []);
 
   const resetPinFlow = () => {
-    setStep("pick"); setTargetName(""); setPin(""); setPinConfirm(""); setPinError(""); setSaving(false);
+    setStep("pick"); setTargetName(""); setPin(""); setPinConfirm(""); setPinError(""); setSaving(false); setPendingBackup(null); setBackupError("");
   };
 
   const pickExisting = (chosenName) => {
@@ -5672,7 +5697,17 @@ function UserPickerScreen({ onSelect }) {
       let error = null;
       try {
         const uid = await ensureAuth();
-        ({ error } = await supabase.from("orelibere_users").upsert({ user_id: uid, name: targetName, pin_hash: h }, { onConflict: "user_id,name" }));
+        const riga = { user_id: uid, name: targetName, pin_hash: h };
+        if (pendingBackup) {
+          // Il profilo nasce già pieno: i dati del backup vengono scritti insieme al PIN,
+          // così quando l'app li rilegge trova tutto al suo posto.
+          riga.data = pendingBackup.data;
+          riga.entries = stampEntryDates(pendingBackup.entries || []);
+          riga.tx_feed = pendingBackup.tx_feed || null;
+          riga.onboarded = true;
+          riga.updated_at = new Date().toISOString();
+        }
+        ({ error } = await supabase.from("orelibere_users").upsert(riga, { onConflict: "user_id,name" }));
       } catch (e) { error = e; }
       if (error) { setPinError("Errore salvataggio: " + error.message); setSaving(false); return; }
     }
@@ -5709,10 +5744,12 @@ function UserPickerScreen({ onSelect }) {
         )}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, color: C.paper, marginBottom: 6 }}>
-            {pinMode === "migrate" ? `Ciao ${targetName}, imposta un PIN` : "Scegli un PIN"}
+            {pendingBackup ? `Bentornato ${targetName}` : pinMode === "migrate" ? `Ciao ${targetName}, imposta un PIN` : "Scegli un PIN"}
           </div>
           <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5 }}>
-            {pinMode === "migrate"
+            {pendingBackup
+              ? `Backup del ${new Date(pendingBackup.creato).toLocaleDateString("it-IT")} pronto da ripristinare. Scegli un PIN e ritrovi tutto com'era.`
+              : pinMode === "migrate"
               ? "Non ne avevi ancora uno: da ora servirà per proteggere i tuoi dati."
               : "4 cifre, ti serviranno per ritrovare i tuoi dati."}
           </div>
@@ -5789,6 +5826,33 @@ function UserPickerScreen({ onSelect }) {
             >
               <ArrowRight size={18} />
             </button>
+          </div>
+
+          <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${C.panelBorder}` }}>
+            <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5, marginBottom: 10 }}>
+              Hai cambiato telefono o cancellato i dati del browser? Se avevi scaricato una copia
+              del profilo, rimettila qui invece di ricominciare da capo.
+            </div>
+            <input
+              ref={backupFileRef}
+              type="file"
+              accept="application/json,.json"
+              style={{ display: "none" }}
+              onChange={(e) => { caricaBackup(e.target.files && e.target.files[0]); e.target.value = ""; }}
+            />
+            <button
+              onClick={() => backupFileRef.current && backupFileRef.current.click()}
+              style={{
+                width: "100%", padding: "11px 0", borderRadius: 8, border: `1px solid ${C.panelBorder}`,
+                background: "none", color: C.textDim, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              }}
+            >
+              <ArrowRight size={15} color={C.textFaint} style={{ transform: "rotate(-90deg)" }} /> Riprendi da un backup
+            </button>
+            {backupError && (
+              <div style={{ marginTop: 8, fontSize: 12.5, color: C.rust, lineHeight: 1.45 }}>{backupError}</div>
+            )}
           </div>
         </>
       )}
