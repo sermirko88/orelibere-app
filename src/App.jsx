@@ -1,6 +1,27 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as Tone from "tone";
 import { supabase, supabaseConfigured } from "./supabaseClient.js";
+
+// ---- Identità del dispositivo ----
+// Ogni dispositivo ottiene un utente anonimo vero su Supabase: nessuna email, nessuna
+// password, l'utente non se ne accorge. Serve perché le regole di sicurezza del database
+// (RLS) possano dire "questa riga appartiene a questo auth.uid() e a nessun altro".
+// Senza, l'unico modo per far funzionare l'app era lasciare la tabella leggibile da chiunque.
+let authPromise = null;
+function ensureAuth() {
+  if (!supabaseConfigured) return Promise.resolve(null);
+  if (!authPromise) {
+    authPromise = supabase.auth
+      .getSession()
+      .then(({ data }) => (data && data.session ? data.session : supabase.auth.signInAnonymously().then(({ data: d, error }) => {
+        if (error) throw error;
+        return d.session;
+      })))
+      .then((session) => (session && session.user ? session.user.id : null))
+      .catch((e) => { authPromise = null; throw e; });
+  }
+  return authPromise;
+}
 import {
   Home, Calculator, Plus, Coffee, UtensilsCrossed, Beer, Dumbbell, Car,
   MoreHorizontal, X, TrendingDown, Receipt, Zap, Building2, Fuel,
@@ -369,7 +390,11 @@ function PinMigratePrompt({ name, onDone }) {
     if (pin !== pinConfirm) { setError("I due PIN non coincidono"); setPinConfirm(""); return; }
     setSaving(true);
     const h = await hashPin(pin);
-    const { error: err } = await supabase.from("orelibere_users").upsert({ name, pin_hash: h }, { onConflict: "name" });
+    let err = null;
+    try {
+      const uid = await ensureAuth();
+      ({ error: err } = await supabase.from("orelibere_users").upsert({ user_id: uid, name, pin_hash: h }, { onConflict: "user_id,name" }));
+    } catch (e) { err = e; }
     if (err) { setError("Errore salvataggio: " + err.message); setSaving(false); return; }
     onDone();
   };
@@ -473,7 +498,13 @@ function computeRealRate(calendario) {
     });
   });
   if (ore < REAL_RATE_MIN_HOURS || entrate <= 0) return { ready: false, ore, entrate, uscite, rate: null };
-  return { ready: true, ore, entrate, uscite, rate: (entrate - uscite) / ore };
+  const rate = (entrate - uscite) / ore;
+  // Se in un periodo le uscite superano le entrate il conto va sottozero. Una tariffa oraria
+  // negativa non vuol dire niente e, moltiplicata per ogni importo dell'app, ribalta il segno
+  // di tutto: ore spese negative, obiettivi irraggiungibili, barre vuote. Meglio dichiarare
+  // che il dato non è ancora utilizzabile e restare sulla stima.
+  if (!isFinite(rate) || rate <= 0) return { ready: false, ore, entrate, uscite, rate: null };
+  return { ready: true, ore, entrate, uscite, rate };
 }
 
 // Scaglioni IRPEF 2026 (Legge di Bilancio 2026, L. 199/2025): 23% fino a 28.000€,
@@ -2371,14 +2402,84 @@ function AddSheet({ hourly, onClose, onAdd }) {
   const [category, setCategory] = useState(null);
   const [amount, setAmount] = useState(null);
   const [amountStr, setAmountStr] = useState("");
+  // Di norma si registra una spesa di oggi, ma capita di ricordarsi il giorno dopo:
+  // si può tornare indietro. Non in avanti — una spesa futura non è una spesa, è una
+  // previsione, e quelle stanno nel Calendario come "uscite pianificate".
+  const [giorno, setGiorno] = useState(todayKey());
+  const [showGiorno, setShowGiorno] = useState(false);
+  const isOggi = giorno === todayKey();
 
   const handleAmount = (val) => {
     setAmount(val);
     setStep("done");
     playExpenseSound();
-    onAdd({ id: Date.now() + Math.random(), cat: category.label, iconId: category.id, euro: val, time: "adesso" });
+    onAdd({
+      id: Date.now() + Math.random(),
+      cat: category.label,
+      iconId: category.id,
+      euro: val,
+      date: giorno,
+      time: isOggi ? "adesso" : shortDayLabel(giorno),
+    });
     setTimeout(onClose, 1400);
   };
+
+  // Ultimi 14 giorni, oggi per primo: copre la dimenticanza tipica senza diventare un calendario
+  const giorniScelta = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    giorniScelta.push(dateKey(d));
+  }
+
+  const DaySelector = () => (
+    <div style={{ marginBottom: 14 }}>
+      <button
+        onClick={() => setShowGiorno(!showGiorno)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+          backgroundColor: isOggi ? C.inputBg : "rgba(255,107,74,0.10)",
+          border: `1px solid ${isOggi ? C.panelBorder : C.brass}`,
+          borderRadius: 6, padding: "10px 12px", cursor: "pointer",
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Calendar size={16} color={isOggi ? C.textFaint : C.brassText} />
+          <span style={{ fontSize: 13, color: C.paper, fontWeight: isOggi ? 400 : 700 }}>
+            {isOggi ? "Oggi" : longDayLabel(giorno)}
+          </span>
+        </span>
+        <span style={{ fontSize: 12, color: C.textDim, fontWeight: 600 }}>{showGiorno ? "chiudi" : "cambia giorno"}</span>
+      </button>
+      {showGiorno && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+          {giorniScelta.map((k, i) => {
+            const sel = k === giorno;
+            return (
+              <button
+                key={k}
+                onClick={() => { setGiorno(k); setShowGiorno(false); }}
+                style={{
+                  padding: "7px 11px", borderRadius: 999, cursor: "pointer",
+                  backgroundColor: sel ? C.brass : C.inputBg,
+                  border: `1px solid ${sel ? C.brass : C.panelBorder}`,
+                  color: sel ? "#FFFFFF" : C.textDim,
+                  fontSize: 12, fontFamily: MONO_FONT, fontWeight: sel ? 700 : 400,
+                }}
+              >
+                {i === 0 ? "Oggi" : i === 1 ? "Ieri" : shortDayLabel(k)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {!isOggi && !showGiorno && (
+        <div style={{ fontSize: 12, color: C.textFaint, marginTop: 6, lineHeight: 1.4 }}>
+          Non conta nelle ore di oggi, ma entra nella chiusura del periodo.
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
@@ -2391,6 +2492,7 @@ function AddSheet({ hourly, onClose, onAdd }) {
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Nuova spesa</span>
               <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
             </div>
+            <DaySelector />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               {CATEGORIES.map((c) => (
                 <button
@@ -2412,6 +2514,7 @@ function AddSheet({ hourly, onClose, onAdd }) {
               <category.icon size={20} color={C.brassText} />
               <span style={{ color: C.paper, fontWeight: 700 }}>{category.label}</span>
             </div>
+            <DaySelector />
             <div style={{ display: "flex", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
               {[category.suggested, category.suggested ? category.suggested * 1.5 : null, category.suggested ? category.suggested * 0.6 : null]
                 .filter(Boolean)
@@ -2430,7 +2533,9 @@ function AddSheet({ hourly, onClose, onAdd }) {
             <div style={{ fontSize: 30, marginBottom: 8, color: C.greenText }}>✓</div>
             <div style={{ fontFamily: MONO_FONT, color: C.paper, fontSize: 18 }}>{amount.toFixed(2)}€</div>
             <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(amount, hourly)} del tuo tempo</div>
-            <div style={{ color: C.rust, fontSize: 12, marginTop: 12 }}>Il tuo obiettivo slitta di 3 ore</div>
+            {!isOggi && (
+              <div style={{ fontSize: 13, color: C.textDim, marginTop: 8 }}>registrata su {longDayLabel(giorno)}</div>
+            )}
           </div>
         )}
       </div>
@@ -3706,7 +3811,9 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                 <div style={{ fontSize: 13, color: C.textFaint, marginTop: 1 }}>
                   {real.ore < REAL_RATE_MIN_HOURS
                     ? `Registra almeno ${REAL_RATE_MIN_HOURS}h di turni a consuntivo (ne hai ${real.ore.toFixed(1)}h) per passare a un numero calcolato sui tuoi dati veri.`
-                    : "Hai abbastanza ore registrate, ma nessuna entrata confermata: finché i tuoi compensi restano \"in attesa\" nelle fatture, l'app resta sulla stima invece di calcolare un numero da un incasso che non è ancora arrivato davvero."}
+                    : real.entrate <= 0
+                    ? "Hai abbastanza ore registrate, ma nessuna entrata confermata: finché i tuoi compensi restano \"in attesa\" nelle fatture, l'app resta sulla stima invece di calcolare un numero da un incasso che non è ancora arrivato davvero."
+                    : `In questo periodo le uscite registrate (${real.uscite.toFixed(0)}€) superano le entrate (${real.entrate.toFixed(0)}€): il conto darebbe una tariffa oraria negativa, che non vorrebbe dire nulla. L'app resta sulla stima finché il saldo non torna positivo.`}
                 </div>
               </>
             )}
@@ -4180,7 +4287,7 @@ function GuidaScreen({ onBack, redditoTipo }) {
       id: "diario",
       titolo: "Diario — registrare una spesa",
       minTier: "free",
-      esempio: "Serve per segnare cosa spendi ogni giorno. Tocca il bottone rosso con il \"+\" in basso, scegli una categoria (Bar, Spesa, Bollette...), scrivi l'importo e conferma. L'app calcola subito quante ore ti è costata e la trovi nella lista \"Timbrature di oggi\".",
+      esempio: "Serve per segnare cosa spendi ogni giorno. Tocca il bottone rosso con il \"+\" in basso, scegli una categoria (Bar, Spesa, Bollette...), scrivi l'importo e conferma. L'app calcola subito quante ore ti è costata e la trovi nella lista \"Timbrature di oggi\". Se ti sei dimenticato di segnare qualcosa, tocca \"cambia giorno\" nella stessa schermata e scegli il giorno giusto fino a due settimane indietro: la spesa non conta nelle ore di oggi, ma entra nella chiusura del periodo. Per una spesa che deve ancora arrivare (il bollo, una multa) usa invece il Calendario: lì resta una previsione finché non succede davvero.",
     },
     {
       id: "simulatore",
@@ -5363,14 +5470,20 @@ function UserPickerScreen({ onSelect }) {
 
   useEffect(() => {
     if (!supabaseConfigured) return;
-    supabase
-      .from("orelibere_users")
-      .select("name, pin_hash")
-      .order("updated_at", { ascending: false })
+    // Con l'RLS attivo questa select restituisce soltanto i profili di questo dispositivo,
+    // non più l'elenco di tutti gli utenti dell'app.
+    ensureAuth()
+      .then(() =>
+        supabase
+          .from("orelibere_users")
+          .select("name, pin_hash")
+          .order("updated_at", { ascending: false })
+      )
       .then(({ data, error }) => {
         if (!error && data) setKnownUsers(data);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   const resetPinFlow = () => {
@@ -5417,7 +5530,11 @@ function UserPickerScreen({ onSelect }) {
     setSaving(true);
     const h = await hashPin(pin);
     if (supabaseConfigured) {
-      const { error } = await supabase.from("orelibere_users").upsert({ name: targetName, pin_hash: h }, { onConflict: "name" });
+      let error = null;
+      try {
+        const uid = await ensureAuth();
+        ({ error } = await supabase.from("orelibere_users").upsert({ user_id: uid, name: targetName, pin_hash: h }, { onConflict: "user_id,name" }));
+      } catch (e) { error = e; }
       if (error) { setPinError("Errore salvataggio: " + error.message); setSaving(false); return; }
     }
     onSelect(targetName);
@@ -5590,11 +5707,14 @@ function MainApp({ currentUser, onChangeUser }) {
   useEffect(() => {
     if (!supabaseConfigured) return;
     let cancelled = false;
-    supabase
-      .from("orelibere_users")
-      .select("data, entries, tx_feed, onboarded")
-      .eq("name", currentUser)
-      .maybeSingle()
+    ensureAuth()
+      .then(() =>
+        supabase
+          .from("orelibere_users")
+          .select("data, entries, tx_feed, onboarded")
+          .eq("name", currentUser)
+          .maybeSingle()
+      )
       .then(({ data: row, error }) => {
         if (cancelled) return;
         if (error) {
@@ -5606,6 +5726,11 @@ function MainApp({ currentUser, onChangeUser }) {
           if (row.onboarded) setOnboarded(true);
         }
         setCloudLoaded(true);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setSyncError("Accesso: " + e.message);
+        setCloudLoaded(true);
       });
     return () => { cancelled = true; };
   }, [currentUser]);
@@ -5615,15 +5740,19 @@ function MainApp({ currentUser, onChangeUser }) {
     if (!supabaseConfigured || !cloudLoaded) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      supabase
-        .from("orelibere_users")
-        .upsert(
-          { name: currentUser, data, entries, tx_feed: txFeed, onboarded, updated_at: new Date().toISOString() },
-          { onConflict: "name" }
+      ensureAuth()
+        .then((uid) =>
+          supabase
+            .from("orelibere_users")
+            .upsert(
+              { user_id: uid, name: currentUser, data, entries, tx_feed: txFeed, onboarded, updated_at: new Date().toISOString() },
+              { onConflict: "user_id,name" }
+            )
         )
         .then(({ error }) => {
           setSyncError(error ? "Salvataggio: " + error.message : null);
-        });
+        })
+        .catch((e) => setSyncError("Salvataggio: " + e.message));
     }, 1200);
     return () => clearTimeout(saveTimer.current);
   }, [data, entries, txFeed, onboarded, cloudLoaded, currentUser]);
@@ -6036,16 +6165,20 @@ function AppInner() {
     if (!currentUser || !supabaseConfigured) { setPinChecked(true); return; }
     setPinChecked(false);
     let cancelled = false;
-    supabase
-      .from("orelibere_users")
-      .select("pin_hash")
-      .eq("name", currentUser)
-      .maybeSingle()
+    ensureAuth()
+      .then(() =>
+        supabase
+          .from("orelibere_users")
+          .select("pin_hash")
+          .eq("name", currentUser)
+          .maybeSingle()
+      )
       .then(({ data, error }) => {
         if (cancelled) return;
         setNeedsPinSetup(!error && (!data || !data.pin_hash));
         setPinChecked(true);
-      });
+      })
+      .catch(() => { if (!cancelled) setPinChecked(true); });
     return () => { cancelled = true; };
   }, [currentUser]);
 
