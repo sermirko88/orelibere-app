@@ -1,7 +1,7 @@
 {
   "name": "OreLibere",
   "short_name": "OreLibere",
-  "description": "Quanto ti costa davvero, in ore della tua vita.",
+  "description": "Quanto ti costa davvero, in ore di lavoro.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
