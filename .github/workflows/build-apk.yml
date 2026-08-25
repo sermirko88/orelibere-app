@@ -36,7 +36,13 @@ jobs:
       - name: Installa Capacitor
         run: npm install @capacitor/core @capacitor/cli @capacitor/android
 
+      # Le chiavi Supabase su Vercel non arrivano qui: vanno passate a Vite al momento
+      # della compilazione, altrimenti l'APK viene costruito senza collegamento al
+      # database e i dati non si salvano online.
       - name: Compila il sito (Vite -> cartella dist)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
       - name: Crea il progetto Android
