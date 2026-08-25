@@ -1,3 +1,12 @@
+/*
+ * OreLibere — quanto ti costa davvero, in ore della tua vita.
+ *
+ * Copyright (c) 2026 Mirko Serino. Tutti i diritti riservati.
+ *
+ * Codice proprietario. Nessuna licenza d'uso, copia, modifica o distribuzione
+ * è concessa. Vedi il file LICENSE nella radice del progetto.
+ */
+
 import React, { useState, useEffect, useRef } from "react";
 import * as Tone from "tone";
 import { supabase, supabaseConfigured } from "./supabaseClient.js";
