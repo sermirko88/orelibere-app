@@ -48,7 +48,7 @@ const KICKSTARTER_BUILD = false;
 // PARTENZA per ogni nuovo utente — ma ogni tester può cambiarla da solo, sul proprio
 // telefono, dalle Impostazioni → "Cambia fascia (solo test)", senza bisogno che il
 // codice venga ricaricato ogni volta.
-//   Free: Convertitore (cash/3 rate), Diario, tariffa oraria, Budget (1 obiettivo)
+//   Free: Convertitore (pagamento subito), Diario, tariffa oraria, Budget (1 obiettivo)
 //   Premium: + Calendario, Chiusura, Rendiconto, Import file, confronto finanziamenti, Budget illimitato
 //   Elite: + Regime fiscale, Progetti, tariffa oraria reale dallo storico
 const TIER = "free"; // "free" | "premium" | "elite" — valore di partenza
@@ -2003,8 +2003,8 @@ function buildTutorialSteps(isVariabile) {
   steps.push({
     tab: "converti", targetId: null,
     text: hasTier("premium")
-      ? "E se stai pensando di pagarlo a rate, nella stessa schermata tocca \"E se non lo paghi subito?\": confronta cash, tre rate senza interessi e finanziamento, e ti dice quante ore di lavoro in più ti costano gli interessi."
-      : "E se stai pensando di pagarlo a rate, nella stessa schermata tocca \"E se non lo paghi subito?\": confronta cash e tre rate senza interessi. Con Premium si aggiunge anche il confronto con i finanziamenti.",
+      ? "E se stai pensando di pagarlo a rate, nella stessa schermata tocca \"E se non lo paghi subito?\": confronta il pagamento immediato con il finanziamento, e ti dice quante ore di lavoro in più ti costano gli interessi."
+      : "Con Premium, sotto il risultato compare anche \"E se non lo paghi subito?\": confronta il pagamento immediato con un finanziamento a rate e ti dice quante ore di lavoro in più ti costano gli interessi.",
   });
   steps.push({
     tab: "goal", targetId: "tut-tab-goal", radius: 16,
@@ -4371,8 +4371,8 @@ function GuidaScreen({ onBack, redditoTipo }) {
       titolo: "E se lo paghi a rate",
       minTier: "free",
       esempio: hasTier("premium")
-        ? "Il Convertitore ti dice quanto costa una cosa in ore. Questa schermata ti dice quanto cambia a seconda di come la paghi. Scrivi il prezzo e confronta: subito, a tre rate PayPal, o con un finanziamento. Si parte sempre da \"Cash subito\", che è il termine di paragone. Serve soprattutto a vedere gli interessi per quello che sono: non una percentuale, ma giornate intere di lavoro in più."
-        : "Il Convertitore ti dice quanto costa una cosa in ore. Questa schermata ti dice quanto cambia a seconda di come la paghi: subito, o a tre rate PayPal senza interessi. Con Premium si aggiunge il confronto con i finanziamenti, per vedere gli interessi non come percentuale ma come giornate di lavoro in più.",
+        ? "Sotto il risultato del Convertitore c'è la riga \"E se non lo paghi subito?\". Aprila e confronti pagamento immediato e finanziamento a rate: inserisci quanto paghi al mese e per quanti mesi (oppure il TAN, se lo conosci) e l'app ti dice il costo totale, gli interessi, e soprattutto quante ore di lavoro in più ti costano. Si parte sempre da \"Subito\", che è il termine di paragone."
+        : "Con Premium, sotto il risultato del Convertitore compare la riga \"E se non lo paghi subito?\": confronta il pagamento immediato con un finanziamento a rate e ti mostra gli interessi non come percentuale, ma come giornate di lavoro in più.",
     },
     {
       id: "budget",
@@ -6209,7 +6209,7 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
   // Il confronto tra modi di pagare è la stessa domanda vista da un'altra angolazione,
   // sullo stesso prezzo: sta qui sotto, chiuso, e si apre solo se serve.
   const [apriRate, setApriRate] = useState(false);
-  const [modoPag, setModoPag] = useState("cash"); // cash | paypal3 | finanziato
+  const [modoPag, setModoPag] = useState("cash"); // cash | finanziato
   const [rata, setRata] = useState(95);
   const [numRate, setNumRate] = useState(14);
   const [inputFinanziato, setInputFinanziato] = useState("rata"); // rata | tasso
@@ -6233,10 +6233,7 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
   const rataEffettiva = inputFinanziato === "tasso" ? rataDaTasso : Number(rata) || 0;
 
   let costoTotale = prezzo, interessi = 0, rataMostrata = prezzo, numRateMostrate = 1;
-  if (modoPag === "paypal3") {
-    rataMostrata = prezzo / 3;
-    numRateMostrate = 3;
-  } else if (modoPag === "finanziato") {
+  if (modoPag === "finanziato") {
     costoTotale = rataEffettiva * (Number(numRate) || 0);
     interessi = costoTotale - prezzo;
     rataMostrata = rataEffettiva;
@@ -6246,8 +6243,7 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
 
   const MODI_PAG = [
     { id: "cash", label: "Subito" },
-    { id: "paypal3", label: "3 rate" },
-    ...(hasTier("premium") ? [{ id: "finanziato", label: "Finanziam." }] : []),
+    ...(hasTier("premium") ? [{ id: "finanziato", label: "A rate" }] : []),
   ];
 
   useEffect(() => {
@@ -6389,7 +6385,7 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ ...etichetta, fontSize: 11 }}>{inputFinanziato === "rata" ? "Rata/mese" : "TAN annuo %"}</div>
+                      <div style={{ ...etichetta, fontSize: 11 }}>{inputFinanziato === "rata" ? "Euro/mese" : "TAN annuo %"}</div>
                       <input
                         type="number" inputMode="decimal"
                         value={inputFinanziato === "rata" ? rata : tasso}
