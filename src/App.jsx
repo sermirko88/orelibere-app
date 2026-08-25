@@ -247,69 +247,54 @@ function euroToDaysHours(euro, hourlyRate, dailyHours = 8) {
 // bene la demo su schermo grande. Dentro l'APK, però, quella cornice diventa un
 // "telefono dentro il telefono": su schermi stretti la togliamo e usiamo tutto lo spazio.
 function useShellStyles() {
-  const readVh = () => {
-    if (typeof window === "undefined") return 0;
-    // visualViewport è l'unica misura che tiene conto della barra del browser che si apre e
-    // si chiude e della tastiera: "100dvh" su Android a volte vale più dell'area davvero
-    // visibile, e in quel caso è la pagina intera a scorrere, portandosi via la barra in basso.
-    return (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-  };
   const [isSmall, setIsSmall] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 480 : false));
-  const [vh, setVh] = useState(readVh);
+  // Altezza dell'area davvero visibile. "100dvh" su Chrome Android a volte vale più di
+  // quello che si vede: l'app risulta più lunga dello schermo e a scorrere è la pagina
+  // intera, portandosi via la barra in basso. visualViewport dà la misura giusta.
+  const [vh, setVh] = useState(0);
 
   useEffect(() => {
     const sync = () => {
       setIsSmall(window.innerWidth < 480);
-      setVh(readVh());
+      const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight || 0;
+      setVh(h > 200 ? Math.round(h) : 0); // sotto i 200px la misura non è attendibile: si resta su dvh
     };
     sync();
     window.addEventListener("resize", sync);
     window.addEventListener("orientationchange", sync);
     const vv = window.visualViewport;
-    if (vv) {
-      vv.addEventListener("resize", sync);
-      vv.addEventListener("scroll", sync);
-    }
+    if (vv) vv.addEventListener("resize", sync);
     return () => {
       window.removeEventListener("resize", sync);
       window.removeEventListener("orientationchange", sync);
-      if (vv) {
-        vv.removeEventListener("resize", sync);
-        vv.removeEventListener("scroll", sync);
-      }
+      if (vv) vv.removeEventListener("resize", sync);
     };
   }, []);
 
-  // Su telefono la pagina non deve scorrere: scorre solo il contenuto dentro l'app,
+  // Su telefono deve scorrere solo il contenuto dentro l'app, non la pagina:
   // così la barra dei pulsanti resta incollata in basso invece di scivolare via.
   useEffect(() => {
     if (!isSmall) return;
     const html = document.documentElement, body = document.body;
-    const prev = {
-      htmlOverflow: html.style.overflow, bodyOverflow: body.style.overflow,
-      bodyMargin: body.style.margin, overscroll: body.style.overscrollBehavior,
-    };
+    const prev = { h: html.style.overflow, b: body.style.overflow, m: body.style.margin, o: body.style.overscrollBehavior };
     html.style.overflow = "hidden";
     body.style.overflow = "hidden";
     body.style.margin = "0";
     body.style.overscrollBehavior = "none";
     return () => {
-      html.style.overflow = prev.htmlOverflow;
-      body.style.overflow = prev.bodyOverflow;
-      body.style.margin = prev.bodyMargin;
-      body.style.overscrollBehavior = prev.overscroll;
+      html.style.overflow = prev.h;
+      body.style.overflow = prev.b;
+      body.style.margin = prev.m;
+      body.style.overscrollBehavior = prev.o;
     };
   }, [isSmall]);
 
   if (isSmall) {
-    const h = vh ? `${vh}px` : "100dvh";
+    const h = vh > 0 ? `${vh}px` : "100dvh";
     return {
-      outerStyle: {
-        position: "fixed", top: 0, left: 0, right: 0, height: h,
-        backgroundColor: C.bg, colorScheme: "light", overflow: "hidden",
-      },
+      outerStyle: { height: h, minHeight: 320, backgroundColor: C.bg, colorScheme: "light", overflow: "hidden" },
       frameStyle: {
-        position: "relative", width: "100%", height: "100%",
+        position: "relative", width: "100%", height: "100%", minHeight: 320,
         background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
         overflow: "hidden", display: "flex", flexDirection: "column",
         paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)",
