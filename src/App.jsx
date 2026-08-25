@@ -1,5 +1,5 @@
 /*
- * OreLibere — quanto ti costa davvero, in ore della tua vita.
+ * OreLibere — quanto ti costa davvero, in ore di lavoro.
  *
  * Copyright (c) 2026 Mirko Serino. Tutti i diritti riservati.
  *
@@ -1058,7 +1058,7 @@ function WelcomeScreen({ onStart }) {
         </p>
 
         <p style={P}>
-          Per risparmiare davvero, smetti di contare gli euro. Conta le ore della tua vita.
+          Per risparmiare davvero, smetti di contare gli euro. Conta le ore che hai dovuto lavorare.
         </p>
 
         <p style={{ ...P, marginBottom: 20 }}>
@@ -1076,7 +1076,7 @@ function WelcomeScreen({ onStart }) {
             OreLibere <strong style={{ color: C.paper }}>non è un salvadanaio e non è una banca.</strong> Non tiene i tuoi soldi, non li sposta, non te ne mette da parte.
           </p>
           <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.6, margin: 0 }}>
-            Fa una cosa sola: ti mostra ogni spesa in <strong style={{ color: C.paper }}>ore della tua vita</strong>. Poi decidi tu. Il risparmio, se arriva, arriva da quello che scegli di non comprare più.
+            Fa una cosa sola: ti mostra ogni spesa in <strong style={{ color: C.paper }}>ore di lavoro</strong> — quante ne devi fare per permettertela. Poi decidi tu. Il risparmio, se arriva, arriva da quello che scegli di non comprare più.
           </p>
         </div>
 
@@ -1149,8 +1149,8 @@ function OnboardingIncome({ data, setData, onNext }) {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "24px 20px 32px 20px", overflowY: "auto" }}>
       <button onClick={() => setPhase("choose")} style={{ background: "none", border: "none", color: C.textDim, fontSize: 12, marginBottom: 12, alignSelf: "flex-start", cursor: "pointer" }}>← cambia tipo di reddito</button>
       <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.brassText, fontFamily: MONO_FONT, marginBottom: 4 }}>Passo 1 di 3</div>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>Quanto vale il tuo tempo</h1>
-      <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 24 }}>Serve per convertire ogni spesa in ore di lavoro.</p>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>Quanto vale la tua ora di lavoro</h1>
+      <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 24 }}>Serve per dire, a ogni spesa, quante ore devi lavorare per permettertela.</p>
 
       {isVariabile && (
         <div style={{ display: "flex", gap: 6, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: 4, marginBottom: 20 }}>
@@ -1789,7 +1789,7 @@ function OneTapCategorizeSheet({ tx, hourly, onClose, onConfirm }) {
           <div style={{ padding: "24px 0", textAlign: "center" }}>
             <div style={{ fontSize: 30, marginBottom: 8, color: C.greenText }}>✓</div>
             <div style={{ fontFamily: MONO_FONT, color: C.paper, fontSize: 18 }}>{tx.euro.toFixed(2)}€ etichettati</div>
-            <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(tx.euro, hourly)} del tuo tempo</div>
+            <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(tx.euro, hourly)} di lavoro</div>
           </div>
         )}
       </div>
@@ -2112,7 +2112,7 @@ function EditAmountInline({ initial, hourly, onConfirm, onDelete }) {
         />
       </div>
       {hourly ? (
-        <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginBottom: 18 }}>→ {euroToTime(numericValue, hourly)} del tuo tempo</div>
+        <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginBottom: 18 }}>→ {euroToTime(numericValue, hourly)} di lavoro</div>
       ) : null}
       <div style={{ display: "flex", gap: 10 }}>
         {onDelete && (
@@ -2381,7 +2381,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
               100€ sono 100€ per tutti. Ma per te, con la tua tariffa oraria, potrebbero essere <strong style={{ color: C.paper }}>{(100 / hourly).toFixed(1)}h</strong> di lavoro — per un'altra persona potrebbero essere molte di meno o molte di più.
             </p>
             <p style={{ fontSize: 13.5, color: C.textDim, fontFamily: SANS_FONT, lineHeight: 1.6, margin: "0 0 18px 0" }}>
-              Gli euro sono uguali per tutti. Le ore no: sono la misura vera di quanto ti costa qualcosa, perché sono la tua vita che se ne va. Per questo ogni spesa qui la vedi prima in ore.
+              Gli euro sono uguali per tutti. Le ore no: dipendono da quanto ti rende il tuo lavoro. Per questo ogni spesa qui la vedi prima in ore — quelle che hai dovuto lavorare per pagarla.
             </p>
             <button
               onClick={() => setShowConcept(false)}
@@ -2582,7 +2582,7 @@ function AddSheet({ hourly, onClose, onAdd }) {
           <div style={{ padding: "24px 0", textAlign: "center" }}>
             <div style={{ fontSize: 30, marginBottom: 8, color: C.greenText }}>✓</div>
             <div style={{ fontFamily: MONO_FONT, color: C.paper, fontSize: 18 }}>{amount.toFixed(2)}€</div>
-            <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(amount, hourly)} del tuo tempo</div>
+            <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(amount, hourly)} di lavoro</div>
             {!isOggi && (
               <div style={{ fontSize: 13, color: C.textDim, marginTop: 8 }}>registrata su {longDayLabel(giorno)}</div>
             )}
@@ -2702,7 +2702,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
       </div>
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Dove va il tuo tempo</div>
+        <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Dove vanno le tue ore</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {categoryList.map((c, i) => {
             const Icon = CAT_ICON_MAP[c.cat] || MoreHorizontal;
@@ -4826,7 +4826,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
             <Clock size={14} color={C.textFainter} style={{ flexShrink: 0 }} />
             <div>
               <div style={{ fontSize: 13, color: C.textDim, fontWeight: 600 }}>Anche i tuoi file, presto, diventeranno ore</div>
-              <div style={{ fontSize: 13, color: C.textFainter, marginTop: 1, lineHeight: 1.4 }}>La stessa conversione da soldi a tempo, ma per tutto quello che hai già speso — in arrivo</div>
+              <div style={{ fontSize: 13, color: C.textFainter, marginTop: 1, lineHeight: 1.4 }}>La stessa conversione da euro a ore di lavoro, ma per tutto quello che hai già speso — in arrivo</div>
             </div>
           </div>
         ) : hasTier("premium") ? (
@@ -5561,7 +5561,7 @@ function SimulatoreScreen({ hourly }) {
           </div>
 
           <div style={{ borderTop: `1px dashed ${C.sheetBorder}`, paddingTop: 16 }}>
-            <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, fontFamily: MONO_FONT, marginBottom: 4 }}>Il tuo tempo</div>
+            <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, fontFamily: MONO_FONT, marginBottom: 4 }}>Ore di lavoro</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
               <div style={{ fontFamily: MONO_FONT, fontSize: 30, fontWeight: 800 }}>{Math.round(oreReali)}h</div>
               <div style={{ fontFamily: MONO_FONT, fontSize: 15, color: C.textFaint }}>≈ {euroToDaysHours(costoTotale, hourly)}</div>
@@ -6081,7 +6081,7 @@ function MainApp({ currentUser, onChangeUser }) {
         </div>
         <div style={{ padding: "0 20px 12px 20px" }}>
           <span style={{ fontFamily: SERIF_FONT, fontStyle: "italic", fontWeight: 500, fontSize: 12.5, color: C.textFainter }}>
-            I soldi vanno e vengono. Il tuo tempo no — scorre e basta.
+            Gli euro si rifanno. Le ore che hai lavorato per averli, no.
           </span>
         </div>
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
