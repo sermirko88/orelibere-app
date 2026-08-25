@@ -498,7 +498,13 @@ function computeRealRate(calendario) {
     });
   });
   if (ore < REAL_RATE_MIN_HOURS || entrate <= 0) return { ready: false, ore, entrate, uscite, rate: null };
-  return { ready: true, ore, entrate, uscite, rate: (entrate - uscite) / ore };
+  const rate = (entrate - uscite) / ore;
+  // Se in un periodo le uscite superano le entrate il conto va sottozero. Una tariffa oraria
+  // negativa non vuol dire niente e, moltiplicata per ogni importo dell'app, ribalta il segno
+  // di tutto: ore spese negative, obiettivi irraggiungibili, barre vuote. Meglio dichiarare
+  // che il dato non è ancora utilizzabile e restare sulla stima.
+  if (!isFinite(rate) || rate <= 0) return { ready: false, ore, entrate, uscite, rate: null };
+  return { ready: true, ore, entrate, uscite, rate };
 }
 
 // Scaglioni IRPEF 2026 (Legge di Bilancio 2026, L. 199/2025): 23% fino a 28.000€,
@@ -3805,7 +3811,9 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                 <div style={{ fontSize: 13, color: C.textFaint, marginTop: 1 }}>
                   {real.ore < REAL_RATE_MIN_HOURS
                     ? `Registra almeno ${REAL_RATE_MIN_HOURS}h di turni a consuntivo (ne hai ${real.ore.toFixed(1)}h) per passare a un numero calcolato sui tuoi dati veri.`
-                    : "Hai abbastanza ore registrate, ma nessuna entrata confermata: finché i tuoi compensi restano \"in attesa\" nelle fatture, l'app resta sulla stima invece di calcolare un numero da un incasso che non è ancora arrivato davvero."}
+                    : real.entrate <= 0
+                    ? "Hai abbastanza ore registrate, ma nessuna entrata confermata: finché i tuoi compensi restano \"in attesa\" nelle fatture, l'app resta sulla stima invece di calcolare un numero da un incasso che non è ancora arrivato davvero."
+                    : `In questo periodo le uscite registrate (${real.uscite.toFixed(0)}€) superano le entrate (${real.entrate.toFixed(0)}€): il conto darebbe una tariffa oraria negativa, che non vorrebbe dire nulla. L'app resta sulla stima finché il saldo non torna positivo.`}
                 </div>
               </>
             )}
