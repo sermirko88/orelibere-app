@@ -6214,6 +6214,15 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
   const [numRate, setNumRate] = useState(14);
   const [inputFinanziato, setInputFinanziato] = useState("rata"); // rata | tasso
   const [tasso, setTasso] = useState(9.9); // TAN annuo %
+  const prezzoRef = useRef(null);
+  const guadagnoRef = useRef(null);
+
+  // All'apertura il cursore va dove serve davvero scrivere: sul prezzo se la tariffa
+  // è già nota (dentro l'app), sul guadagno se non lo è ancora (primo accesso).
+  useEffect(() => {
+    const campoIniziale = hourly > 0 ? prezzoRef.current : guadagnoRef.current;
+    if (campoIniziale) campoIniziale.focus();
+  }, []);
 
   // Da stipendio mensile a tariffa oraria: 4,33 settimane al mese per 40 ore.
   const tariffa = modo === "ora"
@@ -6292,16 +6301,17 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
         </div>
         {modo === "ora" ? (
           <input
+            ref={guadagnoRef}
             type="number" inputMode="decimal" value={oraStr}
             onChange={(e) => setOraStr(e.target.value)}
-            placeholder="12" style={campo}
+            placeholder="0" style={campo}
           />
         ) : (
           <>
             <input
               type="number" inputMode="decimal" value={meseStr}
               onChange={(e) => setMeseStr(e.target.value)}
-              placeholder="1500" style={campo}
+              placeholder="0" style={campo}
             />
             {tariffa > 0 && (
               <div style={{ fontSize: 12.5, color: C.textFaint, marginTop: 6 }}>
@@ -6315,9 +6325,10 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
       <div style={{ marginBottom: 20 }}>
         <div style={etichetta}>Quanto costa</div>
         <input
+          ref={prezzoRef}
           type="number" inputMode="decimal" value={prezzoStr}
           onChange={(e) => setPrezzoStr(e.target.value)}
-          placeholder="220" style={campo}
+          placeholder="00" style={campo}
         />
       </div>
 
