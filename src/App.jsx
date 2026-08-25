@@ -29,7 +29,7 @@ function hasTier(minTier) {
 }
 
 // ---- Design tokens (applied via inline style, NOT via bg-[#..] classes) ----
-const LIGHT_THEME = {
+const C = {
   bg: "#F7F3EA",
   panel: "#FFFFFF",
   panelBorder: "#E7E1D2",
@@ -46,43 +46,7 @@ const LIGHT_THEME = {
   textFainter: "#BDBAB0",
   fixedBar: "#3D4550",
   outerBg: "#EDE7D8",
-  sheetBorder: "#DED7C4",
-  ticketBorder: "#E2DAC5",
-  trackBg: "rgba(23,23,23,0.08)",
-  glow: "#FFFFFF",
 };
-
-const DARK_THEME = {
-  bg: "#1A1712",
-  panel: "#211E17",
-  panelBorder: "#3A352A",
-  inputBg: "#28241C",
-  ticket: "#26221A",
-  brass: "#FF7A5C",
-  brassDim: "#E5522F",
-  paper: "#F2EEE3",
-  ink: "#171717",
-  rust: "#FF5C43",
-  green: "#8FCB55",
-  textDim: "#B0AC9E",
-  textFaint: "#847F70",
-  textFainter: "#524D3F",
-  fixedBar: "#6C7684",
-  outerBg: "#0F0D09",
-  sheetBorder: "#4A4433",
-  ticketBorder: "#3E3928",
-  trackBg: "rgba(255,255,255,0.08)",
-  glow: "#2B2620",
-};
-
-// C resta lo stesso oggetto (stessa identità in memoria) per tutta la vita dell'app:
-// cambiare tema NON lo ricrea, ne aggiorna solo le proprietà con Object.assign — così
-// ogni componente che legge C.xxx durante il render vede sempre i colori aggiornati,
-// esattamente come già succede con ACTIVE_TIER più sotto.
-const C = { ...LIGHT_THEME };
-function applyTheme(theme) {
-  Object.assign(C, theme === "dark" ? DARK_THEME : LIGHT_THEME);
-}
 
 const DISPLAY_FONT = "'Archivo Black', system-ui, sans-serif";
 const SERIF_FONT = "'Playfair Display', Georgia, serif"; // numeri/prezzi in evidenza — tono "alta moda"
@@ -237,45 +201,6 @@ function euroToDaysHours(euro, hourlyRate, dailyHours = 8) {
   if (hours === 0) return `${days} g`;
   return `${days} g ${hours}h`;
 }
-// Sul web l'app è mostrata dentro una finta cornice da telefono (380x780), che rende
-// bene la demo su schermo grande. Dentro l'APK, però, quella cornice diventa un
-// "telefono dentro il telefono": su schermi stretti la togliamo e usiamo tutto lo spazio.
-function useShellStyles() {
-  const [isSmall, setIsSmall] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 480 : false));
-
-  useEffect(() => {
-    const onResize = () => setIsSmall(window.innerWidth < 480);
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
-    return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
-    };
-  }, []);
-
-  if (isSmall) {
-    return {
-      outerStyle: { minHeight: "100dvh", backgroundColor: C.bg, colorScheme: "light" },
-      frameStyle: {
-        position: "relative", width: "100%", minHeight: "100dvh",
-        background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
-        overflow: "hidden", display: "flex", flexDirection: "column",
-        paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)",
-      },
-    };
-  }
-
-  return {
-    outerStyle: { minHeight: "100vh", backgroundColor: C.outerBg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, colorScheme: "light" },
-    frameStyle: {
-      position: "relative", width: 380, height: 780,
-      background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
-      borderRadius: 36, overflow: "hidden", border: `4px solid ${C.panelBorder}`,
-      boxShadow: "0 25px 60px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column",
-    },
-  };
-}
-
 function euroToTime(euro, hourlyRate) {
   if (!hourlyRate || !isFinite(hourlyRate) || hourlyRate <= 0) return "—";
   const totalMinutes = (euro / hourlyRate) * 60;
@@ -284,82 +209,6 @@ function euroToTime(euro, hourlyRate) {
   if (h === 0) return `${m} min`;
   if (m === 0) return `${h}h`;
   return `${h}h ${m}min`;
-}
-
-// Il PIN non viene mai salvato in chiaro: lo trasformiamo in un hash (SHA-256, incluso
-// nel browser) e confrontiamo gli hash. Protezione di base, non equivalente a un vero
-// login — ma sufficiente per la fase di test, evitando di intercettare i dati altrui
-// per sbaglio o curiosità scegliendo il nome sbagliato dalla lista.
-async function hashPin(pin) {
-  const enc = new TextEncoder().encode(pin);
-  const buf = await crypto.subtle.digest("SHA-256", enc);
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-// Campo per inserire un PIN a 4 cifre, usato sia per crearlo che per verificarlo.
-function PinInput({ value, onChange, autoFocus }) {
-  return (
-    <input
-      type="tel"
-      inputMode="numeric"
-      pattern="[0-9]*"
-      maxLength={4}
-      autoFocus={autoFocus}
-      value={value}
-      onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
-      style={{
-        width: "100%", boxSizing: "border-box", textAlign: "center", fontFamily: MONO_FONT, fontSize: 28, fontWeight: 800,
-        letterSpacing: "0.6em", color: C.paper, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`,
-        borderRadius: 8, padding: "14px 0 14px 0.6em", outline: "none",
-      }}
-    />
-  );
-}
-
-// Schermata "imposta un PIN" per chi torna sullo stesso dispositivo (nome già ricordato
-// in locale) ma non ne ha ancora uno salvato lato server — migrazione automatica, una
-// volta sola, prima di entrare nell'app.
-function PinMigratePrompt({ name, onDone }) {
-  const [pin, setPin] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-  const ready = pin.length === 4 && pinConfirm.length === 4;
-
-  const save = async () => {
-    if (!ready) return;
-    if (pin !== pinConfirm) { setError("I due PIN non coincidono"); setPinConfirm(""); return; }
-    setSaving(true);
-    const h = await hashPin(pin);
-    const { error: err } = await supabase.from("orelibere_users").upsert({ name, pin_hash: h }, { onConflict: "name" });
-    if (err) { setError("Errore salvataggio: " + err.message); setSaving(false); return; }
-    onDone();
-  };
-
-  return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
-      <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, color: C.paper, marginBottom: 6 }}>Ciao {name}, imposta un PIN</div>
-        <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5 }}>Non ne avevi ancora uno: da ora servirà per proteggere i tuoi dati.</div>
-      </div>
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>PIN</div>
-        <PinInput value={pin} onChange={(v) => { setPin(v); setError(""); }} autoFocus />
-      </div>
-      <div>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Ripeti il PIN</div>
-        <PinInput value={pinConfirm} onChange={(v) => { setPinConfirm(v); setError(""); }} />
-      </div>
-      {error && <div style={{ color: C.rust, fontSize: 12, textAlign: "center", marginTop: 10 }}>{error}</div>}
-      <button
-        onClick={save}
-        disabled={!ready || saving}
-        style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: ready ? C.brass : C.panelBorder, color: ready ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: ready ? "pointer" : "default" }}
-      >
-        {saving ? "Salvo..." : "Conferma PIN"}
-      </button>
-    </div>
-  );
 }
 
 // ---- Calendario: entrate/uscite/turni, principalmente per redditi variabili ----
@@ -676,38 +525,57 @@ function parseTransactionLines(text) {
 }
 
 // ---- Dati simulati di una settimana, per mostrare come funziona il report ----
-const WEEK_DATA = [
-  { day: "Lun", extra: 14.5, entries: { Colazione: 2.5, Pranzo: 9, Trasporti: 3 } },
-  { day: "Mar", extra: 11.5, entries: { Colazione: 2.5, Pranzo: 9 } },
-  { day: "Mer", extra: 16, entries: { Colazione: 2.5, Pranzo: 9, Aperitivo: 4.5 } },
-  { day: "Gio", extra: 11.5, entries: { Colazione: 2.5, Pranzo: 9 } },
-  { day: "Ven", extra: 32, entries: { Colazione: 2.5, Pranzo: 9, Aperitivo: 12, Spesa: 8.5 } },
-  { day: "Sab", extra: 24, entries: { Spesa: 18, Aperitivo: 6 } },
-  { day: "Dom", extra: 9, entries: { Spesa: 9 } },
-];
-const PREV_WEEK_TOTAL_EURO = 108; // per il confronto settimana precedente
+// Costruisce 7 giorni consecutivi di spese VERE (non più un esempio scritto a mano),
+// terminando "offsetDays" giorni fa — con offsetDays=7 costruisce la settimana precedente,
+// utile per il confronto "vs periodo scorso".
+function buildRealWeekData(entries, offsetDays = 0) {
+  const days = [];
+  const dayLabels = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  const todayK = todayKey();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i - offsetDays);
+    const k = dateKey(d);
+    const dayEntries = (entries || []).filter((e) => e.dateKey === k);
+    const byCat = {};
+    dayEntries.forEach((e) => { byCat[e.cat] = (byCat[e.cat] || 0) + e.euro; });
+    const extra = dayEntries.reduce((s, e) => s + e.euro, 0);
+    days.push({ day: dayLabels[d.getDay()], dateKey: k, extra, entries: byCat, isToday: k === todayK });
+  }
+  return days;
+}
 
-function buildWeekInsights(hourly) {
-  const totalEuro = WEEK_DATA.reduce((s, d) => s + d.extra, 0);
-  const totalHours = totalEuro / hourly;
-  const prevHours = PREV_WEEK_TOTAL_EURO / hourly;
+function buildWeekInsights(hourly, entries) {
+  const weekData = buildRealWeekData(entries, 0);
+  const prevWeekData = buildRealWeekData(entries, 7);
+
+  const totalEuro = weekData.reduce((s, d) => s + d.extra, 0);
+  const totalHours = hourly ? totalEuro / hourly : 0;
+  const prevTotalEuro = prevWeekData.reduce((s, d) => s + d.extra, 0);
+  const prevHours = hourly ? prevTotalEuro / hourly : 0;
   const deltaHours = totalHours - prevHours;
 
   const byCategory = {};
-  WEEK_DATA.forEach((d) => {
+  weekData.forEach((d) => {
     Object.entries(d.entries).forEach(([cat, val]) => {
       byCategory[cat] = (byCategory[cat] || 0) + val;
     });
   });
   const categoryList = Object.entries(byCategory)
-    .map(([cat, euro]) => ({ cat, euro, hours: euro / hourly, pct: (euro / totalEuro) * 100 }))
+    .map(([cat, euro]) => ({ cat, euro, hours: hourly ? euro / hourly : 0, pct: totalEuro > 0 ? (euro / totalEuro) * 100 : 0 }))
     .sort((a, b) => b.euro - a.euro);
 
-  const criticalDay = [...WEEK_DATA].sort((a, b) => b.extra - a.extra)[0];
-  const avgOtherDays = (totalEuro - criticalDay.extra) / (WEEK_DATA.length - 1);
-  const criticalMultiplier = criticalDay.extra / avgOtherDays;
+  let criticalDay = null;
+  let criticalMultiplier = 1;
+  if (totalEuro > 0) {
+    criticalDay = [...weekData].sort((a, b) => b.extra - a.extra)[0];
+    const otherDays = weekData.filter((d) => d.dateKey !== criticalDay.dateKey);
+    const otherTotal = otherDays.reduce((s, d) => s + d.extra, 0);
+    const avgOtherDays = otherDays.length ? otherTotal / otherDays.length : 0;
+    criticalMultiplier = avgOtherDays > 0 ? criticalDay.extra / avgOtherDays : null; // null = spesa concentrata solo in quel giorno
+  }
 
-  return { totalEuro, totalHours, prevHours, deltaHours, categoryList, criticalDay, criticalMultiplier };
+  return { weekData, totalEuro, totalHours, prevHours, deltaHours, categoryList, criticalDay, criticalMultiplier, hasAnyData: totalEuro > 0 };
 }
 
 function PunchTicket({ children, style = {}, id, ...rest }) {
@@ -717,6 +585,7 @@ function PunchTicket({ children, style = {}, id, ...rest }) {
       style={{
         backgroundColor: C.ticket,
         color: C.ink,
+        backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 7px, rgba(23,23,23,0.05) 7px, rgba(23,23,23,0.05) 8px)",
         ...style,
       }}
       {...rest}
@@ -883,24 +752,9 @@ function WelcomeScreen({ onStart }) {
           Per risparmiare davvero, smetti di contare gli euro. Conta le ore della tua vita.
         </p>
 
-        <p style={{ ...P, marginBottom: 20 }}>
+        <p style={{ ...P, marginBottom: 24 }}>
           Scegli quanto vale la tua ora. L'app ti dirà se puoi permettertela davvero.
         </p>
-
-        {/* Posizionamento esplicito: due tester hanno confrontato OreLibere con
-            Satispay/PayPal chiedendo "ma come fa a farmi risparmiare?". Non lo fa:
-            non tocca i soldi, cambia solo l'unità con cui li guardi. */}
-        <div style={{ border: `1px solid ${C.panelBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 22, backgroundColor: C.panel }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: C.textFainter, fontFamily: MONO_FONT, marginBottom: 8 }}>
-            Mettiamo in chiaro una cosa
-          </div>
-          <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.6, margin: "0 0 8px 0" }}>
-            OreLibere <strong style={{ color: C.paper }}>non è un salvadanaio e non è una banca.</strong> Non tiene i tuoi soldi, non li sposta, non te ne mette da parte.
-          </p>
-          <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.6, margin: 0 }}>
-            Fa una cosa sola: ti mostra ogni spesa in <strong style={{ color: C.paper }}>ore della tua vita</strong>. Poi decidi tu. Il risparmio, se arriva, arriva da quello che scegli di non comprare più.
-          </p>
-        </div>
 
         <p style={{ fontSize: 13.5, color: C.brassDim, fontFamily: SANS_FONT, fontWeight: 700, marginBottom: 20 }}>
           Non pagare per sbaglio. Scegli il prezzo giusto.
@@ -917,10 +771,7 @@ function WelcomeScreen({ onStart }) {
 }
 
 function OnboardingIncome({ data, setData, onNext }) {
-  // Parte sempre dalla scelta del tipo di reddito (vera "Passo 1"), anche quando si
-  // rientra per modificare dati già inseriti — altrimenti si salta dritti al form e
-  // per tornare alla scelta serve un tap in più su "← cambia tipo di reddito".
-  const [phase, setPhase] = useState("choose");
+  const [phase, setPhase] = useState(data.redditoTipo ? "form" : "choose");
   const isVariabile = data.redditoTipo === "variabile";
 
   // Tariffa oraria: due percorsi diversi a seconda del tipo di reddito.
@@ -1100,7 +951,7 @@ function OnboardingIncome({ data, setData, onNext }) {
         disabled={!hourly}
         style={{
           width: "100%", padding: "14px 0", borderRadius: 4, border: "none",
-          backgroundColor: hourly ? C.brass : C.sheetBorder,
+          backgroundColor: hourly ? C.brass : "#DED7C4",
           color: hourly ? C.ink : C.textDim,
           fontWeight: 700, fontSize: 14,
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -1113,47 +964,19 @@ function OnboardingIncome({ data, setData, onNext }) {
   );
 }
 
-// Etichette di default per l'aggiunta rapida: un tap pre-compila nome e categoria,
-// resta solo da scrivere l'importo — pensato per chi ha tante spese fisse e non
-// vuole compilare da zero ogni singola voce.
-const QUICK_FIXED = [
-  ["affitto", "Affitto/Mutuo"],
-  ["bollette", "Bollette"],
-  ["auto", "Rata auto"],
-  ["carburante", "Carburante"],
-  ["internet", "Internet/Telefono"],
-  ["sigarette", "Sigarette"],
-];
-
 function OnboardingFixed({ data, setData, onNext, onBack }) {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ nome: "", tipo: "altro", importo: "", frequenza: "mensile" });
-  const [editingId, setEditingId] = useState(null);
   const list = data.fixedList;
   const monthlyTotal = list.reduce((s, f) => s + toMonthly(f), 0);
 
-  const closeModal = () => { setShowAdd(false); setEditingId(null); };
-  const saveExpense = () => {
+  const addExpense = () => {
     if (!form.nome || !form.importo) return;
-    if (editingId) {
-      setData({ ...data, fixedList: list.map((f) => (f.id === editingId ? { ...f, ...form, importo: Number(form.importo) } : f)) });
-    } else {
-      setData({ ...data, fixedList: [...list, { id: Date.now(), ...form, importo: Number(form.importo) }] });
-    }
+    setData({ ...data, fixedList: [...list, { id: Date.now(), ...form, importo: Number(form.importo) }] });
     setForm({ nome: "", tipo: "altro", importo: "", frequenza: "mensile" });
-    closeModal();
+    setShowAdd(false);
   };
   const remove = (id) => setData({ ...data, fixedList: list.filter((f) => f.id !== id) });
-  const startEdit = (f) => {
-    setForm({ nome: f.nome, tipo: f.tipo, importo: String(f.importo), frequenza: f.frequenza });
-    setEditingId(f.id);
-    setShowAdd(true);
-  };
-  const quickAdd = (tipo, nome) => {
-    setForm({ nome, tipo, importo: "", frequenza: "mensile" });
-    setEditingId(null);
-    setShowAdd(true);
-  };
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "24px 20px 32px 20px", position: "relative", overflowY: "auto" }}>
@@ -1163,7 +986,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
         <span style={{ fontSize: 9, fontFamily: MONO_FONT, color: C.textFainter, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "2px 8px" }}>opzionale</span>
       </div>
       <h1 style={{ fontSize: 21, fontWeight: 700, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>Spese fisse</h1>
-      <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 20 }}>Facoltativo, ma aiuta a capire quante ore "partono da sole" ogni mese. Tocca una voce per modificarla. Puoi anche saltare e tornarci dopo dalle Impostazioni.</p>
+      <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 20 }}>Facoltativo, ma aiuta a capire quante ore "partono da sole" ogni mese. Puoi anche saltare e tornarci dopo dalle Impostazioni.</p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
         {list.map((f) => {
@@ -1173,44 +996,25 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
               <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Icon size={15} color={C.brass} />
               </div>
-              <button onClick={() => startEdit(f)} style={{ flex: 1, minWidth: 0, background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ color: C.paper, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.nome}</div>
                 <div style={{ color: C.textDim, fontSize: 11, fontFamily: MONO_FONT }}>{f.importo.toFixed(2)}€ / {f.frequenza === "mensile" ? "mese" : f.frequenza === "settimanale" ? "sett" : f.frequenza === "annuale" ? "anno" : "giorno"}</div>
-              </button>
-              <button onClick={() => remove(f.id)} style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}><X size={15} color={C.textDim} /></button>
+              </div>
+              <button onClick={() => remove(f.id)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={15} color={C.textDim} /></button>
             </div>
           );
         })}
       </div>
 
-      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: C.textFainter, marginBottom: 8 }}>Aggiunta rapida</div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        {QUICK_FIXED.map(([key, label]) => {
-          const Icon = FIXED_ICONS[key];
-          return (
-            <button
-              key={key}
-              onClick={() => quickAdd(key, label)}
-              style={{
-                display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 999,
-                border: `1px solid ${C.panelBorder}`, backgroundColor: C.panel, color: C.paper, fontSize: 12.5, cursor: "pointer",
-              }}
-            >
-              <Icon size={13} color={C.brass} /> {label}
-            </button>
-          );
-        })}
-      </div>
-
       <button
-        onClick={() => { setForm({ nome: "", tipo: "altro", importo: "", frequenza: "mensile" }); setEditingId(null); setShowAdd(true); }}
+        onClick={() => setShowAdd(true)}
         style={{
           width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed ${C.panelBorder}`,
           background: "none", color: C.textFainter, fontSize: 13, fontWeight: 400,
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16, cursor: "pointer",
         }}
       >
-        <Plus size={15} /> Altra spesa fissa (personalizzata)
+        <Plus size={15} /> Aggiungi spesa fissa
       </button>
 
       <PunchTicket style={{ borderRadius: 4, padding: 16 }}>
@@ -1228,18 +1032,17 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
 
       {showAdd && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-          <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={closeModal} />
-          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+          <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setShowAdd(false)} />
+          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid #DED7C4`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
+            <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>{editingId ? "Modifica spesa fissa" : "Nuova spesa fissa"}</span>
-              <button onClick={closeModal} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
+              <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Nuova spesa fissa</span>
+              <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
             </div>
 
             <div style={{ marginBottom: 4 }}><FieldLabel>Nome</FieldLabel></div>
             <input
               type="text" value={form.nome} placeholder="es. Abbonamento palestra"
-              autoFocus={!form.nome}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
               style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
             />
@@ -1267,7 +1070,6 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
                 <FieldLabel>Importo €</FieldLabel>
                 <input
                   type="number" value={form.importo} placeholder="0.00"
-                  autoFocus={!!form.nome}
                   onChange={(e) => setForm({ ...form, importo: e.target.value })}
                   style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}
                 />
@@ -1287,16 +1089,8 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
               </div>
             </div>
 
-            {editingId && (
-              <button
-                onClick={() => { remove(editingId); closeModal(); }}
-                style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.rust}`, backgroundColor: "transparent", color: C.rust, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10 }}
-              >
-                Elimina
-              </button>
-            )}
-            <button onClick={saveExpense} style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-              {editingId ? "Salva modifica" : "Aggiungi"}
+            <button onClick={addExpense} style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+              Aggiungi
             </button>
           </div>
         </div>
@@ -1370,7 +1164,7 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
 
       <button
         onClick={() => setShowAdd(true)}
-        style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed ${C.sheetBorder}`, background: "none", color: C.textFainter, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16, cursor: "pointer" }}
+        style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed #DED7C4`, background: "none", color: C.textFainter, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16, cursor: "pointer" }}
       >
         <Plus size={15} /> Aggiungi obiettivo
       </button>
@@ -1384,8 +1178,8 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
       {showAdd && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setShowAdd(false)} />
-          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid #DED7C4`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
+            <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Nuovo obiettivo</span>
               <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -1435,7 +1229,7 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", padding: 0, marginBottom: form.hasDeadline ? 12 : 16, cursor: "pointer" }}
             >
               <span style={{ color: C.paper, fontSize: 13, fontWeight: 600 }}>{isRiserva ? "Imposta una scadenza per il recupero" : "Imposta una scadenza"}</span>
-              <div style={{ width: 38, height: 20, borderRadius: 999, backgroundColor: form.hasDeadline ? C.brass : C.sheetBorder, position: "relative", transition: "background-color 0.15s" }}>
+              <div style={{ width: 38, height: 20, borderRadius: 999, backgroundColor: form.hasDeadline ? C.brass : "#DED7C4", position: "relative", transition: "background-color 0.15s" }}>
                 <div style={{ position: "absolute", top: 2, left: form.hasDeadline ? 20 : 2, width: 16, height: 16, borderRadius: "50%", backgroundColor: C.ink, transition: "left 0.15s" }} />
               </div>
             </button>
@@ -1494,7 +1288,7 @@ function SpendingBar({ fixedHours, extraHours, capHours, hourly }) {
   const extraPct = Math.min(extraHours / capHours, 1 - fixedPct / 100) * 100;
   const remainingPct = Math.max(100 - fixedPct - extraPct, 0);
   const extraColor = over ? C.rust : C.brass;
-  const availableColor = C.green;
+  const availableColor = "#C9A86A"; // oro tenue, coerente con la palette da "scontrino" — niente verde
 
   return (
     <div style={{ width: "100%" }}>
@@ -1506,11 +1300,11 @@ function SpendingBar({ fixedHours, extraHours, capHours, hourly }) {
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
           <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: C.textFaint, marginBottom: 4 }}>Ore disponibili</span>
-          <span style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em", color: C.green }}>{remainingHours.toFixed(1)}h</span>
+          <span style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em", color: "#A9863F" }}>{remainingHours.toFixed(1)}h</span>
           {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(remainingHours * hourly).toFixed(0)}€</span> : null}
         </div>
       </div>
-      <div style={{ position: "relative", width: "100%", height: 18, borderRadius: 999, backgroundColor: C.trackBg, overflow: "hidden", display: "flex" }}>
+      <div style={{ position: "relative", width: "100%", height: 18, borderRadius: 999, backgroundColor: "rgba(23,23,23,0.08)", overflow: "hidden", display: "flex" }}>
         <div style={{ width: `${fixedPct}%`, backgroundColor: C.fixedBar, transition: "width 0.6s ease", borderRadius: 999 }} />
         <div style={{ width: `${extraPct}%`, backgroundColor: extraColor, transition: "width 0.6s ease, background-color 0.3s ease", borderRadius: 999, marginLeft: fixedPct > 0 && extraPct > 0 ? 3 : 0 }} />
         {!over && remainingPct > 0 && (
@@ -1561,15 +1355,15 @@ function OneTapCategorizeSheet({ tx, hourly, onClose, onConfirm }) {
   const pick = (cat) => {
     setDone(true);
     playExpenseSound();
-    onConfirm({ cat: cat.label, iconId: cat.id, euro: tx.euro, time: "adesso" });
+    onConfirm({ cat: cat.label, iconId: cat.id, euro: tx.euro, time: "adesso", dateKey: todayKey() });
     setTimeout(onClose, 1300);
   };
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 55, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={done ? undefined : onClose} />
-      <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
-        <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+      <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid #DED7C4`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
+        <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
 
         {!done ? (
           <>
@@ -1675,7 +1469,7 @@ function TransactionsScreen({ hourly, connectedAccounts, feed, setFeed, onBack, 
       />
 
       <div style={{ padding: "0 20px" }}>
-        <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}`, marginBottom: 16 }}>
+        <PunchTicket style={{ borderRadius: 4, padding: 16, border: "1px solid #E2DAC5", marginBottom: 16 }}>
           <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>
             Totale da {activeSources.length} cont{activeSources.length === 1 ? "o" : "i"} collegat{activeSources.length === 1 ? "o" : "i"}
           </div>
@@ -1905,56 +1699,17 @@ function TutorialOverlay({ step, steps, frameRef, onNext, onFinish }) {
   );
 }
 
-// Modifica di un importo già esistente: campo di testo semplice precompilato con il
-// valore attuale, conversione live in ore, e i due pulsanti Elimina / Salva modifica
-// affiancati — versione "pulita" richiesta al posto del tastierino calcolatrice.
-function EditAmountInline({ initial, hourly, onConfirm, onDelete }) {
+// Piccolo wrapper che riusa AmountKeypad per modificare un importo già esistente,
+// partendo precompilato dal valore attuale invece che da zero.
+function EditAmountInline({ initial, onConfirm }) {
   const [amountStr, setAmountStr] = useState(String(initial).replace(".", ","));
-  const numericValue = Number((amountStr || "0").replace(",", "."));
-
   return (
-    <>
-      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Importo</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 12px", marginBottom: 10 }}>
-        <span style={{ color: C.brass, fontFamily: MONO_FONT, fontSize: 18 }}>€</span>
-        <input
-          type="text"
-          inputMode="decimal"
-          autoFocus
-          value={amountStr}
-          onChange={(e) => {
-            const v = e.target.value.replace(/[^0-9,]/g, "");
-            if ((v.match(/,/g) || []).length > 1) return;
-            setAmountStr(v);
-          }}
-          style={{ flex: 1, border: "none", outline: "none", backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 20, fontWeight: 700 }}
-        />
-      </div>
-      {hourly ? (
-        <div style={{ fontFamily: MONO_FONT, color: C.brass, fontSize: 14, marginBottom: 18 }}>→ {euroToTime(numericValue, hourly)} del tuo tempo</div>
-      ) : null}
-      <div style={{ display: "flex", gap: 10 }}>
-        {onDelete && (
-          <button
-            onClick={onDelete}
-            style={{ flex: 1, padding: "13px 0", borderRadius: 6, border: `1px solid ${C.rust}`, backgroundColor: "transparent", color: C.rust, fontWeight: 700, fontSize: 14, cursor: "pointer" }}
-          >
-            Elimina
-          </button>
-        )}
-        <button
-          onClick={() => onConfirm(numericValue)}
-          disabled={numericValue <= 0}
-          style={{
-            flex: 2, padding: "13px 0", borderRadius: 6, border: "none", cursor: numericValue > 0 ? "pointer" : "default",
-            backgroundColor: numericValue > 0 ? C.panelBorder : C.inputBg, color: numericValue > 0 ? C.paper : C.textFaint,
-            fontWeight: 700, fontSize: 14,
-          }}
-        >
-          Salva modifica
-        </button>
-      </div>
-    </>
+    <AmountKeypad
+      value={amountStr}
+      onChange={setAmountStr}
+      onConfirm={() => onConfirm(Number((amountStr || "0").replace(",", ".")))}
+      confirmLabel="Salva modifica"
+    />
   );
 }
 
@@ -2030,7 +1785,7 @@ function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpen
       </div>
 
       <div style={{ padding: "0 20px" }}>
-        <PunchTicket id="tut-gauge" style={{ borderRadius: 4, padding: "24px 16px", border: `1px solid ${C.ticketBorder}` }}>
+        <PunchTicket id="tut-gauge" style={{ borderRadius: 4, padding: "24px 16px", border: `1px solid #E2DAC5` }}>
           <SpendingBar fixedHours={fixedHours} extraHours={extraHours} capHours={dailyHours} hourly={hourly} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 12, marginBottom: over ? 4 : 0, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -2043,7 +1798,7 @@ function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpen
             </div>
             {!over && (
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: C.green, display: "inline-block" }} />
+                <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: "#C9A86A", display: "inline-block" }} />
                 <span style={{ fontSize: 11, color: C.textFaint }}>Disponibili {remaining.toFixed(1)}h</span>
               </div>
             )}
@@ -2078,32 +1833,31 @@ function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpen
             <div style={{ height: 5, backgroundColor: C.panelBorder, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
               <div style={{ height: "100%", backgroundColor: C.brass, width: `${goalPct || 0}%` }} />
             </div>
-            <div style={{ fontSize: 10.5, color: C.brass, fontFamily: MONO_FONT, marginBottom: 6 }}>
-              → ancora {euroToTime(Math.max(primaryGoal.importo - primaryGoal.saved, 0), hourly)} di lavoro
-            </div>
             <div style={{ fontSize: 10.5, color: C.textFainter }}>vai a tutti i budget →</div>
           </button>
         </div>
       ) : null}
 
-      {todayEntries.length === 0 && (
-        <div style={{ padding: "0 20px", marginTop: 20 }}>
-          <button
-            onClick={onOpenReport}
-            style={{
-              width: "100%", textAlign: "left", cursor: "pointer", border: `1px solid ${C.brass}`,
-              backgroundColor: "rgba(255,107,74,0.08)", borderRadius: 4, padding: 16,
-              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-            }}
-          >
-            <div>
-              <div style={{ color: C.paper, fontWeight: 700, fontSize: 14, marginBottom: 2 }}>Guarda un esempio di resoconto</div>
-              <div style={{ color: C.textFaint, fontSize: 12 }}>Così sarà quando avrai le tue spese →</div>
+      <div style={{ padding: "0 20px", marginTop: 20 }}>
+        <button
+          onClick={onOpenReport}
+          style={{
+            width: "100%", textAlign: "left", cursor: "pointer", border: `1px solid ${C.brass}`,
+            backgroundColor: "rgba(255,107,74,0.08)", borderRadius: 4, padding: 16,
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          }}
+        >
+          <div>
+            <div style={{ color: C.paper, fontWeight: 700, fontSize: 14, marginBottom: 2 }}>
+              {todayEntries.length === 0 ? "Guarda un esempio di resoconto" : "Vedi il tuo resoconto"}
             </div>
-            <BarChart3 size={22} color={C.brass} />
-          </button>
-        </div>
-      )}
+            <div style={{ color: C.textFaint, fontSize: 12 }}>
+              {todayEntries.length === 0 ? "Così sarà quando avrai le tue spese →" : "Spesa extra della settimana, giorno per giorno →"}
+            </div>
+          </div>
+          <BarChart3 size={22} color={C.brass} />
+        </button>
+      </div>
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
         <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 8 }}>Timbrature di oggi</div>
@@ -2151,23 +1905,15 @@ function DiarioScreen({ profile, todayEntries, onOpenAdd, onOpenSettings, onOpen
       {editingEntry && (
         <div style={{ position: "fixed", inset: 0, zIndex: 55, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setEditingEntry(null)} />
-          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {(() => {
-                  const EntryIcon = (typeof editingEntry.icon === "function" ? editingEntry.icon : null) || (CATEGORIES.find((c) => c.id === editingEntry.iconId)?.icon) || MoreHorizontal;
-                  return <EntryIcon size={20} color={C.brass} />;
-                })()}
-                <span style={{ color: C.paper, fontWeight: 700, fontSize: 16 }}>{editingEntry.cat}</span>
-              </div>
+          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: "1px solid #DED7C4", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
+            <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Modifica "{editingEntry.cat}"</span>
               <button onClick={() => setEditingEntry(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
             </div>
             <EditAmountInline
               initial={editingEntry.euro}
-              hourly={hourly}
               onConfirm={(newVal) => { onEditEntry(editingEntry.id, newVal); setEditingEntry(null); }}
-              onDelete={() => { onDeleteEntry(editingEntry.id); setEditingEntry(null); }}
             />
           </div>
         </div>
@@ -2274,15 +2020,15 @@ function AddSheet({ hourly, onClose, onAdd }) {
     setAmount(val);
     setStep("done");
     playExpenseSound();
-    onAdd({ id: Date.now() + Math.random(), cat: category.label, iconId: category.id, euro: val, time: "adesso" });
+    onAdd({ id: Date.now() + Math.random(), cat: category.label, iconId: category.id, euro: val, time: "adesso", dateKey: todayKey() });
     setTimeout(onClose, 1400);
   };
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={onClose} />
-      <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
-        <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+      <div style={{ position: "relative", backgroundColor: C.panel, borderTop: "1px solid #DED7C4", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
+        <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
         {step === "category" && (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -2314,7 +2060,7 @@ function AddSheet({ hourly, onClose, onAdd }) {
               {[category.suggested, category.suggested ? category.suggested * 1.5 : null, category.suggested ? category.suggested * 0.6 : null]
                 .filter(Boolean)
                 .map((v, i) => (
-                  <button key={i} onClick={() => handleAmount(v)} style={{ padding: "8px 16px", borderRadius: 999, backgroundColor: C.panelBorder, color: C.paper, fontSize: 13, fontFamily: MONO_FONT, border: `1px solid ${C.sheetBorder}`, cursor: "pointer" }}>
+                  <button key={i} onClick={() => handleAmount(v)} style={{ padding: "8px 16px", borderRadius: 999, backgroundColor: C.panelBorder, color: C.paper, fontSize: 13, fontFamily: MONO_FONT, border: "1px solid #DED7C4", cursor: "pointer" }}>
                     {v.toFixed(2)}€
                   </button>
                 ))}
@@ -2352,8 +2098,8 @@ function periodRecommended(g, period) {
 }
 
 // Calcola il pool disponibile da distribuire: risparmio del periodo + eventuale rimanenza non allocata dal periodo precedente
-function computeClosurePool(profile, hourly) {
-  const { totalEuro } = buildWeekInsights(hourly);
+function computeClosurePool(profile, hourly, entries) {
+  const { totalEuro } = buildWeekInsights(hourly, entries);
   const period = profile.closurePeriod;
   const monthlyFree = freeMonthlyMargin(profile);
   const periodFree = monthlyFree / PERIOD_DIVISORS[period];
@@ -2368,20 +2114,20 @@ const PERIOD_EYEBROW = { giorno: "Oggi", settimana: "Ultimi 7 giorni", mese: "Ul
 const PERIOD_TITLE = { giorno: "Il tuo giorno", settimana: "La tua settimana", mese: "Il tuo mese" };
 const PERIOD_CTA = { giorno: "Chiudi la giornata", settimana: "Chiudi la settimana", mese: "Chiudi il mese" };
 
-function ReportScreen({ hourly, profile, onBack, onOpenClosure }) {
+function ReportScreen({ hourly, profile, entries, onBack, onOpenClosure }) {
   const period = profile.closurePeriod;
-  const { totalHours, totalEuro, deltaHours, categoryList, criticalDay, criticalMultiplier } = buildWeekInsights(hourly);
-  const maxDayExtra = Math.max(...WEEK_DATA.map((d) => d.extra));
+  const { totalHours, totalEuro, deltaHours, categoryList, criticalDay, criticalMultiplier, hasAnyData, weekData } = buildWeekInsights(hourly, entries);
+  const maxDayExtra = Math.max(...weekData.map((d) => d.extra), 1); // almeno 1 per evitare divisioni per zero
   const worse = deltaHours > 0;
 
-  const topCat = categoryList[0];
+  const topCat = categoryList[0] || null;
   const CAT_ICON_MAP = { Colazione: Coffee, Pranzo: UtensilsCrossed, Aperitivo: Beer, Trasporti: Car, Spesa: ShoppingBag, Bollette: Zap, Finanziamento: CreditCard, Salute: HeartPulse, Regalo: Gift, Sigarette: Cigarette, Altro: MoreHorizontal };
 
-  // suggerimento concreto legato alla categoria che pesa di più
-  const potentialSavingHours = topCat.hours * 0.5;
+  // suggerimento concreto legato alla categoria che pesa di più — solo se c'è almeno una categoria
+  const potentialSavingHours = topCat ? topCat.hours * 0.5 : 0;
   const potentialSavingEuro = potentialSavingHours * hourly;
   const firstDeadlineGoal = profile.goals.find((g) => g.mesi) || null;
-  const goalDaysGained = firstDeadlineGoal ? Math.round((potentialSavingEuro / firstDeadlineGoal.importo) * (Number(firstDeadlineGoal.mesi || 12) * 30)) : null;
+  const goalDaysGained = topCat && firstDeadlineGoal ? Math.round((potentialSavingEuro / firstDeadlineGoal.importo) * (Number(firstDeadlineGoal.mesi || 12) * 30)) : null;
 
   return (
     <div style={{ flex: 1, overflowY: "auto", paddingBottom: 32 }}>
@@ -2392,15 +2138,18 @@ function ReportScreen({ hourly, profile, onBack, onOpenClosure }) {
         <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT }}>Diario</span>
       </div>
       <ScreenHeader eyebrow={PERIOD_EYEBROW[period]} title={PERIOD_TITLE[period]} />
-      <div style={{ padding: "0 20px", marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(255,107,74,0.12)", border: `1px solid ${C.brass}`, borderRadius: 8, padding: "10px 12px" }}>
-          <Info size={13} color={C.brass} style={{ marginTop: 1, flexShrink: 0 }} />
-          <span style={{ fontSize: 11.5, color: C.brass, fontWeight: 600, lineHeight: 1.4 }}>Dati di esempio — qui vedrai la tua settimana vera quando avrai registrato qualche spesa</span>
+
+      {!hasAnyData && (
+        <div style={{ padding: "0 20px", marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(255,107,74,0.12)", border: `1px solid ${C.brass}`, borderRadius: 8, padding: "10px 12px" }}>
+            <Info size={13} color={C.brass} style={{ marginTop: 1, flexShrink: 0 }} />
+            <span style={{ fontSize: 11.5, color: C.brass, fontWeight: 600, lineHeight: 1.4 }}>Non hai ancora registrato spese in questi 7 giorni — appena inizi, questa pagina si riempie con i tuoi dati veri.</span>
+          </div>
         </div>
-      </div>
+      )}
 
       <div style={{ padding: "0 20px" }}>
-        <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
+        <PunchTicket style={{ borderRadius: 4, padding: 16, border: "1px solid #E2DAC5" }}>
           <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Tempo extra totale</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{totalHours.toFixed(1)}h</div>
@@ -2415,24 +2164,63 @@ function ReportScreen({ hourly, profile, onBack, onOpenClosure }) {
       <div style={{ padding: "0 20px", marginTop: 20 }}>
         <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Spesa extra per giorno</div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 128, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 12px 10px 12px" }}>
-          {WEEK_DATA.map((d, i) => {
+          {weekData.map((d, i) => {
             const h = Math.max((d.extra / maxDayExtra) * 58, 4);
-            const isCritical = d.day === criticalDay.day;
+            const isCritical = criticalDay && d.dateKey === criticalDay.dateKey;
             return (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                 <div style={{ width: "100%", maxWidth: 22, height: h, borderRadius: 2, backgroundColor: isCritical ? C.rust : C.brass, opacity: isCritical ? 1 : 0.75 }} />
-                <span style={{ fontSize: 10, color: isCritical ? C.rust : C.textFaint, fontFamily: MONO_FONT, fontWeight: isCritical ? 700 : 400 }}>{d.day}</span>
+                <span style={{ fontSize: 10, color: isCritical ? C.rust : d.isToday ? C.paper : C.textFaint, fontFamily: MONO_FONT, fontWeight: isCritical || d.isToday ? 700 : 400 }}>{d.day}</span>
                 <span style={{ fontSize: 9, color: C.textFaint, fontFamily: MONO_FONT, opacity: 0.8 }}>{d.extra.toFixed(0)}€</span>
               </div>
             );
           })}
         </div>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, padding: "10px 12px", backgroundColor: "rgba(225,74,46,0.08)", border: `1px solid ${C.rust}`, borderRadius: 4 }}>
-          <TrendingDown size={14} color={C.rust} style={{ marginTop: 2, flexShrink: 0, transform: "rotate(180deg)" }} />
-          <div style={{ fontSize: 12, color: C.paper }}>
-            Il <strong>{criticalDay.day}</strong> spendi in media <strong>{criticalMultiplier.toFixed(1)}×</strong> di più rispetto agli altri giorni.
+        {criticalDay && criticalMultiplier !== null && (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, padding: "10px 12px", backgroundColor: "rgba(225,74,46,0.08)", border: `1px solid ${C.rust}`, borderRadius: 4 }}>
+            <TrendingDown size={14} color={C.rust} style={{ marginTop: 2, flexShrink: 0, transform: "rotate(180deg)" }} />
+            <div style={{ fontSize: 12, color: C.paper }}>
+              Il <strong>{criticalDay.day}</strong> spendi in media <strong>{criticalMultiplier.toFixed(1)}×</strong> di più rispetto agli altri giorni.
+            </div>
           </div>
+        )}
+      </div>
+
+      <div style={{ padding: "0 20px", marginTop: 20 }}>
+        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Giorno per giorno</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {weekData.map((d, i) => {
+            const catEntries = Object.entries(d.entries);
+            return (
+              <div
+                key={i}
+                style={{
+                  backgroundColor: d.isToday ? "rgba(255,107,74,0.06)" : C.panel,
+                  border: `1px solid ${d.isToday ? C.brass : C.panelBorder}`,
+                  borderRadius: 4, padding: "10px 12px",
+                  opacity: d.isToday ? 1 : 0.65,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: d.isToday ? C.brass : C.textDim }}>
+                    {d.day}{d.isToday ? " · oggi" : ""}
+                  </span>
+                  <span style={{ fontFamily: MONO_FONT, fontSize: 13, fontWeight: 700, color: d.isToday ? C.paper : C.textFaint }}>
+                    {d.extra > 0 ? `${d.extra.toFixed(0)}€` : "—"}
+                  </span>
+                </div>
+                {catEntries.length > 0 && (
+                  <div style={{ fontSize: 11, color: C.textFainter, marginTop: 4 }}>
+                    {catEntries.map(([cat, v]) => `${cat} ${v.toFixed(0)}€`).join(" · ")}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
+        <p style={{ fontSize: 10.5, color: C.textFainter, lineHeight: 1.4, marginTop: 8 }}>
+          I giorni passati restano qui per consultarli, in grigio — solo oggi resta "vivo" e modificabile dal Diario.
+        </p>
       </div>
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
@@ -2458,22 +2246,24 @@ function ReportScreen({ hourly, profile, onBack, onOpenClosure }) {
         </div>
       </div>
 
-      <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ backgroundColor: "rgba(255,107,74,0.08)", border: `1px solid ${C.brass}`, borderRadius: 4, padding: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <Lightbulb size={16} color={C.brass} />
-            <span style={{ color: C.brass, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Suggerimento</span>
+      {topCat && (
+        <div style={{ padding: "0 20px", marginTop: 20 }}>
+          <div style={{ backgroundColor: "rgba(255,107,74,0.08)", border: `1px solid ${C.brass}`, borderRadius: 4, padding: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <Lightbulb size={16} color={C.brass} />
+              <span style={{ color: C.brass, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Suggerimento</span>
+            </div>
+            <p style={{ fontSize: 13, color: C.paper, margin: 0, lineHeight: 1.5 }}>
+              Dimezzando "<strong>{topCat.cat}</strong>" risparmi circa <strong>{potentialSavingHours.toFixed(1)}h</strong> a settimana
+              {goalDaysGained ? (
+                <> — il tuo obiettivo arriverebbe <strong>{goalDaysGained} giorni prima</strong>.</>
+              ) : (
+                <>.</>
+              )}
+            </p>
           </div>
-          <p style={{ fontSize: 13, color: C.paper, margin: 0, lineHeight: 1.5 }}>
-            Dimezzando "<strong>{topCat.cat}</strong>" risparmi circa <strong>{potentialSavingHours.toFixed(1)}h</strong> a settimana
-            {goalDaysGained ? (
-              <> — il tuo obiettivo arriverebbe <strong>{goalDaysGained} giorni prima</strong>.</>
-            ) : (
-              <>.</>
-            )}
-          </p>
         </div>
-      </div>
+      )}
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
         <button
@@ -2487,9 +2277,9 @@ function ReportScreen({ hourly, profile, onBack, onOpenClosure }) {
   );
 }
 
-function ClosureScreen({ hourly, profile, onBack, onAllocate, onCarryOver }) {
+function ClosureScreen({ hourly, profile, entries, onBack, onAllocate, onCarryOver }) {
   const period = profile.closurePeriod;
-  const { pool, periodSaved, carryOver } = computeClosurePool(profile, hourly);
+  const { pool, periodSaved, carryOver } = computeClosurePool(profile, hourly, entries);
 
   const GOAL_ICON_INFO = "Per rispettare la tabella di marcia di questo obiettivo, questo è quanto dovresti versare in questo periodo.";
 
@@ -2524,7 +2314,7 @@ function ClosureScreen({ hourly, profile, onBack, onAllocate, onCarryOver }) {
       <div style={{ padding: "0 20px" }}>
         {!confirmed ? (
           <>
-            <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}`, marginBottom: 14 }}>
+            <PunchTicket style={{ borderRadius: 4, padding: 16, border: "1px solid #E2DAC5", marginBottom: 14 }}>
               <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Disponibile da distribuire</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                 <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{pool}€</div>
@@ -2629,7 +2419,7 @@ function ClosureScreen({ hourly, profile, onBack, onAllocate, onCarryOver }) {
                   disabled={allocatedTotal === 0 || remaining < 0}
                   style={{
                     width: "100%", padding: "12px 0", borderRadius: 4, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer",
-                    backgroundColor: allocatedTotal > 0 && remaining >= 0 ? C.brass : C.sheetBorder,
+                    backgroundColor: allocatedTotal > 0 && remaining >= 0 ? C.brass : "#DED7C4",
                     color: allocatedTotal > 0 && remaining >= 0 ? C.ink : C.textFaint,
                   }}
                 >
@@ -3349,8 +3139,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
       {addMenuDay && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setAddMenuDay(null)} />
-          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid #DED7C4`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
+            <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Cosa vuoi registrare?</span>
               <button onClick={() => setAddMenuDay(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -3607,7 +3397,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setSelectedDay(null)} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "80vh", overflowY: "auto" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>{selectedDay.getDate()} {MESI_IT[selectedDay.getMonth()]}</span>
               <button onClick={() => setSelectedDay(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -3650,8 +3440,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
             {editingCalEntry && (
               <div style={{ position: "fixed", inset: 0, zIndex: 65, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                 <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setEditingCalEntry(null)} />
-                <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
-                  <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+                <div style={{ position: "relative", backgroundColor: C.panel, borderTop: "1px solid #DED7C4", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
+                  <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                     <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>
                       Modifica {editingCalEntry.entry.tipo === "turno" ? "turno" : editingCalEntry.entry.tipo === "entrata" ? "entrata" : "uscita"}
@@ -3718,8 +3508,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
       {showAddRange && (
         <div style={{ position: "fixed", inset: 0, zIndex: 55, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => { setShowAddRange(false); setRangeResult(null); }} />
-          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "88vh", overflowY: "auto" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid #DED7C4`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "88vh", overflowY: "auto" }}>
+            <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Aggiungi un periodo di lavoro</span>
               <button onClick={() => { setShowAddRange(false); setRangeResult(null); }} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -3763,7 +3553,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", padding: 0, marginBottom: 16, cursor: "pointer" }}
                 >
                   <span style={{ color: C.paper, fontSize: 13, fontWeight: 600 }}>Salta sabato e domenica</span>
-                  <div style={{ width: 38, height: 20, borderRadius: 999, backgroundColor: rangeForm.skipWeekend ? C.brass : C.sheetBorder, position: "relative", transition: "background-color 0.15s" }}>
+                  <div style={{ width: 38, height: 20, borderRadius: 999, backgroundColor: rangeForm.skipWeekend ? C.brass : "#DED7C4", position: "relative", transition: "background-color 0.15s" }}>
                     <div style={{ position: "absolute", top: 2, left: rangeForm.skipWeekend ? 20 : 2, width: 16, height: 16, borderRadius: "50%", backgroundColor: C.ink, transition: "left 0.15s" }} />
                   </div>
                 </button>
@@ -4339,66 +4129,6 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           </p>
         </div>
 
-        <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 22 }}>
-          <div style={{ fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
-            Tema
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            {[["light", "Chiaro"], ["dark", "Scuro"]].map(([key, label]) => {
-              const active = (data.theme || "light") === key;
-              return (
-                <button
-                  key={key}
-                  onClick={() => setData({ ...data, theme: key })}
-                  style={{
-                    flex: 1, padding: "8px 0", borderRadius: 999, border: "none", cursor: "pointer",
-                    backgroundColor: active ? C.brass : C.bg, color: active ? "#FFFFFF" : C.textDim,
-                    fontSize: 11.5, fontWeight: 700,
-                  }}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {!KICKSTARTER_BUILD && (() => {
-          const lockedItems = [
-            { key: "conti", show: !hasTier("premium"), icon: Landmark, label: "Conti collegati e Rendiconto", tier: "Premium" },
-            { key: "import", show: !hasTier("premium"), icon: ArrowRight, rotate: -90, label: "Importa spese da file", tier: "Premium" },
-            { key: "chiusura", show: !hasTier("premium"), icon: HandCoins, label: "Periodo di chiusura", tier: "Premium" },
-            { key: "regime", show: data.redditoTipo === "variabile" && !hasTier("elite"), icon: Calculator, label: "Regime fiscale e calcolo del netto", tier: "Elite" },
-          ].filter((i) => i.show);
-          if (lockedItems.length === 0) return null;
-          return (
-            <div style={{ border: `1px solid ${C.panelBorder}`, borderRadius: 8, marginBottom: 22, overflow: "hidden" }}>
-              <div style={{ padding: "12px 14px 8px 14px", fontSize: 10, fontFamily: MONO_FONT, textTransform: "uppercase", letterSpacing: "0.08em", color: C.textFainter }}>
-                Funzioni da sbloccare
-              </div>
-              {lockedItems.map((item, i) => (
-                <button
-                  key={item.key}
-                  onClick={() => onOpenLocked(item.key)}
-                  style={{
-                    width: "100%", padding: "13px 14px", border: "none", borderTop: i > 0 ? `1px solid ${C.panelBorder}` : "none",
-                    background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", opacity: 0.75,
-                  }}
-                >
-                  <div style={{ position: "relative", flexShrink: 0 }}>
-                    <item.icon size={16} color={C.textFaint} style={item.rotate ? { transform: `rotate(${item.rotate}deg)` } : undefined} />
-                    <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
-                  </div>
-                  <div style={{ textAlign: "left", flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>{item.label}</div>
-                    <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>{item.tier} · tocca per saperne di più</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          );
-        })()}
-
         {!KICKSTARTER_BUILD && (hasTier("premium") ? (
           <>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Conti collegati</div>
@@ -4451,7 +4181,24 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
               <BarChart3 size={15} /> Vedi rendiconto transazioni
             </button>
           </>
-        ) : null)}
+        ) : (
+          <button
+            onClick={() => onOpenLocked("conti")}
+            style={{
+              width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none",
+              display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 24, opacity: 0.65,
+            }}
+          >
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <Landmark size={18} color={C.textFaint} />
+              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Conti collegati e Rendiconto</div>
+              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Premium · tocca per saperne di più</div>
+            </div>
+          </button>
+        ))}
 
         {KICKSTARTER_BUILD ? (
           <div style={{ width: "100%", padding: "12px 14px", borderRadius: 4, border: `1px dashed ${C.panelBorder}`, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
@@ -4461,7 +4208,21 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
               <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1, lineHeight: 1.4 }}>La stessa conversione da soldi a tempo, ma per tutto quello che hai già speso — in arrivo</div>
             </div>
           </div>
-        ) : hasTier("premium") ? (
+        ) : !hasTier("premium") ? (
+          <button
+            onClick={() => onOpenLocked("import")}
+            style={{ width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 24, opacity: 0.65 }}
+          >
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <ArrowRight size={16} color={C.textFaint} style={{ transform: "rotate(-90deg)" }} />
+              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Importa spese da file</div>
+              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Premium · tocca per saperne di più</div>
+            </div>
+          </button>
+        ) : (
           <>
             <button
               id="tut-import-csv"
@@ -4484,7 +4245,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
               <ArrowRight size={14} color={C.brass} style={{ transform: "rotate(-90deg)" }} /> Importa spese da file (PDF)
             </button>
           </>
-        ) : null}
+        )}
 
         {hasTier("premium") && (
         <button
@@ -4537,11 +4298,25 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           })}
         </div>
         </>
-        ) : null}
+        ) : (
+          <button
+            onClick={() => onOpenLocked("chiusura")}
+            style={{ width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 24, opacity: 0.65 }}
+          >
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <HandCoins size={18} color={C.textFaint} />
+              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Periodo di chiusura</div>
+              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Premium · tocca per saperne di più</div>
+            </div>
+          </button>
+        )}
 
         <button
           onClick={onFullOnboarding}
-          style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed ${C.sheetBorder}`, background: "none", color: C.textFainter, fontSize: 13, cursor: "pointer" }}
+          style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed #DED7C4`, background: "none", color: C.textFainter, fontSize: 13, cursor: "pointer" }}
         >
           Modifica reddito, spese fisse e obiettivi iniziali
         </button>
@@ -4549,9 +4324,24 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
         {data.redditoTipo === "variabile" && hasTier("elite") && (
           <button
             onClick={onOpenRegime}
-            style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed ${C.sheetBorder}`, background: "none", color: C.textFainter, fontSize: 13, cursor: "pointer", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed #DED7C4`, background: "none", color: C.textFainter, fontSize: 13, cursor: "pointer", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           >
             <Calculator size={14} /> Regime fiscale e calcolo del netto
+          </button>
+        )}
+        {data.redditoTipo === "variabile" && !hasTier("elite") && (
+          <button
+            onClick={() => onOpenLocked("regime")}
+            style={{ width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.panelBorder}`, background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 10, opacity: 0.65 }}
+          >
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <Calculator size={16} color={C.textFaint} />
+              <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>Regime fiscale e calcolo del netto</div>
+              <div style={{ fontSize: 11, color: C.textFainter, marginTop: 1 }}>Elite · tocca per saperne di più</div>
+            </div>
           </button>
         )}
 
@@ -4594,14 +4384,13 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
         <ScreenHeader eyebrow="Budget libero · senza scadenza" title={nome || "Obiettivo"} />
 
         <div style={{ padding: "0 20px" }}>
-          <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
+          <PunchTicket style={{ borderRadius: 4, padding: 16, border: "1px solid #E2DAC5" }}>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Accumulato</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 2 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
               <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{saved.toFixed(0)}€</div>
               <div style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.textFaint }}>/ {importo.toFixed(0)}€</div>
             </div>
-            <div style={{ fontFamily: MONO_FONT, fontSize: 12, color: C.brass, marginBottom: 8 }}>≈ {euroToTime(saved, hourly)} di lavoro già recuperate</div>
-            <div style={{ height: 8, backgroundColor: C.ticketBorder, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+            <div style={{ height: 8, backgroundColor: "#E2DAC5", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
               <div style={{ height: "100%", backgroundColor: C.brass, width: `${pct}%` }} />
             </div>
             <div style={{ fontSize: 12, color: C.textFaint }}>{pct.toFixed(0)}% del percorso · {remainingHours.toFixed(0)}h ({remainingEuro.toFixed(0)}€) ancora da mettere via</div>
@@ -4653,14 +4442,13 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
       <ScreenHeader eyebrow={`Scadenza: ${mesi} mesi`} title={nome || "Obiettivo"} />
 
       <div style={{ padding: "0 20px" }}>
-        <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
+        <PunchTicket style={{ borderRadius: 4, padding: 16, border: "1px solid #E2DAC5" }}>
           <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Accumulato</div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 2 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
             <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{saved.toFixed(0)}€</div>
             <div style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.textFaint }}>/ {importo.toFixed(0)}€</div>
           </div>
-          <div style={{ fontFamily: MONO_FONT, fontSize: 12, color: C.brass, marginBottom: 8 }}>≈ {euroToTime(saved, hourly)} di lavoro già recuperate</div>
-          <div style={{ height: 8, backgroundColor: C.ticketBorder, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+          <div style={{ height: 8, backgroundColor: "#E2DAC5", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
             <div style={{ height: "100%", backgroundColor: C.brass, width: `${pct}%` }} />
           </div>
           <div style={{ fontSize: 12, color: C.textFaint }}>{pct.toFixed(0)}% del percorso completato</div>
@@ -4818,11 +4606,8 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
                   <span style={{ fontFamily: MONO_FONT, fontSize: 11, color: C.textFainter }}>{g.saved.toFixed(0)}€ / {g.tipo === "riserva" ? "min " : ""}{g.importo.toFixed(0)}€</span>
                   <span style={{ fontFamily: MONO_FONT, fontSize: 11, color: C.textFainter }}>{pct.toFixed(0)}%</span>
                 </div>
-                <div style={{ height: 6, backgroundColor: C.panelBorder, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+                <div style={{ height: 6, backgroundColor: C.panelBorder, borderRadius: 4, overflow: "hidden" }}>
                   <div style={{ height: "100%", backgroundColor: C.brass, width: `${pct}%` }} />
-                </div>
-                <div style={{ fontSize: 11, color: C.brass, fontFamily: MONO_FONT }}>
-                  → ancora {euroToTime(Math.max(g.importo - g.saved, 0), hourly)} di lavoro
                 </div>
               </button>
             );
@@ -4833,8 +4618,8 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
       {showAdd && atFreeLimit && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setShowAdd(false)} />
-          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "24px 20px 32px 20px", textAlign: "center" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 20px auto" }} />
+          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid #DED7C4`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "24px 20px 32px 20px", textAlign: "center" }}>
+            <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 20px auto" }} />
             <PiggyBank size={28} color={C.brass} style={{ marginBottom: 10 }} />
             <div style={{ color: C.paper, fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Il piano Free include 1 obiettivo</div>
             <p style={{ fontSize: 13, color: C.textFaint, lineHeight: 1.5, marginBottom: 20 }}>
@@ -4850,8 +4635,8 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
       {showAdd && !atFreeLimit && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setShowAdd(false)} />
-          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+          <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid #DED7C4`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
+            <div style={{ width: 40, height: 4, backgroundColor: "#DED7C4", borderRadius: 4, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Nuovo obiettivo</span>
               <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -4901,7 +4686,7 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", padding: 0, marginBottom: form.hasDeadline ? 12 : 16, cursor: "pointer" }}
             >
               <span style={{ color: C.paper, fontSize: 13, fontWeight: 600 }}>{isRiserva ? "Imposta una scadenza per il recupero" : "Imposta una scadenza"}</span>
-              <div style={{ width: 38, height: 20, borderRadius: 999, backgroundColor: form.hasDeadline ? C.brass : C.sheetBorder, position: "relative", transition: "background-color 0.15s" }}>
+              <div style={{ width: 38, height: 20, borderRadius: 999, backgroundColor: form.hasDeadline ? C.brass : "#DED7C4", position: "relative", transition: "background-color 0.15s" }}>
                 <div style={{ position: "absolute", top: 2, left: form.hasDeadline ? 20 : 2, width: 16, height: 16, borderRadius: "50%", backgroundColor: C.ink, transition: "left 0.15s" }} />
               </div>
             </button>
@@ -5037,7 +4822,7 @@ function SimulatoreScreen({ hourly }) {
         <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: 16, display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
             <FieldLabel>Prezzo oggetto</FieldLabel>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, borderBottom: `1px solid ${C.sheetBorder}`, paddingBottom: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, borderBottom: "1px solid #DED7C4", paddingBottom: 4 }}>
               <span style={{ color: C.brass, fontFamily: MONO_FONT, fontSize: 20 }}>€</span>
               <input type="number" value={prezzo} onChange={(e) => setPrezzo(Number(e.target.value))}
                 style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 20, width: "100%", border: "none", outline: "none" }} />
@@ -5066,12 +4851,12 @@ function SimulatoreScreen({ hourly }) {
                   <div>
                     <FieldLabel>Rata/mese</FieldLabel>
                     <input type="number" value={rata} onChange={(e) => setRata(Number(e.target.value))}
-                      style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
+                      style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: "1px solid #DED7C4", outline: "none", marginTop: 4, paddingBottom: 4 }} />
                   </div>
                   <div>
                     <FieldLabel>N. rate</FieldLabel>
                     <input type="number" value={numRate} onChange={(e) => setNumRate(Number(e.target.value))}
-                      style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
+                      style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: "1px solid #DED7C4", outline: "none", marginTop: 4, paddingBottom: 4 }} />
                   </div>
                 </div>
               ) : (
@@ -5080,12 +4865,12 @@ function SimulatoreScreen({ hourly }) {
                     <div>
                       <FieldLabel>Tasso annuo (TAN) %</FieldLabel>
                       <input type="number" value={tasso} onChange={(e) => setTasso(Number(e.target.value))}
-                        style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
+                        style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: "1px solid #DED7C4", outline: "none", marginTop: 4, paddingBottom: 4 }} />
                     </div>
                     <div>
                       <FieldLabel>N. rate</FieldLabel>
                       <input type="number" value={numRate} onChange={(e) => setNumRate(Number(e.target.value))}
-                        style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
+                        style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: "1px solid #DED7C4", outline: "none", marginTop: 4, paddingBottom: 4 }} />
                     </div>
                   </div>
                   <div style={{ fontSize: 12, color: C.textFaint, display: "flex", justifyContent: "space-between" }}>
@@ -5113,7 +4898,7 @@ function SimulatoreScreen({ hourly }) {
           )}
         </div>
 
-        <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
+        <PunchTicket style={{ borderRadius: 4, padding: 16, border: "1px solid #E2DAC5" }}>
           <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 12 }}>Il costo reale</div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
@@ -5139,7 +4924,7 @@ function SimulatoreScreen({ hourly }) {
             )}
           </div>
 
-          <div style={{ borderTop: `1px dashed ${C.sheetBorder}`, paddingTop: 16 }}>
+          <div style={{ borderTop: "1px dashed #DED7C4", paddingTop: 16 }}>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: C.textFaint, fontFamily: MONO_FONT, marginBottom: 4 }}>Il tuo tempo</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
               <div style={{ fontFamily: MONO_FONT, fontSize: 30, fontWeight: 800 }}>{Math.round(oreReali)}h</div>
@@ -5176,135 +4961,26 @@ function SimulatoreScreen({ hourly }) {
 
 function UserPickerScreen({ onSelect }) {
   const [name, setName] = useState("");
-  const [knownUsers, setKnownUsers] = useState([]); // [{ name, pin_hash }]
+  const [knownUsers, setKnownUsers] = useState([]);
   const [loading, setLoading] = useState(supabaseConfigured);
-  const [step, setStep] = useState("pick"); // pick | verify | setpin
-  const [targetName, setTargetName] = useState("");
-  const [pinMode, setPinMode] = useState("create"); // create | migrate — solo per step "setpin"
-  const [pin, setPin] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
-  const [pinError, setPinError] = useState("");
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!supabaseConfigured) return;
     supabase
       .from("orelibere_users")
-      .select("name, pin_hash")
+      .select("name")
       .order("updated_at", { ascending: false })
       .then(({ data, error }) => {
-        if (!error && data) setKnownUsers(data);
+        if (!error && data) setKnownUsers(data.map((r) => r.name));
         setLoading(false);
       });
   }, []);
 
-  const resetPinFlow = () => {
-    setStep("pick"); setTargetName(""); setPin(""); setPinConfirm(""); setPinError(""); setSaving(false);
-  };
-
-  const pickExisting = (chosenName) => {
-    const found = knownUsers.find((u) => u.name === chosenName);
-    setTargetName(chosenName);
-    setPin(""); setPinError("");
-    if (!supabaseConfigured || !found || !found.pin_hash) {
-      // Utente "vecchio" senza PIN ancora impostato (o salvataggio online non collegato): glielo facciamo creare ora.
-      setPinMode("migrate");
-      setStep("setpin");
-    } else {
-      setStep("verify");
-    }
-  };
-
-  const pickNew = () => {
-    const trimmed = name.trim();
+  const confirm = (chosenName) => {
+    const trimmed = chosenName.trim();
     if (!trimmed) return;
-    setTargetName(trimmed);
-    setPin(""); setPinConfirm(""); setPinError("");
-    setPinMode("create");
-    setStep("setpin");
+    onSelect(trimmed);
   };
-
-  const verifyPin = async () => {
-    if (pin.length !== 4) return;
-    const found = knownUsers.find((u) => u.name === targetName);
-    const h = await hashPin(pin);
-    if (found && h === found.pin_hash) {
-      onSelect(targetName);
-    } else {
-      setPinError("PIN sbagliato, riprova");
-      setPin("");
-    }
-  };
-
-  const savePin = async () => {
-    if (pin.length !== 4) return;
-    if (pin !== pinConfirm) { setPinError("I due PIN non coincidono"); setPinConfirm(""); return; }
-    setSaving(true);
-    const h = await hashPin(pin);
-    if (supabaseConfigured) {
-      const { error } = await supabase.from("orelibere_users").upsert({ name: targetName, pin_hash: h }, { onConflict: "name" });
-      if (error) { setPinError("Errore salvataggio: " + error.message); setSaving(false); return; }
-    }
-    onSelect(targetName);
-  };
-
-  if (step === "verify") {
-    return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
-        <button onClick={resetPinFlow} style={{ alignSelf: "flex-start", background: "none", border: "none", color: C.textDim, fontSize: 13, marginBottom: 20, cursor: "pointer" }}>← indietro</button>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, color: C.paper, marginBottom: 6 }}>Ciao {targetName}</div>
-          <div style={{ fontSize: 13, color: C.textDim }}>Inserisci il tuo PIN per continuare</div>
-        </div>
-        <PinInput value={pin} onChange={(v) => { setPin(v); setPinError(""); }} autoFocus />
-        {pinError && <div style={{ color: C.rust, fontSize: 12, textAlign: "center", marginTop: 10 }}>{pinError}</div>}
-        <button
-          onClick={verifyPin}
-          disabled={pin.length !== 4}
-          style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: pin.length === 4 ? C.brass : C.panelBorder, color: pin.length === 4 ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: pin.length === 4 ? "pointer" : "default" }}
-        >
-          Entra
-        </button>
-      </div>
-    );
-  }
-
-  if (step === "setpin") {
-    const ready = pin.length === 4 && pinConfirm.length === 4;
-    return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
-        {pinMode === "create" && (
-          <button onClick={resetPinFlow} style={{ alignSelf: "flex-start", background: "none", border: "none", color: C.textDim, fontSize: 13, marginBottom: 20, cursor: "pointer" }}>← indietro</button>
-        )}
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, color: C.paper, marginBottom: 6 }}>
-            {pinMode === "migrate" ? `Ciao ${targetName}, imposta un PIN` : "Scegli un PIN"}
-          </div>
-          <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5 }}>
-            {pinMode === "migrate"
-              ? "Non ne avevi ancora uno: da ora servirà per proteggere i tuoi dati."
-              : "4 cifre, ti serviranno per ritrovare i tuoi dati."}
-          </div>
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>PIN</div>
-          <PinInput value={pin} onChange={(v) => { setPin(v); setPinError(""); }} autoFocus />
-        </div>
-        <div>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Ripeti il PIN</div>
-          <PinInput value={pinConfirm} onChange={(v) => { setPinConfirm(v); setPinError(""); }} />
-        </div>
-        {pinError && <div style={{ color: C.rust, fontSize: 12, textAlign: "center", marginTop: 10 }}>{pinError}</div>}
-        <button
-          onClick={savePin}
-          disabled={!ready || saving}
-          style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: ready ? C.brass : C.panelBorder, color: ready ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: ready ? "pointer" : "default" }}
-        >
-          {saving ? "Salvo..." : "Conferma PIN"}
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: 32 }}>
@@ -5332,11 +5008,11 @@ function UserPickerScreen({ onSelect }) {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 20 }}>
               {knownUsers.map((u) => (
                 <button
-                  key={u.name}
-                  onClick={() => pickExisting(u.name)}
+                  key={u}
+                  onClick={() => confirm(u)}
                   style={{ padding: "10px 18px", borderRadius: 999, border: `1px solid ${C.panelBorder}`, backgroundColor: C.panel, color: C.paper, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
                 >
-                  {u.name}
+                  {u}
                 </button>
               ))}
             </div>
@@ -5347,12 +5023,12 @@ function UserPickerScreen({ onSelect }) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && pickNew()}
+              onKeyDown={(e) => e.key === "Enter" && confirm(name)}
               placeholder="Scrivi il tuo nome"
               style={{ flex: 1, backgroundColor: C.inputBg, color: C.paper, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", fontSize: 15, outline: "none" }}
             />
             <button
-              onClick={pickNew}
+              onClick={() => confirm(name)}
               disabled={!name.trim()}
               style={{ padding: "12px 16px", borderRadius: 8, border: "none", backgroundColor: name.trim() ? C.brass : C.panelBorder, color: C.ink, fontWeight: 700, cursor: name.trim() ? "pointer" : "default" }}
             >
@@ -5383,15 +5059,11 @@ function MainApp({ currentUser, onChangeUser }) {
     fatture: [], // fatture/pagamenti in attesa, collegate a giorni di lavoro: arancio finché non pagate, verde dopo
     tierOverride: null, // "free"|"premium"|"elite"|null — cambio fascia per i tester, sovrascrive TIER solo per questo utente
     regimeFiscale: {}, // parametri fiscali (forfettario/ordinario) per stimare il netto
-    theme: "light", // "light" | "dark"
   });
 
   // Aggiorna la fascia attiva per QUESTO render — deve succedere prima che qualsiasi
   // componente figlio chiami hasTier(), altrimenti vedrebbero il valore vecchio.
   ACTIVE_TIER = data.tierOverride || TIER;
-  // Stessa logica per il tema: aggiorna i colori di C PRIMA che qualsiasi componente
-  // figlio venga renderizzato in questo giro, altrimenti vedrebbero ancora i colori vecchi.
-  applyTheme(data.theme || "light");
 
   const [cloudLoaded, setCloudLoaded] = useState(!supabaseConfigured);
   const [syncError, setSyncError] = useState(null);
@@ -5447,7 +5119,12 @@ function MainApp({ currentUser, onChangeUser }) {
     return () => clearTimeout(saveTimer.current);
   }, [data, entries, txFeed, onboarded, cloudLoaded, currentUser]);
 
-  const { frameStyle, outerStyle } = useShellStyles();
+  const frameStyle = {
+    position: "relative", width: 380, height: 780, background: `radial-gradient(circle at 50% 0%, #FFFFFF 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
+    borderRadius: 36, overflow: "hidden", border: `4px solid ${C.panelBorder}`,
+    boxShadow: "0 25px 60px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column",
+  };
+  const outerStyle = { minHeight: "100vh", backgroundColor: C.outerBg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, colorScheme: "light" };
   const tutorialSteps = buildTutorialSteps(data.redditoTipo === "variabile");
 
   const finishOnboarding = () => {
@@ -5543,7 +5220,7 @@ function MainApp({ currentUser, onChangeUser }) {
     setData((d) => ({ ...d, carryOver: amount }));
   };
 
-  const { pool: closurePool } = computeClosurePool(profile, hourlyRate);
+  const { pool: closurePool } = computeClosurePool(profile, hourlyRate, entries);
 
   const connectedAccounts = data.connectedAccounts || {};
   const hasAnyAccountConnected = !KICKSTARTER_BUILD && Object.values(connectedAccounts).some(Boolean);
@@ -5576,7 +5253,7 @@ function MainApp({ currentUser, onChangeUser }) {
           {tab === "diario" && (
             <DiarioScreen
               profile={profile}
-              todayEntries={entries}
+              todayEntries={entries.filter((e) => e.dateKey === todayKey())}
               onOpenAdd={() => setAddOpen(true)}
               onOpenSettings={() => setTab("settings")}
               onOpenReport={() => setTab("report")}
@@ -5636,8 +5313,8 @@ function MainApp({ currentUser, onChangeUser }) {
               onUnlocked={() => setTab("transactions")}
             />
           )}
-          {tab === "report" && <ReportScreen hourly={hourlyRate} profile={profile} onBack={() => setTab("diario")} onOpenClosure={() => setTab("closure")} />}
-          {tab === "closure" && <ClosureScreen hourly={hourlyRate} profile={profile} onBack={() => setTab("report")} onAllocate={addToGoalSaved} onCarryOver={setCarryOver} />}
+          {tab === "report" && <ReportScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("diario")} onOpenClosure={() => setTab("closure")} />}
+          {tab === "closure" && <ClosureScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("report")} onAllocate={addToGoalSaved} onCarryOver={setCarryOver} />}
           {tab === "goal" && <GoalScreen profile={profile} hourly={hourlyRate} onAddGoal={addGoal} />}
           {tab === "settings" && <SettingsScreen data={data} setData={setData} onBack={() => setTab("diario")} onFullOnboarding={() => { setStep(0); setOnboarded(false); }} onOpenTransactions={() => setTab("transactions")} onChangeUser={onChangeUser} onOpenRegime={() => setTab("regime")} onOpenImport={() => setTab("importcsv")} onOpenImportPDF={() => setTab("importpdf")} onOpenGuida={() => setTab("guida")} onOpenLocked={(key) => setTab("locked-" + key)} />}
           {tab === "locked-conti" && (
@@ -5844,30 +5521,6 @@ function AppInner() {
     }
   });
 
-  // Chi torna con il nome già ricordato su questo dispositivo salta la schermata "Chi sei?"
-  // (e quindi anche la verifica del PIN lì presente): controlliamo qui, una volta sola per
-  // sessione, se quel nome ha già un PIN salvato lato server — altrimenti lo facciamo creare
-  // ora, prima di entrare, così anche gli utenti "vecchi" vengono migrati automaticamente.
-  const [pinChecked, setPinChecked] = useState(!supabaseConfigured);
-  const [needsPinSetup, setNeedsPinSetup] = useState(false);
-
-  useEffect(() => {
-    if (!currentUser || !supabaseConfigured) { setPinChecked(true); return; }
-    setPinChecked(false);
-    let cancelled = false;
-    supabase
-      .from("orelibere_users")
-      .select("pin_hash")
-      .eq("name", currentUser)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setNeedsPinSetup(!error && (!data || !data.pin_hash));
-        setPinChecked(true);
-      });
-    return () => { cancelled = true; };
-  }, [currentUser]);
-
   const handleSelectUser = (name) => {
     try {
       localStorage.setItem("orelibere_user", name);
@@ -5887,35 +5540,18 @@ function AppInner() {
     setCurrentUser(null);
   };
 
-  const { frameStyle, outerStyle } = useShellStyles();
+  const outerStyle = { minHeight: "100vh", backgroundColor: C.outerBg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, colorScheme: "light" };
+  const frameStyle = {
+    position: "relative", width: 380, height: 780, background: `radial-gradient(circle at 50% 0%, #FFFFFF 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
+    borderRadius: 36, overflow: "hidden", border: `4px solid ${C.panelBorder}`,
+    boxShadow: "0 25px 60px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column",
+  };
 
   if (!currentUser) {
     return (
       <div style={outerStyle}>
         <div style={frameStyle}>
           <UserPickerScreen onSelect={handleSelectUser} />
-        </div>
-      </div>
-    );
-  }
-
-  if (!pinChecked) {
-    return (
-      <div style={outerStyle}>
-        <div style={frameStyle}>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: C.textFaint, fontSize: 13 }}>Carico...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (needsPinSetup) {
-    return (
-      <div style={outerStyle}>
-        <div style={frameStyle}>
-          <PinMigratePrompt name={currentUser} onDone={() => setNeedsPinSetup(false)} />
         </div>
       </div>
     );
