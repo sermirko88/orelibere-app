@@ -39,7 +39,8 @@ const LIGHT_THEME = {
   brassText: "#C9401B",   // stesso arancio ma leggibile quando è testo o icona su fondo chiaro
   brassDim: "#E5522F",
   paper: "#171717",
-  ink: "#171717",
+  ink: "#171717",       // testo sopra i pulsanti arancioni: scuro in entrambi i temi
+  ticketInk: "#171717", // testo dentro le card "biglietto": segue il tema
   rust: "#C93E22",
   green: "#7CB342",       // riempimenti (barre, pallini)
   greenText: "#4F7D24",   // testo/icone verdi: la versione chiara spariva sul fondo crema
@@ -65,6 +66,7 @@ const DARK_THEME = {
   brassDim: "#E5522F",
   paper: "#F2EEE3",
   ink: "#171717",
+  ticketInk: "#F2EEE3",
   rust: "#FF6B52",
   green: "#8FCB55",
   greenText: "#A2D96E",
@@ -782,7 +784,7 @@ function PunchTicket({ children, style = {}, id, ...rest }) {
       id={id}
       style={{
         backgroundColor: C.ticket,
-        color: C.ink,
+        color: C.ticketInk,
         ...style,
       }}
       {...rest}
@@ -902,8 +904,8 @@ function TimeCompareBox({ label, hours, color, delay }) {
           transition: "background-color 0.15s ease, border-color 0.15s ease",
         }}
       >
-        <span style={{ fontSize: 12, fontFamily: SANS_FONT, letterSpacing: "0.02em", color: C.ink }}>{label}</span>
-        <span style={{ fontFamily: SERIF_FONT, fontSize: 17, fontWeight: 700, color: C.ink }}>{hours}</span>
+        <span style={{ fontSize: 12, fontFamily: SANS_FONT, letterSpacing: "0.02em", color: C.ticketInk }}>{label}</span>
+        <span style={{ fontFamily: SERIF_FONT, fontSize: 17, fontWeight: 700, color: C.ticketInk }}>{hours}</span>
       </div>
     </>
   );
@@ -934,7 +936,7 @@ function WelcomeScreen({ onStart }) {
         </p>
 
         <PunchTicket style={{ borderRadius: 10, padding: 18, marginBottom: 20, border: `1px solid ${C.panelBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <div style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, color: C.ink, marginBottom: 16, letterSpacing: "-0.01em" }}>100€</div>
+          <div style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, color: C.ticketInk, marginBottom: 16, letterSpacing: "-0.01em" }}>100€</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <TimeCompareBox label="Per te" hours="2h" color={C.greenText} delay={80} />
             <TimeCompareBox label="Per un altro" hours="8h" color={C.rust} delay={220} />
@@ -1567,7 +1569,7 @@ function SpendingBar({ fixedHours, extraHours, capHours, hourly }) {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFaint, marginBottom: 4 }}>Ore spese oggi</span>
-          <span style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em", color: over ? C.rust : C.ink }}>{spentHours.toFixed(1)}h</span>
+          <span style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em", color: over ? C.rust : C.ticketInk }}>{spentHours.toFixed(1)}h</span>
           {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(spentHours * hourly).toFixed(0)}€</span> : null}
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
@@ -3570,7 +3572,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
             {redditoTipo === "variabile" && (
               <div>
                 <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, color: C.textDim, letterSpacing: "0.1em", marginBottom: 2 }}>Ore lavorate</div>
-                <div style={{ fontFamily: SERIF_FONT, fontSize: 22, fontWeight: 700, color: C.ink }}>{monthOre.toFixed(1)}h</div>
+                <div style={{ fontFamily: SERIF_FONT, fontSize: 22, fontWeight: 700, color: C.ticketInk }}>{monthOre.toFixed(1)}h</div>
               </div>
             )}
             <div>
@@ -4357,20 +4359,20 @@ function RegimeFiscaleScreen({ data, setData, onBack }) {
             <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textDim, marginBottom: 10 }}>Il tuo netto stimato</div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12.5 }}>
               <span style={{ color: C.textDim }}>Contributi INPS</span>
-              <span style={{ fontFamily: MONO_FONT, color: C.ink }}>-{contributiINPS.toFixed(0)}€</span>
+              <span style={{ fontFamily: MONO_FONT, color: C.ticketInk }}>-{contributiINPS.toFixed(0)}€</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12.5 }}>
               <span style={{ color: C.textDim }}>Imposte</span>
-              <span style={{ fontFamily: MONO_FONT, color: C.ink }}>-{imposta.toFixed(0)}€</span>
+              <span style={{ fontFamily: MONO_FONT, color: C.ticketInk }}>-{imposta.toFixed(0)}€</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14, fontSize: 12.5 }}>
               <span style={{ color: C.textDim }}>Commercialista</span>
-              <span style={{ fontFamily: MONO_FONT, color: C.ink }}>-{commercialista.toFixed(0)}€</span>
+              <span style={{ fontFamily: MONO_FONT, color: C.ticketInk }}>-{commercialista.toFixed(0)}€</span>
             </div>
             <div style={{ borderTop: "1px dashed #D9BE93", paddingTop: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>Netto annuo</span>
-                <span style={{ fontFamily: SERIF_FONT, fontSize: 26, fontWeight: 700, color: C.ink }}>{nettoAnnuo.toFixed(0)}€</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.ticketInk }}>Netto annuo</span>
+                <span style={{ fontFamily: SERIF_FONT, fontSize: 26, fontWeight: 700, color: C.ticketInk }}>{nettoAnnuo.toFixed(0)}€</span>
               </div>
               <div style={{ fontSize: 13.5, color: C.textDim, marginTop: 2 }}>≈ {nettoMensile.toFixed(0)}€/mese</div>
               {tariffaOrariaNetta ? (
