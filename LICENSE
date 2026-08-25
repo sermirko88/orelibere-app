@@ -1,0 +1,49 @@
+Copyright (c) 2026 Mirko Serino. Tutti i diritti riservati.
+All rights reserved.
+
+OreLibere — applicazione di finanza personale.
+
+
+CONDIZIONI D'USO
+
+Questo software e il codice sorgente in esso contenuto sono opera protetta dal
+diritto d'autore ai sensi della Legge 22 aprile 1941 n. 633 e successive
+modifiche, nonché dalle convenzioni internazionali in materia.
+
+Nessuna licenza, espressa o implicita, viene concessa. In particolare, salvo
+esplicita autorizzazione scritta del titolare dei diritti, non è consentito:
+
+  - copiare, riprodurre o distribuire il codice sorgente, in tutto o in parte;
+  - modificare il codice o creare opere derivate;
+  - decompilare, disassemblare o effettuare reverse engineering
+    dell'applicazione compilata;
+  - utilizzare il codice, o parti di esso, in altri progetti, siano essi
+    commerciali o non commerciali;
+  - riutilizzare il nome "OreLibere", il logo o gli altri segni distintivi
+    dell'applicazione.
+
+La consultazione del codice, ove resa possibile, non implica alcuna concessione
+di diritti d'uso.
+
+
+COMPONENTI DI TERZE PARTI
+
+L'applicazione utilizza librerie open source (fra cui React, Vite, Supabase JS,
+lucide-react, Tone.js, Capacitor), ciascuna distribuita secondo la propria
+licenza. Le presenti condizioni si applicano esclusivamente al codice originale
+di OreLibere e non alle librerie di terze parti, che restano soggette ai
+rispettivi termini.
+
+
+ESCLUSIONE DI GARANZIA
+
+Il software è fornito "così com'è", senza garanzie di alcun tipo. OreLibere
+fornisce stime e strumenti di orientamento: non costituisce consulenza
+finanziaria, fiscale o legale. I calcoli relativi a regimi fiscali, imposte e
+contributi sono approssimazioni a scopo indicativo e non sostituiscono il
+parere di un commercialista.
+
+
+CONTATTI
+
+Per richieste di licenza o autorizzazioni: mirko.ser@proton.me
