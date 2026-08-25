@@ -354,6 +354,26 @@ function euroToTime(euro, hourlyRate) {
   return `${h}h ${m}min`;
 }
 
+// Accanto al numero preciso serve un metro umano: "9h 46min" è esatto ma astratto,
+// "più di una giornata di lavoro" è la frase che ti fa fermare un attimo.
+function scalaUmana(euro, hourlyRate, oreGiorno = 8) {
+  if (!hourlyRate || hourlyRate <= 0 || !euro) return "";
+  const ore = euro / hourlyRate;
+  const g = oreGiorno > 0 ? oreGiorno : 8;
+  if (ore < 0.5) return "poco più di una pausa";
+  if (ore < 1.5) return "circa un'ora di lavoro";
+  if (ore < g * 0.5) return "una mattinata di lavoro";
+  if (ore < g * 0.95) return "quasi una giornata di lavoro";
+  if (ore < g * 1.5) return "una giornata di lavoro";
+  const giorni = ore / g;
+  if (giorni < 5) return `${giorni.toFixed(giorni < 3 ? 1 : 0)} giornate di lavoro`.replace(".0", "");
+  const settimane = giorni / 5;
+  if (settimane < 1.5) return "una settimana di lavoro";
+  if (settimane < 4.5) return `${Math.round(settimane)} settimane di lavoro`;
+  const mesi = giorni / 22;
+  return `circa ${Math.round(mesi)} mesi di lavoro`;
+}
+
 // Il PIN non viene mai salvato in chiaro: lo trasformiamo in un hash (SHA-256, incluso
 // nel browser) e confrontiamo gli hash. Protezione di base, non equivalente a un vero
 // login — ma sufficiente per la fase di test, evitando di intercettare i dati altrui
@@ -1683,7 +1703,7 @@ function SpendingBar({ fixedHours, extraHours, capHours, hourly }) {
           {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(spentHours * hourly).toFixed(0)}€</span> : null}
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-          <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFaint, marginBottom: 4 }}>Ore disponibili</span>
+          <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFaint, marginBottom: 4 }}>Ore che ti restano</span>
           <span style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em", color: C.greenText }}>{remainingHours.toFixed(1)}h</span>
           {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(remainingHours * hourly).toFixed(0)}€</span> : null}
         </div>
@@ -1960,13 +1980,14 @@ function TransactionsScreen({ hourly, connectedAccounts, feed, setFeed, onBack, 
 // passi su Calendario, Progetti e Regime fiscale, che chi ha stipendio fisso non ha.
 function buildTutorialSteps(isVariabile) {
   const steps = [
-    { tab: "diario", targetId: "tut-gauge", radius: 12, text: "Qui in alto vedi subito quante ore hai già \"speso\" oggi: viola per le spese fisse, arancio/rosso per quelle extra." },
+    { tab: "converti", targetId: null, text: "Questa è la cosa che l'app fa meglio: scrivi un prezzo e ti dice quante ore devi lavorare per permettertelo. Usala prima di comprare, quando sei ancora in tempo a cambiare idea." },
+    { tab: "diario", targetId: "tut-gauge", radius: 12, text: "Qui invece tieni il conto di quello che hai già speso oggi: viola per le spese fisse, arancio/rosso per quelle extra." },
     { tab: "diario", targetId: "tut-add", radius: 999, text: "Tocca qui per registrare una spesa: scegli la categoria, conferma l'importo, fatto in pochi secondi." },
     {
       tab: "diario", targetId: "tut-tabbar", radius: 12,
       text: hasTier("premium")
-        ? "Da questa barra passi tra le sezioni dell'app. Diario, Calendario, Simulatore e Budget ci sono sempre; le altre due compaiono quando servono."
-        : "Da questa barra passi tra le sezioni dell'app: Diario, Simulatore e Budget. Con Premium si aggiungono anche Calendario e Chiusura.",
+        ? "Da questa barra passi tra le sezioni dell'app. Converti, Diario, Calendario, Confronta e Budget ci sono sempre; le altre compaiono quando servono."
+        : "Da questa barra passi tra le sezioni dell'app: Converti, Diario, Confronta e Budget. Con Premium si aggiungono anche Calendario e Chiusura.",
     },
   ];
 
@@ -2197,7 +2218,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
 
       <div style={{ padding: "0 20px", marginBottom: 14, display: "flex", justifyContent: "center" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "6px 8px 6px 14px" }}>
-          <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em" }}>La tua ora di lavoro vale</span>
+          <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em" }}>Un'ora del tuo lavoro vale</span>
           <span style={{ fontFamily: MONO_FONT, fontSize: 13, fontWeight: 800, color: C.brassText }}>{hourly.toFixed(2)}€/h</span>
           {rateSource && (
             <span style={{ fontSize: 11, fontFamily: MONO_FONT, color: rateSource === "reale" ? C.greenText : C.textFainter, border: `1px solid ${rateSource === "reale" ? C.green : C.panelBorder}`, borderRadius: 999, padding: "1px 6px" }}>
@@ -2225,7 +2246,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
             {!over && (
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: C.green, display: "inline-block" }} />
-                <span style={{ fontSize: 13, color: C.textFaint }}>Disponibili {remaining.toFixed(1)}h</span>
+                <span style={{ fontSize: 13, color: C.textFaint }}>Ti restano {remaining.toFixed(1)}h</span>
               </div>
             )}
           </div>
@@ -2260,7 +2281,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
               <div style={{ height: "100%", backgroundColor: C.brass, width: `${goalPct || 0}%` }} />
             </div>
             <div style={{ fontSize: 12.5, color: C.brassText, fontFamily: MONO_FONT, marginBottom: 6 }}>
-              → ancora {euroToTime(Math.max(primaryGoal.importo - primaryGoal.saved, 0), hourly)} di lavoro
+              ti mancano {euroToTime(Math.max(primaryGoal.importo - primaryGoal.saved, 0), hourly)} di lavoro
             </div>
             <div style={{ fontSize: 13, color: C.textDim, fontWeight: 600 }}>vai a tutti i budget →</div>
           </button>
@@ -2289,7 +2310,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
       </div>
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 8 }}>Timbrature di oggi</div>
+        <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 8 }}>Oggi hai speso</div>
         {todayEntries.length === 0 ? (
           <div style={{ color: C.textFaint, fontSize: 13, fontStyle: "italic", padding: "16px 0", textAlign: "center", border: `1px dashed ${C.panelBorder}`, borderRadius: 4 }}>Nessuna spesa registrata oggi</div>
         ) : (
@@ -2808,7 +2829,7 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
         {!confirmed ? (
           <>
             <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}`, marginBottom: 14 }}>
-              <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Disponibile da distribuire</div>
+              <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Ti è avanzato</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                 <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{pool}€</div>
                 <div style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.textFaint }}>{euroToTime(pool, hourly)}</div>
@@ -4334,18 +4355,24 @@ function GuidaScreen({ onBack, redditoTipo }) {
       esempio: "L'app converte ogni spesa in ore di lavoro invece che in euro. Se guadagni 12€ all'ora, un gelato da 4€ diventa \"20 minuti\": è il tempo che hai lavorato per pagartelo. Ogni numero che vedi nell'app parte da questo conto.",
     },
     {
+      id: "converti",
+      titolo: "Converti — quanto costa in ore",
+      minTier: "free",
+      esempio: "È la prima schermata, e serve prima di comprare, non dopo. Scrivi quanto guadagni (all'ora o al mese) e quanto costa la cosa che stai guardando: l'app ti dice quante ore devi lavorare per permettertela. Un telefono da 800€ con 12€ l'ora sono 66 ore, cioè più di una settimana di lavoro. Poi decidi tu: \"Lascio perdere\" azzera e basta, \"Lo prendo\" la segna tra le spese di oggi. Non serve aver inserito nient'altro per usarla.",
+    },
+    {
       id: "diario",
       titolo: "Diario — registrare una spesa",
       minTier: "free",
-      esempio: "Serve per segnare cosa spendi ogni giorno. Tocca il bottone rosso con il \"+\" in basso, scegli una categoria (Bar, Spesa, Bollette...), scrivi l'importo e conferma. L'app calcola subito quante ore ti è costata e la trovi nella lista \"Timbrature di oggi\". Se ti sei dimenticato di segnare qualcosa, tocca \"cambia giorno\" nella stessa schermata e scegli il giorno giusto fino a due settimane indietro: la spesa non conta nelle ore di oggi, ma entra nella chiusura del periodo. Per una spesa che deve ancora arrivare (il bollo, una multa) usa invece il Calendario: lì resta una previsione finché non succede davvero.",
+      esempio: "Serve per segnare cosa spendi ogni giorno. Tocca il bottone rosso con il \"+\" in basso, scegli una categoria (Bar, Spesa, Bollette...), scrivi l'importo e conferma. L'app calcola subito quante ore ti è costata e la trovi nella lista \"Oggi hai speso\". Se ti sei dimenticato di segnare qualcosa, tocca \"cambia giorno\" nella stessa schermata e scegli il giorno giusto fino a due settimane indietro: la spesa non conta nelle ore di oggi, ma entra nella chiusura del periodo. Per una spesa che deve ancora arrivare (il bollo, una multa) usa invece il Calendario: lì resta una previsione finché non succede davvero.",
     },
     {
       id: "simulatore",
       titolo: "Simulatore — prima di un acquisto",
       minTier: "free",
       esempio: hasTier("premium")
-        ? "Serve per capire quanto ti costa davvero, in ore, comprare qualcosa prima di farlo. Scrivi il prezzo, scegli come lo pagheresti (subito, a rate PayPal, o a rate con finanziamento), e l'app confronta le ore di lavoro che ti costa ogni opzione — utile soprattutto per capire quanto ti costano gli interessi."
-        : "Serve per capire quanto ti costa davvero, in ore, comprare qualcosa prima di farlo. Scrivi il prezzo e confronta pagamento subito o a rate PayPal senza interessi. Con Premium si aggiunge anche il confronto con i finanziamenti a rate, per vedere quanto ti costano gli interessi in ore.",
+        ? "Il Convertitore ti dice quanto costa una cosa in ore. Questa schermata ti dice quanto cambia a seconda di come la paghi. Scrivi il prezzo e confronta: subito, a tre rate PayPal, o con un finanziamento. Si parte sempre da \"Cash subito\", che è il termine di paragone. Serve soprattutto a vedere gli interessi per quello che sono: non una percentuale, ma giornate intere di lavoro in più."
+        : "Il Convertitore ti dice quanto costa una cosa in ore. Questa schermata ti dice quanto cambia a seconda di come la paghi: subito, o a tre rate PayPal senza interessi. Con Premium si aggiunge il confronto con i finanziamenti, per vedere gli interessi non come percentuale ma come giornate di lavoro in più.",
     },
     {
       id: "budget",
@@ -4394,7 +4421,7 @@ function GuidaScreen({ onBack, redditoTipo }) {
     id: "backup",
     titolo: "Copia di sicurezza",
     minTier: "free",
-    esempio: "Il tuo profilo è salvato online, ma è legato a questo dispositivo: l'app ti riconosce grazie a un'impronta che il browser tiene da parte. Se svuoti i dati di Chrome, cambi telefono o reinstalli l'app, quell'impronta sparisce e il profilo non è più recuperabile — nemmeno da chi ha fatto l'app. Per questo in Impostazioni trovi \"Scarica una copia del profilo\": ti salva un file con dentro tutto (reddito, spese fisse, obiettivi, spese registrate, calendario). Tienilo dove tieni le altre cose importanti. Se un giorno ti ritrovi con l'app vuota, da Impostazioni scegli \"Ripristina da un backup\", selezioni quel file e torna tutto com'era. Attenzione: il ripristino sostituisce quello che c'è, quindi fallo su un profilo nuovo o quando sei sicuro. Consiglio: scaricane uno appena hai finito di inserire le spese fisse, che è la parte più noiosa da rifare.",
+    esempio: "Il tuo profilo è salvato online, ma è legato a questo dispositivo: l'app ti riconosce grazie a un'impronta che il browser tiene da parte. Se svuoti i dati di Chrome, cambi telefono o reinstalli l'app, quell'impronta sparisce e il profilo non è più recuperabile — nemmeno da chi ha fatto l'app. Per questo in Impostazioni trovi \"Salva una copia\": ti salva un file con dentro tutto (reddito, spese fisse, obiettivi, spese registrate, calendario). Tienilo dove tieni le altre cose importanti. Se un giorno ti ritrovi con l'app vuota, da Impostazioni scegli \"Ripristina da un backup\", selezioni quel file e torna tutto com'era. Attenzione: il ripristino sostituisce quello che c'è, quindi fallo su un profilo nuovo o quando sei sicuro. Consiglio: scaricane uno appena hai finito di inserire le spese fisse, che è la parte più noiosa da rifare.",
   });
 
   return (
@@ -4885,7 +4912,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
             cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8,
           }}
         >
-          <ArrowRight size={15} color={C.brassText} style={{ transform: "rotate(90deg)" }} /> Scarica una copia del profilo
+          <ArrowRight size={15} color={C.brassText} style={{ transform: "rotate(90deg)" }} /> Salva una copia
         </button>
 
         <input
@@ -5243,7 +5270,7 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
                   <div style={{ height: "100%", backgroundColor: C.brass, width: `${pct}%` }} />
                 </div>
                 <div style={{ fontSize: 13, color: C.brassText, fontFamily: MONO_FONT }}>
-                  → ancora {euroToTime(Math.max(g.importo - g.saved, 0), hourly)} di lavoro
+                  ti mancano {euroToTime(Math.max(g.importo - g.saved, 0), hourly)} di lavoro
                 </div>
               </button>
             );
@@ -5382,7 +5409,7 @@ function GoalScreen({ profile, hourly, onAddGoal }) {
 }
 
 function SimulatoreScreen({ hourly }) {
-  const [modo, setModo] = useState(hasTier("premium") ? "finanziato" : "cash"); // finanziato | cash | paypal3
+  const [modo, setModo] = useState("cash"); // cash | paypal3 | finanziato — si parte sempre dal pagamento immediato
   const [prezzo, setPrezzo] = useState(1000);
   const [rata, setRata] = useState(95);
   const [numRate, setNumRate] = useState(14);
@@ -5860,14 +5887,15 @@ function UserPickerScreen({ onSelect }) {
   );
 }
 
-function MainApp({ currentUser, onChangeUser }) {
+function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
   const [onboarded, setOnboarded] = useState(false);
   const [welcomeDone, setWelcomeDone] = useState(false);
   const [tutorialDone, setTutorialDone] = useState(true); // true di default: chi torna con onboarding già fatto non deve rivederlo
   const [tutorialStep, setTutorialStep] = useState(0);
   const [step, setStep] = useState(0);
   const [data, setData] = useState({
-    stipendio: "", oreSettimana: "40",
+    // Se ha già scritto quanto guadagna nel convertitore, non glielo si richiede da capo
+    stipendio: rateIniziale > 0 ? String(Math.round(rateIniziale * 4.33 * 40)) : "", oreSettimana: "40",
     fixedList: [], // niente preset: ogni tester parte da zero e inserisce le proprie spese fisse
     goals: [], // nessun obiettivo demo: si imposta nel Passo 3 dell'onboarding
     closurePeriod: "settimana", // giorno | settimana | mese
@@ -5893,7 +5921,7 @@ function MainApp({ currentUser, onChangeUser }) {
   const saveTimer = useRef(null);
   const frameRef = useRef(null); // per misurare la posizione reale dei pulsanti nel tutorial
 
-  const [tab, setTab] = useState("diario");
+  const [tab, setTab] = useState("converti");
   const [addOpen, setAddOpen] = useState(false);
   const [bankTx, setBankTx] = useState(null); // transazione simulata in attesa
   const [categorizeOpen, setCategorizeOpen] = useState(false);
@@ -6085,6 +6113,16 @@ function MainApp({ currentUser, onChangeUser }) {
           </span>
         </div>
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+          {tab === "converti" && (
+            <ConvertitoreScreen
+              hourly={hourlyRate}
+              showEntra={false}
+              onAggiungiSpesa={(euro) => {
+                addEntry({ id: Date.now() + Math.random(), cat: "Altro", iconId: "altro", euro, time: "adesso" });
+                setTab("diario");
+              }}
+            />
+          )}
           {tab === "diario" && (
             <DiarioScreen
               profile={profile}
@@ -6262,6 +6300,10 @@ function MainApp({ currentUser, onChangeUser }) {
         </div>
         {(tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
           <div id="tut-tabbar" style={{ flexShrink: 0, borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 6px" }}>
+            <button onClick={() => setTab("converti")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <Calculator size={20} color={tab === "converti" ? C.brassText : C.textFaint} />
+              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "converti" ? C.brassText : C.textFaint }}>Converti</span>
+            </button>
             <button onClick={() => setTab("diario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <Home size={20} color={tab === "diario" ? C.brassText : C.textFaint} />
               <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "diario" ? C.brassText : C.textFaint }}>Diario</span>
@@ -6281,8 +6323,8 @@ function MainApp({ currentUser, onChangeUser }) {
               </button>
             )}
             <button id="tut-tab-sim" onClick={() => setTab("sim")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <Calculator size={20} color={tab === "sim" ? C.brassText : C.textFaint} />
-              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "sim" ? C.brassText : C.textFaint }}>Simula</span>
+              <CreditCard size={20} color={tab === "sim" ? C.brassText : C.textFaint} />
+              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "sim" ? C.brassText : C.textFaint }}>Confronta</span>
             </button>
             <button id="tut-tab-goal" onClick={() => setTab("goal")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <PiggyBank size={20} color={tab === "goal" ? C.brassText : C.textFaint} />
@@ -6371,6 +6413,171 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// ---- Convertitore euro → ore ----
+// È il gesto che distingue OreLibere da un'app di spese: sei davanti a una cosa che
+// vorresti, digiti il prezzo, e vedi quanto devi lavorare per permettertela — PRIMA
+// di comprarla. Per questo è la prima cosa che si vede, e per questo chiede soltanto
+// la tariffa oraria: tutto il resto (spese fisse, obiettivi) serve al Diario, non a
+// questo conto, e chiederlo qui vorrebbe dire mettere sei schermate prima del primo
+// momento in cui l'app dimostra di servire a qualcosa.
+function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, showEntra = true }) {
+  const [modo, setModo] = useState("ora"); // ora | mese — due modi di dichiarare quanto si guadagna
+  const [oraStr, setOraStr] = useState(hourly > 0 ? String(Number(hourly.toFixed(2))) : "");
+  const [meseStr, setMeseStr] = useState("");
+  const [prezzoStr, setPrezzoStr] = useState("");
+
+  // Da stipendio mensile a tariffa oraria: 4,33 settimane al mese per 40 ore.
+  const tariffa = modo === "ora"
+    ? Number(String(oraStr).replace(",", ".")) || 0
+    : (Number(String(meseStr).replace(",", ".")) || 0) / (4.33 * 40);
+  const prezzo = Number(String(prezzoStr).replace(",", ".")) || 0;
+  const pronto = tariffa > 0 && prezzo > 0;
+
+  useEffect(() => {
+    if (tariffa > 0 && onSetHourly) onSetHourly(tariffa);
+  }, [tariffa]);
+
+  const campo = {
+    width: "100%", backgroundColor: C.inputBg, color: C.paper,
+    border: `1px solid ${C.panelBorder}`, borderRadius: 8,
+    padding: "13px 14px", fontSize: 17, fontFamily: MONO_FONT, outline: "none", boxSizing: "border-box",
+  };
+  const etichetta = {
+    fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em",
+    color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6,
+  };
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 32px 20px" }}>
+      <div style={{ paddingTop: 26, marginBottom: 18 }}>
+        <h1 style={{ fontFamily: DISPLAY_FONT, fontSize: 27, color: C.paper, margin: "0 0 6px 0", lineHeight: 1.15 }}>
+          Quanto ti costa davvero?
+        </h1>
+        <p style={{ fontSize: 14, color: C.textFaint, margin: 0, lineHeight: 1.5 }}>
+          Scrivi un prezzo. Te lo dico in ore di lavoro.
+        </p>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={etichetta}>Quanto guadagni</div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+          {[{ id: "ora", label: "all'ora" }, { id: "mese", label: "al mese" }].map((m) => (
+            <button
+              key={m.id}
+              onClick={() => setModo(m.id)}
+              style={{
+                flex: 1, padding: "8px 0", borderRadius: 999, cursor: "pointer",
+                border: `1px solid ${modo === m.id ? C.brass : C.panelBorder}`,
+                backgroundColor: modo === m.id ? C.brass : "transparent",
+                color: modo === m.id ? C.ink : C.textDim,
+                fontSize: 13, fontWeight: 700, fontFamily: MONO_FONT,
+              }}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        {modo === "ora" ? (
+          <input
+            type="number" inputMode="decimal" value={oraStr}
+            onChange={(e) => setOraStr(e.target.value)}
+            placeholder="12" style={campo}
+          />
+        ) : (
+          <>
+            <input
+              type="number" inputMode="decimal" value={meseStr}
+              onChange={(e) => setMeseStr(e.target.value)}
+              placeholder="1500" style={campo}
+            />
+            {tariffa > 0 && (
+              <div style={{ fontSize: 12.5, color: C.textFaint, marginTop: 6 }}>
+                Fa <strong style={{ color: C.paper }}>{tariffa.toFixed(2)}€/h</strong> su 40 ore a settimana.
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={etichetta}>Quanto costa</div>
+        <input
+          type="number" inputMode="decimal" value={prezzoStr}
+          onChange={(e) => setPrezzoStr(e.target.value)}
+          placeholder="220" style={campo}
+        />
+      </div>
+
+      {pronto ? (
+        <>
+          <PunchTicket style={{ padding: "22px 20px", marginBottom: 14, textAlign: "center" }}>
+            <div style={{ fontFamily: SERIF_FONT, fontSize: 42, fontWeight: 700, lineHeight: 1.05 }}>
+              {euroToTime(prezzo, tariffa)}
+            </div>
+            <div style={{ fontSize: 14, color: C.textDim, marginTop: 6 }}>{scalaUmana(prezzo, tariffa)}</div>
+            <div style={{ fontFamily: SERIF_FONT, fontStyle: "italic", fontSize: 13.5, color: C.textFaint, marginTop: 14, lineHeight: 1.5 }}>
+              Gli euro si rifanno. Le ore che hai lavorato per averli, no.
+            </div>
+          </PunchTicket>
+
+          <div style={{ fontSize: 14, color: C.paper, fontWeight: 700, textAlign: "center", marginBottom: 10 }}>
+            Ti conviene?
+          </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
+            <button
+              onClick={() => { setPrezzoStr(""); }}
+              style={{
+                flex: 1, padding: "13px 0", borderRadius: 8, cursor: "pointer",
+                border: `1px solid ${C.brass}`, backgroundColor: "rgba(255,107,74,0.08)",
+                color: C.paper, fontSize: 14, fontWeight: 700,
+              }}
+            >
+              Lascio perdere
+            </button>
+            <button
+              onClick={() => { if (onAggiungiSpesa) onAggiungiSpesa(prezzo); setPrezzoStr(""); }}
+              style={{
+                flex: 1, padding: "13px 0", borderRadius: 8, cursor: "pointer",
+                border: `1px solid ${C.panelBorder}`, background: "none",
+                color: C.textDim, fontSize: 14, fontWeight: 600,
+              }}
+            >
+              Lo prendo
+            </button>
+          </div>
+        </>
+      ) : (
+        <div style={{
+          border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "18px 16px",
+          marginBottom: 22, fontSize: 13.5, color: C.textFaint, lineHeight: 1.6, textAlign: "center",
+        }}>
+          Un caffè sono dieci minuti di lavoro.<br />
+          Un telefono nuovo, quaranta ore.<br />
+          <span style={{ color: C.textDim, fontWeight: 600 }}>Una settimana intera.</span>
+        </div>
+      )}
+
+      {showEntra && (
+        <div style={{ borderTop: `1px solid ${C.panelBorder}`, paddingTop: 18 }}>
+          <div style={{ fontSize: 13.5, color: C.textDim, lineHeight: 1.55, marginBottom: 10 }}>
+            Vuoi anche tenere il conto di quello che spendi, e vedere quante ore ti restano
+            ogni giorno? Ci vogliono due minuti per impostarlo.
+          </div>
+          <button
+            onClick={onEntra}
+            style={{
+              width: "100%", padding: "13px 0", borderRadius: 8, border: "none",
+              backgroundColor: C.brass, color: C.ink, fontSize: 14.5, fontWeight: 800, cursor: "pointer",
+            }}
+          >
+            Iniziamo
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AppInner() {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -6386,6 +6593,10 @@ function AppInner() {
   // ora, prima di entrare, così anche gli utenti "vecchi" vengono migrati automaticamente.
   const [pinChecked, setPinChecked] = useState(!supabaseConfigured);
   const [needsPinSetup, setNeedsPinSetup] = useState(false);
+  // Chi arriva senza profilo vede prima il convertitore: showPicker passa alla registrazione,
+  // anteprimaRate conserva la tariffa che ha appena scritto per non richiedergliela dopo.
+  const [showPicker, setShowPicker] = useState(false);
+  const [anteprimaRate, setAnteprimaRate] = useState(0);
 
   useEffect(() => {
     if (!currentUser || !supabaseConfigured) { setPinChecked(true); return; }
@@ -6430,10 +6641,25 @@ function AppInner() {
   const { frameStyle, outerStyle } = useShellStyles();
 
   if (!currentUser) {
+    // Prima di chiedere qualsiasi cosa, l'app fa vedere a cosa serve: due campi,
+    // un numero, dieci secondi. La registrazione arriva solo se uno vuole di più.
     return (
       <div style={outerStyle}>
         <div style={frameStyle}>
-          <UserPickerScreen onSelect={handleSelectUser} />
+          {showPicker ? (
+            <>
+              <div style={{ padding: "12px 20px 0 20px" }}>
+                <button onClick={() => setShowPicker(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer" }}>← torna al convertitore</button>
+              </div>
+              <UserPickerScreen onSelect={handleSelectUser} />
+            </>
+          ) : (
+            <ConvertitoreScreen
+              hourly={anteprimaRate}
+              onSetHourly={setAnteprimaRate}
+              onEntra={() => setShowPicker(true)}
+            />
+          )}
         </div>
       </div>
     );
@@ -6461,7 +6687,7 @@ function AppInner() {
     );
   }
 
-  return <MainApp key={currentUser} currentUser={currentUser} onChangeUser={handleChangeUser} />;
+  return <MainApp key={currentUser} currentUser={currentUser} onChangeUser={handleChangeUser} rateIniziale={anteprimaRate} />;
 }
 
 export default function App() {
