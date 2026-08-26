@@ -6297,7 +6297,7 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
           Quante ore di lavoro ti costa?
         </h1>
         <p style={{ fontSize: 14, color: C.textFaint, margin: 0, lineHeight: 1.5 }}>
-          Scrivi quanto guadagni e quanto costa.
+          Scrivi quanto guadagni e il prezzo di quello che vorresti comprare.
         </p>
       </div>
 
