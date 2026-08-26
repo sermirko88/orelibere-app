@@ -6294,10 +6294,10 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
     <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 32px 20px" }}>
       <div style={{ paddingTop: 26, marginBottom: 18 }}>
         <h1 style={{ fontFamily: DISPLAY_FONT, fontSize: 27, color: C.paper, margin: "0 0 6px 0", lineHeight: 1.15 }}>
-          Quanto ti costa davvero?
+          Quante ore di lavoro ti costa?
         </h1>
         <p style={{ fontSize: 14, color: C.textFaint, margin: 0, lineHeight: 1.5 }}>
-          Scrivi un prezzo. Te lo dico in ore di lavoro.
+          Scrivi quanto guadagni e quanto costa.
         </p>
       </div>
 
