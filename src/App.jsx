@@ -5788,7 +5788,7 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
     const nextStep = tutorialStep + 1;
     if (nextStep >= tutorialSteps.length) {
       setTutorialDone(true);
-      setTab("diario");
+      setTab("converti");
     } else {
       setTutorialStep(nextStep);
       setTab(tutorialSteps[nextStep].tab);
@@ -5797,7 +5797,7 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
 
   const skipTutorial = () => {
     setTutorialDone(true);
-    setTab("diario");
+    setTab("converti");
   };
 
   if (!cloudLoaded) {
@@ -6214,15 +6214,10 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
   const [numRate, setNumRate] = useState(14);
   const [inputFinanziato, setInputFinanziato] = useState("rata"); // rata | tasso
   const [tasso, setTasso] = useState(9.9); // TAN annuo %
-  const prezzoRef = useRef(null);
-  const guadagnoRef = useRef(null);
-
-  // All'apertura il cursore va dove serve davvero scrivere: sul prezzo se la tariffa
-  // è già nota (dentro l'app), sul guadagno se non lo è ancora (primo accesso).
-  useEffect(() => {
-    const campoIniziale = hourly > 0 ? prezzoRef.current : guadagnoRef.current;
-    if (campoIniziale) campoIniziale.focus();
-  }, []);
+  // Si scrive col tastierino dell'app, non con quello del telefono: quello di sistema
+  // copre metà schermo e nasconde proprio il risultato che si vuole leggere.
+  // Un campo alla volta è "attivo" e riceve i tasti.
+  const [campoAttivo, setCampoAttivo] = useState(hourly > 0 ? "prezzo" : "guadagno");
 
   // Da stipendio mensile a tariffa oraria: 4,33 settimane al mese per 40 ore.
   const tariffa = modo === "ora"
@@ -6264,6 +6259,32 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
     border: `1px solid ${C.panelBorder}`, borderRadius: 8,
     padding: "13px 14px", fontSize: 17, fontFamily: MONO_FONT, outline: "none", boxSizing: "border-box",
   };
+  // Il campo che sta ricevendo i tasti si riconosce dal bordo arancione
+  const campoBox = (id) => ({
+    width: "100%", boxSizing: "border-box", cursor: "pointer", textAlign: "left",
+    backgroundColor: C.inputBg,
+    border: `${campoAttivo === id ? 2 : 1}px solid ${campoAttivo === id ? C.brass : C.panelBorder}`,
+    borderRadius: 8, padding: campoAttivo === id ? "12px 13px" : "13px 14px",
+    display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8,
+  });
+  const valoreStyle = (v) => ({
+    fontFamily: MONO_FONT, fontSize: 20, fontWeight: 700,
+    color: v ? C.paper : C.textFainter,
+  });
+
+  const leggiCampo = () => (campoAttivo === "prezzo" ? prezzoStr : modo === "ora" ? oraStr : meseStr);
+  const scriviCampo = (v) => {
+    if (campoAttivo === "prezzo") setPrezzoStr(v);
+    else if (modo === "ora") setOraStr(v);
+    else setMeseStr(v);
+  };
+  const premiTasto = (k) => {
+    const v = leggiCampo();
+    if (k === "⌫") return scriviCampo(v.slice(0, -1));
+    if (k === ",") return v.includes(",") ? null : scriviCampo((v || "0") + ",");
+    if (v.replace(",", "").length >= 7) return; // limite ragionevole di cifre
+    scriviCampo(v === "0" ? k : v + k);
+  };
   const etichetta = {
     fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em",
     color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6,
@@ -6299,37 +6320,38 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
             </button>
           ))}
         </div>
-        {modo === "ora" ? (
-          <input
-            ref={guadagnoRef}
-            type="number" inputMode="decimal" value={oraStr}
-            onChange={(e) => setOraStr(e.target.value)}
-            placeholder="0" style={campo}
-          />
-        ) : (
-          <>
-            <input
-              type="number" inputMode="decimal" value={meseStr}
-              onChange={(e) => setMeseStr(e.target.value)}
-              placeholder="0" style={campo}
-            />
-            {tariffa > 0 && (
-              <div style={{ fontSize: 12.5, color: C.textFaint, marginTop: 6 }}>
-                Fa <strong style={{ color: C.paper }}>{tariffa.toFixed(2)}€/h</strong> su 40 ore a settimana.
-              </div>
-            )}
-          </>
+        <button onClick={() => setCampoAttivo("guadagno")} style={campoBox("guadagno")}>
+          <span style={valoreStyle(modo === "ora" ? oraStr : meseStr)}>
+            {(modo === "ora" ? oraStr : meseStr) || "0"}
+          </span>
+          <span style={{ fontFamily: MONO_FONT, fontSize: 15, color: C.textFaint }}>€</span>
+        </button>
+        {modo === "mese" && tariffa > 0 && (
+          <div style={{ fontSize: 12.5, color: C.textFaint, marginTop: 6 }}>
+            Fa <strong style={{ color: C.paper }}>{tariffa.toFixed(2)}€/h</strong> su 40 ore a settimana.
+          </div>
         )}
       </div>
 
       <div style={{ marginBottom: 20 }}>
         <div style={etichetta}>Quanto costa</div>
-        <input
-          ref={prezzoRef}
-          type="number" inputMode="decimal" value={prezzoStr}
-          onChange={(e) => setPrezzoStr(e.target.value)}
-          placeholder="00" style={campo}
-        />
+        <button onClick={() => setCampoAttivo("prezzo")} style={campoBox("prezzo")}>
+          <span style={valoreStyle(prezzoStr)}>{prezzoStr || "0"}</span>
+          <span style={{ fontFamily: MONO_FONT, fontSize: 15, color: C.textFaint }}>€</span>
+        </button>
+      </div>
+
+      {/* Tastierino dell'app: scrive nel campo evidenziato in arancione */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+        {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫"].map((k, i) => (
+          <button
+            key={i}
+            onClick={() => premiTasto(k)}
+            style={{ padding: "14px 0", borderRadius: 6, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, color: C.paper, fontFamily: MONO_FONT, fontSize: 18, cursor: "pointer" }}
+          >
+            {k}
+          </button>
+        ))}
       </div>
 
       {pronto ? (
@@ -6494,6 +6516,17 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
             }}
           >
             Iniziamo
+          </button>
+          {/* Chi ha cambiato telefono deve poter rientrare da qui: la schermata successiva
+              contiene sia i profili di questo dispositivo sia il ripristino da backup. */}
+          <button
+            onClick={onEntra}
+            style={{
+              width: "100%", marginTop: 10, padding: "6px 0", background: "none", border: "none",
+              color: C.textDim, fontSize: 13, fontWeight: 600, cursor: "pointer", textDecoration: "underline",
+            }}
+          >
+            Hai già un profilo o un backup? Entra
           </button>
         </div>
       )}
