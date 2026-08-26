@@ -1986,8 +1986,8 @@ function buildTutorialSteps(isVariabile) {
     {
       tab: "diario", targetId: "tut-tabbar", radius: 12,
       text: hasTier("premium")
-        ? "Da questa barra passi tra le sezioni dell'app. Converti, Diario, Calendario e Budget ci sono sempre; Chiusura e Conti compaiono quando servono."
-        : "Da questa barra passi tra le sezioni dell'app: Converti, Diario e Budget. Con Premium si aggiungono anche Calendario e Chiusura.",
+        ? "Da questa barra passi tra le sezioni dell'app: Converti, Diario, Calendario e Budget. Chiusura e Conti compaiono da soli quando c'è qualcosa da fare."
+        : "Da questa barra passi tra le sezioni dell'app: Converti, Diario e Budget. Bastano per iniziare — le altre funzioni le trovi in Impostazioni, e appena le sblocchi compaiono anche qui.",
     },
   ];
 
@@ -6093,26 +6093,17 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
               <Home size={20} color={tab === "diario" ? C.brassText : C.textFaint} />
               <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "diario" ? C.brassText : C.textFaint }}>Diario</span>
             </button>
-            {hasTier("premium") ? (
+            {hasTier("premium") && (
               <button id="tut-tab-calendario" onClick={() => setTab("calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
                 <Calendar size={20} color={tab === "calendario" ? C.brassText : C.textFaint} />
                 <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "calendario" ? C.brassText : C.textFaint }}>Calendario</span>
-              </button>
-            ) : (
-              <button onClick={() => setTab("locked-calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
-                <div style={{ position: "relative" }}>
-                  <Calendar size={20} color={C.textFaint} />
-                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: C.textFaint }}>Calendario</span>
               </button>
             )}
             <button id="tut-tab-goal" onClick={() => setTab("goal")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <PiggyBank size={20} color={tab === "goal" ? C.brassText : C.textFaint} />
               <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "goal" ? C.brassText : C.textFaint }}>Budget</span>
             </button>
-            {hasTier("premium") ? (
-              closurePool > 0 && (
+            {hasTier("premium") && closurePool > 0 && (
                 <button id="tut-tab-closure" onClick={() => setTab("closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
                   <div style={{ position: "relative" }}>
                     <HandCoins size={20} color={tab === "closure" ? C.brassText : C.textFaint} />
@@ -6120,18 +6111,8 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
                   </div>
                   <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "closure" ? C.brassText : C.textFaint }}>Chiusura</span>
                 </button>
-              )
-            ) : (
-              <button onClick={() => setTab("locked-closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
-                <div style={{ position: "relative" }}>
-                  <HandCoins size={20} color={C.textFaint} />
-                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: C.textFaint }}>Chiusura</span>
-              </button>
             )}
-            {hasTier("premium") ? (
-              hasAnyAccountConnected && (
+            {hasTier("premium") && hasAnyAccountConnected && (
                 <button onClick={() => setTab("transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
                   <div style={{ position: "relative" }}>
                     <BarChart3 size={20} color={tab === "transactions" ? C.brassText : C.textFaint} />
@@ -6146,15 +6127,6 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
                   </div>
                   <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "transactions" ? C.brassText : C.textFaint }}>Conti</span>
                 </button>
-              )
-            ) : (
-              <button onClick={() => setTab("locked-transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
-                <div style={{ position: "relative" }}>
-                  <BarChart3 size={20} color={C.textFaint} />
-                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: C.textFaint }}>Conti</span>
-              </button>
             )}
           </div>
         )}
@@ -6192,6 +6164,123 @@ class ErrorBoundary extends React.Component {
     }
     return this.props.children;
   }
+}
+
+// ---- Introduzione ----
+// Tre schermate, un'idea per schermata. Non spiega perché il tempo vale più dei soldi:
+// fa fare il conto alla persona sui propri numeri e su una cosa che ha fatto stamattina.
+// Chi entra senza già avere questa prospettiva ha bisogno di vederla, non di leggerla.
+const CAFFE_EURO = 1.2;
+
+function IntroScreen({ onFine }) {
+  const [passo, setPasso] = useState(0);
+  const [modo, setModo] = useState("ora"); // ora | mese
+  const [valore, setValore] = useState("");
+
+  const tariffa = modo === "ora"
+    ? Number(String(valore).replace(",", ".")) || 0
+    : (Number(String(valore).replace(",", ".")) || 0) / (4.33 * 40);
+
+  const premiTasto = (k) => {
+    if (k === "⌫") return setValore(valore.slice(0, -1));
+    if (k === ",") return valore.includes(",") ? null : setValore((valore || "0") + ",");
+    if (valore.replace(",", "").length >= 7) return;
+    setValore(valore === "0" ? k : valore + k);
+  };
+
+  const wrap = { flex: 1, display: "flex", flexDirection: "column", padding: "0 24px 28px 24px", overflowY: "auto" };
+  const avanti = (label, onClick, attivo = true) => (
+    <button
+      onClick={onClick}
+      disabled={!attivo}
+      style={{
+        width: "100%", padding: "15px 0", borderRadius: 8, border: "none", marginTop: 22,
+        backgroundColor: attivo ? C.brass : C.panelBorder, color: attivo ? C.ink : C.textFaint,
+        fontSize: 15, fontWeight: 800, cursor: attivo ? "pointer" : "default",
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  if (passo === 0) {
+    return (
+      <div style={wrap}>
+        <div style={{ paddingTop: 40, marginBottom: 22 }}>
+          <h1 style={{ fontFamily: DISPLAY_FONT, fontSize: 30, color: C.paper, margin: 0, lineHeight: 1.15 }}>
+            Quanto guadagni?
+          </h1>
+        </div>
+
+        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+          {[{ id: "ora", label: "all'ora" }, { id: "mese", label: "al mese" }].map((m) => (
+            <button
+              key={m.id}
+              onClick={() => { setModo(m.id); setValore(""); }}
+              style={{
+                flex: 1, padding: "10px 0", borderRadius: 999, cursor: "pointer",
+                border: `1px solid ${modo === m.id ? C.brass : C.panelBorder}`,
+                backgroundColor: modo === m.id ? C.brass : "transparent",
+                color: modo === m.id ? C.ink : C.textDim,
+                fontSize: 14, fontWeight: 700, fontFamily: MONO_FONT,
+              }}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{
+          backgroundColor: C.inputBg, border: `2px solid ${C.brass}`, borderRadius: 8,
+          padding: "16px 16px", display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 18,
+        }}>
+          <span style={{ fontFamily: MONO_FONT, fontSize: 26, fontWeight: 700, color: valore ? C.paper : C.textFainter }}>
+            {valore || "0"}
+          </span>
+          <span style={{ fontFamily: MONO_FONT, fontSize: 17, color: C.textFaint }}>€</span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+          {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫"].map((k, i) => (
+            <button
+              key={i}
+              onClick={() => premiTasto(k)}
+              style={{ padding: "15px 0", borderRadius: 6, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, color: C.paper, fontFamily: MONO_FONT, fontSize: 19, cursor: "pointer" }}
+            >
+              {k}
+            </button>
+          ))}
+        </div>
+
+        {avanti("Avanti", () => setPasso(1), tariffa > 0)}
+      </div>
+    );
+  }
+
+  if (passo === 1) {
+    return (
+      <div style={{ ...wrap, justifyContent: "center", textAlign: "center" }}>
+        <div style={{ fontSize: 16, color: C.textDim, marginBottom: 10 }}>Il caffè di stamattina</div>
+        <div style={{ fontFamily: SERIF_FONT, fontSize: 58, fontWeight: 700, color: C.paper, lineHeight: 1 }}>
+          {euroToTime(CAFFE_EURO, tariffa)}
+        </div>
+        <div style={{ fontSize: 16, color: C.textDim, marginTop: 10 }}>di lavoro</div>
+        {avanti("Avanti", () => setPasso(2))}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...wrap, justifyContent: "center", textAlign: "center" }}>
+      <div style={{ fontSize: 17, color: C.textDim, lineHeight: 1.5, marginBottom: 14 }}>
+        Otto ore di lavoro al giorno.
+      </div>
+      <div style={{ fontFamily: DISPLAY_FONT, fontSize: 28, color: C.paper, lineHeight: 1.25 }}>
+        Quante te ne restano davvero?
+      </div>
+      {avanti("Scoprilo", () => onFine(tariffa))}
+    </div>
+  );
 }
 
 // ---- Convertitore euro → ore ----
@@ -6496,9 +6585,9 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
           border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "18px 16px",
           marginBottom: 22, fontSize: 13.5, color: C.textFaint, lineHeight: 1.6, textAlign: "center",
         }}>
-          Un caffè sono dieci minuti di lavoro.<br />
-          Un telefono nuovo, quaranta ore.<br />
-          <span style={{ color: C.textDim, fontWeight: 600 }}>Una settimana intera.</span>
+          Un caffè, dieci minuti di lavoro.<br />
+          Un panino a pranzo, mezz'ora.<br />
+          <span style={{ color: C.textDim, fontWeight: 600 }}>Una cena fuori, quasi una giornata.</span>
         </div>
       )}
 
@@ -6553,6 +6642,15 @@ function AppInner() {
   // anteprimaRate conserva la tariffa che ha appena scritto per non richiedergliela dopo.
   const [showPicker, setShowPicker] = useState(false);
   const [anteprimaRate, setAnteprimaRate] = useState(0);
+  // L'introduzione si vede una volta sola per dispositivo: chi torna va dritto al convertitore.
+  const [introFatta, setIntroFatta] = useState(() => {
+    try { return localStorage.getItem("orelibere_intro") === "1"; } catch { return false; }
+  });
+  const chiudiIntro = (tariffa) => {
+    if (tariffa > 0) setAnteprimaRate(tariffa);
+    try { localStorage.setItem("orelibere_intro", "1"); } catch {}
+    setIntroFatta(true);
+  };
 
   useEffect(() => {
     if (!currentUser || !supabaseConfigured) { setPinChecked(true); return; }
@@ -6602,7 +6700,9 @@ function AppInner() {
     return (
       <div style={outerStyle}>
         <div style={frameStyle}>
-          {showPicker ? (
+          {!introFatta ? (
+            <IntroScreen onFine={chiudiIntro} />
+          ) : showPicker ? (
             <>
               <div style={{ padding: "12px 20px 0 20px" }}>
                 <button onClick={() => setShowPicker(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer" }}>← torna al convertitore</button>
