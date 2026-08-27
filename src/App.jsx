@@ -3725,8 +3725,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   };
 
   const scaricaPromemoriaFattura = (fatt) => {
-    const ics = generateICS([{ date: new Date(fatt.scadenza + "T00:00:00"), title: `Fattura: ${fatt.descrizione} · ${fatt.importo.toFixed(0)}€`, notes: "Promemoria pagamento da OreLibere" }]);
-    downloadBlob(ics, `fattura-${fatt.scadenza}.ics`, "text/calendar;charset=utf-8;");
+    const ics = generateICS([{ date: new Date(fatt.scadenza + "T00:00:00"), title: `Da incassare: ${fatt.descrizione} · ${fatt.importo.toFixed(0)}€`, notes: "Promemoria pagamento da OreLibere" }]);
+    downloadBlob(ics, `compenso-${fatt.scadenza}.ics`, "text/calendar;charset=utf-8;");
   };
 
   const addEntry = () => {
@@ -3898,7 +3898,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
           <div style={{ backgroundColor: "rgba(255,107,74,0.08)", border: `1px solid ${C.brass}`, borderRadius: 8, padding: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
               <Receipt size={13} color={C.brassText} />
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: C.paper }}>Fatture in attesa di pagamento</span>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: C.paper }}>Compensi che devi ancora ricevere</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {fatture.filter((f) => f.stato === "attesa").sort((a, b) => a.scadenza.localeCompare(b.scadenza)).map((f) => {
@@ -4014,7 +4014,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                   {real.ore < REAL_RATE_MIN_HOURS
                     ? `Registra almeno ${REAL_RATE_MIN_HOURS}h di turni a consuntivo (ne hai ${real.ore.toFixed(1)}h) per passare a un numero calcolato sui tuoi dati veri.`
                     : real.entrate <= 0
-                    ? "Hai abbastanza ore registrate, ma nessuna entrata confermata: finché i tuoi compensi restano \"in attesa\" nelle fatture, l'app resta sulla stima invece di calcolare un numero da un incasso che non è ancora arrivato davvero."
+                    ? "Hai abbastanza ore registrate, ma nessuna entrata confermata: finché i tuoi compensi restano \"in attesa\", l'app resta sulla stima invece di calcolare un numero da un incasso che non è ancora arrivato davvero."
                     : `In questo periodo le uscite registrate (${real.uscite.toFixed(0)}€) superano le entrate (${real.entrate.toFixed(0)}€): il conto darebbe una tariffa oraria negativa, che non vorrebbe dire nulla. L'app resta sulla stima finché il saldo non torna positivo.`}
                 </div>
               </>
@@ -4082,8 +4082,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: C.fixedBar, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Turno</span></div>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: C.green, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Entrata</span></div>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: C.rust, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Uscita</span></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.brass}`, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Fattura in attesa</span></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.green}`, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Fattura pagata</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.brass}`, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>In attesa</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.green}`, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Incassato</span></div>
         </div>
       </div>
 
@@ -4179,7 +4179,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                 <FieldLabel>Descrizione (opzionale)</FieldLabel>
                 <input
                   type="text" value={form.descrizione}
-                  placeholder={form.tipo === "turno" ? "es. Progetto cliente X" : form.tipo === "entrata" ? "es. Fattura cliente X" : "es. Materiale"}
+                  placeholder={form.tipo === "turno" ? "es. Progetto cliente X" : form.tipo === "entrata" ? "es. Compenso cliente X" : "es. Materiale"}
                   onChange={(e) => setForm({ ...form, descrizione: e.target.value })}
                   style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }}
                 />
@@ -4423,7 +4423,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                       <div style={{ fontSize: 13.5, color: C.brassText, marginTop: 3, fontWeight: 700 }}>≈ {importoGiornaliero.toFixed(2)}€/giorno → {(importoGiornaliero * giorniAnteprima.length).toFixed(0)}€ netti in attesa (stima)</div>
                     )}
                     {rangeForm.tariffaImporto && rangeForm.tariffaUnita === "progetto" && (
-                      <div style={{ fontSize: 13.5, color: C.brassText, marginTop: 3, fontWeight: 700 }}>{(Number(rangeForm.tariffaImporto) * percentualeNettaEffettiva).toFixed(0)}€ netti in attesa (stima), fattura unica</div>
+                      <div style={{ fontSize: 13.5, color: C.brassText, marginTop: 3, fontWeight: 700 }}>{(Number(rangeForm.tariffaImporto) * percentualeNettaEffettiva).toFixed(0)}€ netti in attesa (stima), pagamento unico</div>
                     )}
                     {rangeForm.tariffaImporto && rangeForm.lordoNetto === "lordo" && (
                       <div style={{ fontSize: 12.5, color: C.textFainter, marginTop: 3 }}>
