@@ -34,7 +34,7 @@ function ensureAuth() {
 import {
   Home, Calculator, Plus, Coffee, UtensilsCrossed, Beer, Dumbbell, Car,
   MoreHorizontal, X, TrendingDown, Receipt, Zap, Building2, Fuel,
-  Cigarette, Wifi, ArrowRight, Settings2, CreditCard, ShoppingBag, Gift, HeartPulse, BarChart3, ChevronLeft, ChevronRight, Lightbulb, PiggyBank, Landmark, Bell, Info, HandCoins, ExternalLink, TriangleAlert, Calendar, TrendingUp, Clock, HelpCircle, ChevronDown, Lock, Trash2
+  Cigarette, Wifi, ArrowRight, Settings2, CreditCard, ShoppingBag, Gift, HeartPulse, BarChart3, ChevronLeft, ChevronRight, Lightbulb, PiggyBank, Landmark, Bell, Info, HandCoins, ExternalLink, TriangleAlert, Calendar, TrendingUp, Clock, HelpCircle, ChevronDown, Lock, Trash2, Pencil
 } from "lucide-react";
 
 // ---- Versione Kickstarter/MVP: nasconde tutto ciò che è collegamento bancario,
@@ -3667,6 +3667,35 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   // Un periodo inserito per sbaglio va potuto disfare: si cancella il compenso in attesa
   // e con lui i turni dei giorni che aveva generato, altrimenti resterebbero ore fantasma.
   const [confermaAnnulla, setConfermaAnnulla] = useState(null); // id della fattura da annullare
+  // Modifica di un compenso già inserito: nome, importo e data di pagamento.
+  // Sbagliare a scrivere è normale; costringere a cancellare e rifare tutto no.
+  const [modificaFattura, setModificaFattura] = useState(null); // { id, descrizione, importo, scadenza }
+
+  const apriModifica = (f) => {
+    setConfermaAnnulla(null);
+    setModificaFattura({ id: f.id, descrizione: f.descrizione || "", importo: String(Math.round(f.importo * 100) / 100), scadenza: f.scadenza || "" });
+  };
+
+  const salvaModifica = () => {
+    const m = modificaFattura;
+    if (!m) return;
+    const nuovoImporto = Number(String(m.importo).replace(",", ".")) || 0;
+    if (nuovoImporto <= 0) return;
+    setFatture(fatture.map((f) => (f.id === m.id
+      ? { ...f, descrizione: m.descrizione.trim() || "Compenso periodo", importo: nuovoImporto, scadenza: m.scadenza || f.scadenza }
+      : f)));
+    // I turni collegati portano la stessa descrizione: se cambia il nome, cambia anche lì
+    const fatt = fatture.find((f) => f.id === m.id);
+    if (fatt && Array.isArray(fatt.giorni) && fatt.giorni.length > 0) {
+      const newCal = { ...calendario };
+      fatt.giorni.forEach((k) => {
+        if (!newCal[k]) return;
+        newCal[k] = newCal[k].map((e) => (e.tipo === "turno" ? { ...e, descrizione: m.descrizione.trim() } : e));
+      });
+      setCalendario(newCal);
+    }
+    setModificaFattura(null);
+  };
   const annullaPeriodo = (fatturaId) => {
     const fatt = fatture.find((f) => f.id === fatturaId);
     if (!fatt) return;
@@ -3888,6 +3917,9 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                         <button onClick={() => scaricaPromemoriaFattura(f)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} title="Promemoria al telefono">
                           <Bell size={13} color={C.textFaint} />
                         </button>
+                        <button onClick={() => (modificaFattura && modificaFattura.id === f.id ? setModificaFattura(null) : apriModifica(f))} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} aria-label="Modifica">
+                          <Pencil size={13} color={C.textFaint} />
+                        </button>
                         <button onClick={() => setConfermaAnnulla(confermaAnnulla === f.id ? null : f.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} aria-label="Annulla periodo">
                           <Trash2 size={13} color={C.textFaint} />
                         </button>
@@ -3896,6 +3928,52 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                         </button>
                       </div>
                     </div>
+                    {modificaFattura && modificaFattura.id === f.id && (
+                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${C.panelBorder}` }}>
+                        <div style={{ marginBottom: 5 }}><FieldLabel>Nome</FieldLabel></div>
+                        <input
+                          type="text" value={modificaFattura.descrizione}
+                          onChange={(e) => setModificaFattura({ ...modificaFattura, descrizione: e.target.value })}
+                          placeholder="es. Compenso settembre"
+                          style={{ width: "100%", boxSizing: "border-box", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "9px 11px", color: C.paper, fontSize: 14, marginBottom: 10, outline: "none" }}
+                        />
+                        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ marginBottom: 5 }}><FieldLabel>Compenso (€)</FieldLabel></div>
+                            <input
+                              type="number" inputMode="decimal" value={modificaFattura.importo}
+                              onChange={(e) => setModificaFattura({ ...modificaFattura, importo: e.target.value })}
+                              style={{ width: "100%", boxSizing: "border-box", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "9px 11px", color: C.paper, fontSize: 14, fontFamily: MONO_FONT, outline: "none" }}
+                            />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ marginBottom: 5 }}><FieldLabel>Pagamento</FieldLabel></div>
+                            <input
+                              type="date" value={modificaFattura.scadenza}
+                              onChange={(e) => setModificaFattura({ ...modificaFattura, scadenza: e.target.value })}
+                              style={{ width: "100%", boxSizing: "border-box", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "9px 11px", color: C.paper, fontSize: 14, outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                        {Number(String(modificaFattura.importo).replace(",", ".")) > 0 && (
+                          <div style={{ fontSize: 12.5, color: C.brassText, fontWeight: 700, marginBottom: 10 }}>
+                            ≈ {euroToTime(Number(String(modificaFattura.importo).replace(",", ".")), hourlyEstimate)} di lavoro
+                          </div>
+                        )}
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={salvaModifica} style={{ flex: 1, padding: "9px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                            Salva modifica
+                          </button>
+                          <button onClick={() => setModificaFattura(null)} style={{ flex: 1, padding: "9px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                            Annulla
+                          </button>
+                        </div>
+                        <p style={{ fontSize: 12, color: C.textFainter, lineHeight: 1.4, margin: "8px 0 0 0" }}>
+                          Le date del periodo e le ore dei turni restano quelle: per cambiarle serve annullare il periodo col cestino e reinserirlo.
+                        </p>
+                      </div>
+                    )}
+
                     {confermaAnnulla === f.id && (
                       <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${C.panelBorder}` }}>
                         <div style={{ fontSize: 12.5, color: C.textDim, lineHeight: 1.45, marginBottom: 8 }}>
