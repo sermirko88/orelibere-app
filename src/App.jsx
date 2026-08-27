@@ -34,7 +34,7 @@ function ensureAuth() {
 import {
   Home, Calculator, Plus, Coffee, UtensilsCrossed, Beer, Dumbbell, Car,
   MoreHorizontal, X, TrendingDown, Receipt, Zap, Building2, Fuel,
-  Cigarette, Wifi, ArrowRight, Settings2, CreditCard, ShoppingBag, Gift, HeartPulse, BarChart3, ChevronLeft, ChevronRight, Lightbulb, PiggyBank, Landmark, Bell, Info, HandCoins, ExternalLink, TriangleAlert, Calendar, TrendingUp, Clock, HelpCircle, ChevronDown, Lock
+  Cigarette, Wifi, ArrowRight, Settings2, CreditCard, ShoppingBag, Gift, HeartPulse, BarChart3, ChevronLeft, ChevronRight, Lightbulb, PiggyBank, Landmark, Bell, Info, HandCoins, ExternalLink, TriangleAlert, Calendar, TrendingUp, Clock, HelpCircle, ChevronDown, Lock, Trash2
 } from "lucide-react";
 
 // ---- Versione Kickstarter/MVP: nasconde tutto ciò che è collegamento bancario,
@@ -1650,7 +1650,7 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
                   <div style={{
                     display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, padding: "10px 12px", borderRadius: 4,
                     backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : tight ? "rgba(255,107,74,0.1)" : "rgba(124,179,66,0.1)",
-                    border: `1px solid ${overBudget ? C.rust : tight ? C.brassText : C.greenTextText}`,
+                    border: `1px solid ${overBudget ? C.rust : tight ? C.brassText : C.greenText}`,
                   }}>
                     <span style={{ fontSize: 13, marginTop: -1 }}>{overBudget ? "⚠" : tight ? "!" : "✓"}</span>
                     <p style={{ fontSize: 12, color: C.paper, margin: 0, lineHeight: 1.5 }}>
@@ -3532,7 +3532,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   const [addMenuDay, setAddMenuDay] = useState(null); // null = chiuso, Date = menu aperto per quel giorno
   const [editingCalEntry, setEditingCalEntry] = useState(null); // { key, entry } della voce in modifica
   const [showAddRange, setShowAddRange] = useState(false);
-  const [rangeForm, setRangeForm] = useState({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", lordoNetto: "netto", percentualeNettaManuale: "65", scadenzaPagamento: "", descrizione: "" });
+  const [rangeForm, setRangeForm] = useState({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", lordoNetto: "netto", percentualeNettaManuale: "65", scadenzaPagamento: "", descrizione: "", tipoCompenso: "fattura", scadenzaModo: "data", giornoDelMese: "10" });
   const [rangeResult, setRangeResult] = useState(null);
   const [showInfoLordoNetto, setShowInfoLordoNetto] = useState(false);
   const [form, setForm] = useState({ tipo: redditoTipo === "variabile" ? "turno" : "uscita", ore: "", importo: "", descrizione: "" });
@@ -3606,6 +3606,21 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
     return lordo * percentualeNettaEffettiva;
   })();
 
+  // Uno stipendio non si "fattura": arriva il 10, il 15 o il 27 del mese dopo.
+  // Meglio far scegliere il giorno del mese che obbligare a una data precisa.
+  const scadenzaCalcolata = () => {
+    if (rangeForm.scadenzaModo === "giorno") {
+      const g = Math.min(Math.max(Number(rangeForm.giornoDelMese) || 1, 1), 31);
+      const fine = rangeForm.a ? new Date(rangeForm.a + "T00:00:00") : new Date();
+      // Il mese successivo alla fine del periodo, troncando se il mese è più corto
+      const anno = fine.getFullYear();
+      const mese = fine.getMonth() + 1;
+      const ultimoGiorno = new Date(anno, mese + 1, 0).getDate();
+      return dateKey(new Date(anno, mese, Math.min(g, ultimoGiorno)));
+    }
+    return rangeForm.scadenzaPagamento;
+  };
+
   const submitRange = () => {
     const giorni = giorniLavorativiRange(rangeForm.da, rangeForm.a, rangeForm.skipWeekend);
     if (giorni.length === 0) return;
@@ -3636,7 +3651,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
         id: Date.now() + Math.random(),
         descrizione: rangeForm.descrizione || "Compenso periodo",
         importo: importoTotale,
-        scadenza: rangeForm.scadenzaPagamento || dateKey(giorni[giorni.length - 1]),
+        scadenza: scadenzaCalcolata() || dateKey(giorni[giorni.length - 1]),
+        tipoCompenso: rangeForm.tipoCompenso,
         stato: "attesa",
         giorni: giorniKey,
         dataPagamento: null,
@@ -3645,7 +3661,26 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
     }
 
     setRangeResult({ count: giorni.length, daStr: rangeForm.da, aStr: rangeForm.a, fatturaCreata: importoTotale > 0 });
-    setRangeForm({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", scadenzaPagamento: "", descrizione: "" });
+    setRangeForm({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", lordoNetto: "netto", percentualeNettaManuale: "65", scadenzaPagamento: "", descrizione: "", tipoCompenso: "fattura", scadenzaModo: "data", giornoDelMese: "10" });
+  };
+
+  // Un periodo inserito per sbaglio va potuto disfare: si cancella il compenso in attesa
+  // e con lui i turni dei giorni che aveva generato, altrimenti resterebbero ore fantasma.
+  const [confermaAnnulla, setConfermaAnnulla] = useState(null); // id della fattura da annullare
+  const annullaPeriodo = (fatturaId) => {
+    const fatt = fatture.find((f) => f.id === fatturaId);
+    if (!fatt) return;
+    if (Array.isArray(fatt.giorni) && fatt.giorni.length > 0) {
+      const newCal = { ...calendario };
+      fatt.giorni.forEach((k) => {
+        const restanti = (newCal[k] || []).filter((e) => e.tipo !== "turno");
+        if (restanti.length > 0) newCal[k] = restanti;
+        else delete newCal[k];
+      });
+      setCalendario(newCal);
+    }
+    setFatture(fatture.filter((f) => f.id !== fatturaId));
+    setConfermaAnnulla(null);
   };
 
   const segnaFatturaPagata = (fatturaId) => {
@@ -3853,11 +3888,29 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                         <button onClick={() => scaricaPromemoriaFattura(f)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} title="Promemoria al telefono">
                           <Bell size={13} color={C.textFaint} />
                         </button>
+                        <button onClick={() => setConfermaAnnulla(confermaAnnulla === f.id ? null : f.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} aria-label="Annulla periodo">
+                          <Trash2 size={13} color={C.textFaint} />
+                        </button>
                         <button onClick={() => segnaFatturaPagata(f.id)} style={{ background: "none", border: `1px solid ${C.green}`, borderRadius: 999, padding: "3px 9px", fontSize: 12, color: C.greenText, fontWeight: 700, cursor: "pointer" }}>
                           Segna pagata
                         </button>
                       </div>
                     </div>
+                    {confermaAnnulla === f.id && (
+                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${C.panelBorder}` }}>
+                        <div style={{ fontSize: 12.5, color: C.textDim, lineHeight: 1.45, marginBottom: 8 }}>
+                          Annullo questo compenso e i turni dei {(f.giorni || []).length} giorni collegati?
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => annullaPeriodo(f.id)} style={{ flex: 1, padding: "8px 0", borderRadius: 4, border: `1px solid ${C.rust}`, background: "none", color: C.rust, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+                            Sì, annulla
+                          </button>
+                          <button onClick={() => setConfermaAnnulla(null)} style={{ flex: 1, padding: "8px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>
+                            No, lascia
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -4081,7 +4134,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
             {rangeResult ? (
               <div style={{ textAlign: "center", padding: "24px 0" }}>
                 <div style={{ width: 52, height: 52, borderRadius: "50%", backgroundColor: rangeResult.fatturaCreata ? "rgba(255,107,74,0.15)" : "rgba(124,179,66,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px auto" }}>
-                  <TrendingUp size={24} color={rangeResult.fatturaCreata ? C.brassText : C.greenTextText} />
+                  <TrendingUp size={24} color={rangeResult.fatturaCreata ? C.brassText : C.greenText} />
                 </div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.paper, marginBottom: 6 }}>{rangeResult.count} giorni lavorativi aggiunti</div>
                 <div style={{ fontSize: 12, color: C.textFaint, marginBottom: 20 }}>
@@ -4208,9 +4261,73 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
                 {rangeForm.tariffaImporto && (
                   <>
+                    <div style={{ marginBottom: 6 }}><FieldLabel>Come ti pagano</FieldLabel></div>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                      {[
+                        { id: "fattura", label: "A fattura" },
+                        { id: "stipendio", label: "Stipendio" },
+                        { id: "progetto", label: "A progetto" },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setRangeForm({ ...rangeForm, tipoCompenso: t.id, scadenzaModo: t.id === "stipendio" ? "giorno" : rangeForm.scadenzaModo })}
+                          style={{
+                            flex: 1, padding: "9px 2px", borderRadius: 999, cursor: "pointer",
+                            border: `1px solid ${rangeForm.tipoCompenso === t.id ? C.brass : C.panelBorder}`,
+                            backgroundColor: rangeForm.tipoCompenso === t.id ? "rgba(255,107,74,0.10)" : "transparent",
+                            color: rangeForm.tipoCompenso === t.id ? C.paper : C.textDim,
+                            fontSize: 12.5, fontWeight: 700,
+                          }}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+
                     <div style={{ marginBottom: 6 }}><FieldLabel>Quando ti aspetti il pagamento</FieldLabel></div>
-                    <input type="date" value={rangeForm.scadenzaPagamento} onChange={(e) => setRangeForm({ ...rangeForm, scadenzaPagamento: e.target.value })}
-                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 8, outline: "none" }} />
+                    <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                      {[
+                        { id: "data", label: "Una data precisa" },
+                        { id: "giorno", label: "Un giorno del mese" },
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => setRangeForm({ ...rangeForm, scadenzaModo: m.id })}
+                          style={{
+                            flex: 1, padding: "9px 4px", borderRadius: 999, cursor: "pointer",
+                            border: `1px solid ${rangeForm.scadenzaModo === m.id ? C.brass : C.panelBorder}`,
+                            backgroundColor: rangeForm.scadenzaModo === m.id ? "rgba(255,107,74,0.10)" : "transparent",
+                            color: rangeForm.scadenzaModo === m.id ? C.paper : C.textDim,
+                            fontSize: 12.5, fontWeight: 600,
+                          }}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {rangeForm.scadenzaModo === "giorno" ? (
+                      <>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                          <span style={{ fontSize: 13.5, color: C.textDim }}>Il giorno</span>
+                          <input
+                            type="number" inputMode="numeric" min="1" max="31"
+                            value={rangeForm.giornoDelMese}
+                            onChange={(e) => setRangeForm({ ...rangeForm, giornoDelMese: e.target.value })}
+                            style={{ width: 70, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 15, fontFamily: MONO_FONT, textAlign: "center" }}
+                          />
+                          <span style={{ fontSize: 13.5, color: C.textDim }}>del mese successivo</span>
+                        </div>
+                        <p style={{ fontSize: 13, color: C.textFainter, lineHeight: 1.4, marginBottom: 16 }}>
+                          {scadenzaCalcolata()
+                            ? `Con questo periodo, il pagamento è atteso per il ${new Date(scadenzaCalcolata() + "T00:00:00").toLocaleDateString("it-IT")}.`
+                            : "Scegli prima le date del periodo."}
+                        </p>
+                      </>
+                    ) : (
+                      <input type="date" value={rangeForm.scadenzaPagamento} onChange={(e) => setRangeForm({ ...rangeForm, scadenzaPagamento: e.target.value })}
+                        style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 8, outline: "none" }} />
+                    )}
                     <p style={{ fontSize: 13, color: C.textFainter, lineHeight: 1.4, marginBottom: 16 }}>
                       Finché non la segni come pagata, questo compenso resta "in attesa" (arancione, solo una stima) — non conta ancora nei tuoi totali reali. Puoi anche scaricare un promemoria per non dimenticartene.
                     </p>
@@ -5366,7 +5483,7 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
                   <div style={{
                     display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, padding: "10px 12px", borderRadius: 4,
                     backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : tight ? "rgba(255,107,74,0.1)" : "rgba(124,179,66,0.1)",
-                    border: `1px solid ${overBudget ? C.rust : tight ? C.brassText : C.greenTextText}`,
+                    border: `1px solid ${overBudget ? C.rust : tight ? C.brassText : C.greenText}`,
                   }}>
                     <span style={{ fontSize: 13, marginTop: -1 }}>{overBudget ? "⚠" : tight ? "!" : "✓"}</span>
                     <p style={{ fontSize: 12, color: C.paper, margin: 0, lineHeight: 1.5 }}>
