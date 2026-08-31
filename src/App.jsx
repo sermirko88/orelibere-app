@@ -44,15 +44,18 @@ import {
 // `false` per riattivare le funzionalità di collegamento conto complete.
 const KICKSTARTER_BUILD = false;
 
-// ---- Fasce di abbonamento: Free, Premium, Elite. Questa riga resta il valore di
+// ---- Fasce: Free e Premium. Questa riga resta il valore di
 // PARTENZA per ogni nuovo utente — ma ogni tester può cambiarla da solo, sul proprio
 // telefono, dalle Impostazioni → "Cambia fascia (solo test)", senza bisogno che il
 // codice venga ricaricato ogni volta.
-//   Free: Convertitore (pagamento subito), Diario, tariffa oraria, Budget (1 obiettivo)
-//   Premium: + Calendario, Chiusura, Rendiconto, Import file, confronto finanziamenti, Budget illimitato
-//   Elite: + Regime fiscale, Progetti, tariffa oraria reale dallo storico
-const TIER = "free"; // "free" | "premium" | "elite" — valore di partenza
-const TIER_RANK = { free: 0, premium: 1, elite: 2 };
+//   Free: Convertitore, Diario, tariffa oraria, Budget (1 obiettivo)
+//   Premium: tutto il resto — Calendario, Chiusura, Rendiconto, Import file,
+//            confronto finanziamenti, obiettivi illimitati, regime fiscale, progetti.
+// Un solo sblocco, una volta sola. "elite" resta come sinonimo di "premium" perché
+// nel codice ci sono decine di controlli hasTier("elite"): riscriverli tutti sarebbe
+// rischioso e non cambierebbe nulla, visto che chi ha Premium ha già tutto.
+const TIER = "free"; // "free" | "premium" — valore di partenza
+const TIER_RANK = { free: 0, premium: 1, elite: 1 };
 let ACTIVE_TIER = TIER; // valore effettivo in uso, aggiornato da MainApp ad ogni render
 function hasTier(minTier) {
   return TIER_RANK[ACTIVE_TIER] >= TIER_RANK[minTier];
@@ -3800,8 +3803,9 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
               </div>
             </button>
 
-            <button
-              onClick={() => { setAddMenuDay(null); if (hasTier("elite")) setShowProgetti(true); else setShowLockedProgetti(true); }}
+            {hasTier("premium") && (
+              <button
+              onClick={() => { setAddMenuDay(null); setShowProgetti(true); }}
               style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", opacity: hasTier("elite") ? 1 : 0.7 }}
             >
               <div style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.panel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -3810,13 +3814,11 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: C.paper, display: "flex", alignItems: "center", gap: 6 }}>
                   Un progetto
-                  {!hasTier("elite") && (
-                    <span style={{ fontSize: 10.5, fontFamily: MONO_FONT, fontWeight: 800, textTransform: "uppercase", padding: "1px 6px", borderRadius: 999, backgroundColor: "#171717", color: "#F7F3EA" }}>Elite</span>
-                  )}
                 </div>
                 <div style={{ fontSize: 13, color: C.textFaint, marginTop: 1 }}>Prezzo di vendita e ore di un lavoro, per sapere la tua tariffa oraria vera su quel progetto</div>
               </div>
             </button>
+              )}
           </div>
         </div>
       )}
@@ -3827,7 +3829,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
       {!hasTier("elite") && showLockedProgetti && (
         <div style={{ position: "fixed", inset: 0, zIndex: 70, backgroundColor: C.bg, display: "flex", flexDirection: "column" }}>
           <LockedFeatureScreen
-            tier="elite"
+            tier="premium"
             titolo="Progetti"
             descrizione="Per ogni lavoro che accetti, inserisci prezzo di vendita e ore che ci impieghi: l'app ti dice la tua tariffa oraria reale su quel progetto, e ti avvisa se stai lavorando sotto la tua tariffa base."
             onBack={() => setShowLockedProgetti(false)}
@@ -4453,7 +4455,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 // voce di menu, resta visibile in grigio col lucchetto — tocchi e vedi cosa sblocchi,
 // senza dover indovinare che esiste.
 function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData, onUnlocked }) {
-  const isElite = tier === "elite";
+  const isElite = false; // resta una fascia sola: Premium
   const currentTier = data.tierOverride || TIER;
   const giaSbloccata = TIER_RANK[currentTier] >= TIER_RANK[tier];
   return (
@@ -4479,15 +4481,9 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
           <div style={{ fontSize: 12, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, marginBottom: 10 }}>
             Cosa include ogni piano
           </div>
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: C.brassText, marginBottom: 4 }}>Premium</div>
-            {["Calendario", "Chiusura periodica", "Conti collegati e Rendiconto", "Import da file (CSV/PDF)", "Confronto con i finanziamenti a rate", "Budget senza limite di obiettivi"].map((f) => (
-              <div key={f} style={{ fontSize: 12, color: C.textDim, padding: "2px 0" }}>· {f}</div>
-            ))}
-          </div>
           <div>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: C.paper, marginBottom: 4 }}>Elite <span style={{ fontWeight: 400, color: C.textFainter }}>(tutto Premium, più)</span></div>
-            {["Regime fiscale e calcolo del netto", "Progetti (tariffa oraria per lavoro)", "Tariffa oraria reale dallo storico"].map((f) => (
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: C.brassText, marginBottom: 4 }}>Premium</div>
+            {["Calendario", "Chiusura periodica", "Conti collegati e Rendiconto", "Import da file (CSV/PDF)", "Confronto con i finanziamenti a rate", "Obiettivi illimitati", "Regime fiscale e calcolo del netto", "Progetti e tariffa oraria reale"].map((f) => (
               <div key={f} style={{ fontSize: 12, color: C.textDim, padding: "2px 0" }}>· {f}</div>
             ))}
           </div>
@@ -4498,7 +4494,7 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
             Cambia fascia (solo per questo test)
           </div>
           <div style={{ display: "flex", gap: 6 }}>
-            {["free", "premium", "elite"].map((t) => {
+            {["free", "premium"].map((t) => {
               const active = currentTier === t;
               return (
                 <button
@@ -4510,7 +4506,7 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
                     fontSize: 13.5, fontWeight: 700, textTransform: "capitalize",
                   }}
                 >
-                  {t === "free" ? "Free" : t === "premium" ? "Premium" : "Elite"}
+                  {t === "free" ? "Free" : "Premium"}
                 </button>
               );
             })}
@@ -4642,7 +4638,7 @@ function GuidaScreen({ onBack, redditoTipo }) {
                   {s.titolo}
                   {locked && (
                     <span style={{ fontSize: 10.5, fontFamily: MONO_FONT, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", padding: "2px 7px", borderRadius: 999, backgroundColor: s.minTier === "elite" ? "#171717" : "rgba(255,107,74,0.15)", color: s.minTier === "elite" ? "#F7F3EA" : C.brassText }}>
-                      {s.minTier === "elite" ? "Elite" : "Premium"}
+                      {"Premium"}
                     </span>
                   )}
                 </span>
@@ -4807,7 +4803,105 @@ function RegimeFiscaleScreen({ data, setData, onBack }) {
   );
 }
 
-function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransactions, onChangeUser, onOpenRegime, onOpenImport, onOpenImportPDF, onOpenGuida, onOpenLocked, currentUser, entries, txFeed, onRestore }) {
+// ---- Cosa c'è oltre il piano gratuito ----
+// Una pagina sola, raggiunta da un solo pulsante. Elenca tutto quello che si sblocca,
+// e da qui si torna indietro senza aver cambiato niente: chi sta bene com'è non deve
+// incontrare lucchetti sparsi per l'app.
+function PremiumScreen({ data, onBack, onSetTier }) {
+  const isVariabile = data.redditoTipo === "variabile";
+  const gruppi = [
+    {
+      tier: "premium",
+      titolo: "Premium",
+      sotto: "Un solo sblocco, una volta sola",
+      voci: [
+        { icon: Calendar, label: "Calendario", desc: "Turni, entrate e uscite giorno per giorno. Utile se il tuo reddito cambia ogni mese." },
+        { icon: HandCoins, label: "Chiusura del periodo", desc: "A fine settimana o mese ti dice quanto ti è avanzato e ti aiuta a decidere dove metterlo." },
+        { icon: Landmark, label: "Conti collegati e Rendiconto", desc: "Le transazioni arrivano da sole invece di inserirle a mano." },
+        { icon: ArrowRight, rotate: -90, label: "Importa spese da file", desc: "Carichi l'estratto conto in CSV o PDF e l'app lo legge." },
+        { icon: CreditCard, label: "Confronto con i finanziamenti", desc: "Quante ore di lavoro in più ti costano gli interessi di un pagamento a rate." },
+        { icon: PiggyBank, label: "Obiettivi illimitati", desc: "Nel piano gratuito ne puoi seguire uno alla volta." },
+        ...(isVariabile ? [
+          { icon: Calculator, label: "Regime fiscale e calcolo del netto", desc: "Stima cosa resta davvero dopo tasse e contributi, con forfettario o ordinario." },
+          { icon: TrendingUp, label: "Tariffa oraria reale", desc: "Non più una stima: calcolata sulle ore e sugli incassi che registri davvero." },
+        ] : []),
+      ],
+    },
+  ];
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", paddingBottom: 32 }}>
+      <div style={{ padding: "8px 20px 4px 20px", display: "flex", alignItems: "center", gap: 8 }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
+          <ChevronLeft size={20} color={C.textDim} />
+        </button>
+        <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT }}>Impostazioni</span>
+      </div>
+      <ScreenHeader eyebrow="Cosa c'è oltre" title="Le altre funzioni" />
+
+      <div style={{ padding: "0 20px" }}>
+        <p style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.55, marginTop: 0, marginBottom: 20 }}>
+          OreLibere è completa così com'è: converti, segni le spese, ti dai un obiettivo.
+          Queste sono in più, per chi vuole tenere i conti nel dettaglio.
+        </p>
+
+        {gruppi.map((g) => {
+          const giaAttivo = hasTier(g.tier);
+          return (
+            <div key={g.tier} style={{ marginBottom: 22 }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 3 }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: C.paper }}>{g.titolo}</span>
+                {giaAttivo && <span style={{ fontSize: 12, color: C.greenText, fontWeight: 700 }}>già attivo</span>}
+              </div>
+              <div style={{ fontSize: 13, color: C.textFaint, marginBottom: 12 }}>{g.sotto}</div>
+
+              <div style={{ border: `1px solid ${C.panelBorder}`, borderRadius: 8, overflow: "hidden" }}>
+                {g.voci.map((v, i) => (
+                  <div key={v.label} style={{ display: "flex", gap: 11, padding: "13px 14px", borderTop: i > 0 ? `1px solid ${C.panelBorder}` : "none" }}>
+                    <v.icon size={17} color={C.brassText} style={{ flexShrink: 0, marginTop: 2, ...(v.rotate ? { transform: `rotate(${v.rotate}deg)` } : {}) }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.paper }}>{v.label}</div>
+                      <div style={{ fontSize: 13, color: C.textFaint, lineHeight: 1.45, marginTop: 2 }}>{v.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {!giaAttivo && (
+                <button
+                  onClick={() => onSetTier(g.tier)}
+                  style={{
+                    width: "100%", marginTop: 10, padding: "13px 0", borderRadius: 8, border: "none",
+                    backgroundColor: C.brass, color: C.ink, fontSize: 14.5, fontWeight: 800, cursor: "pointer",
+                  }}
+                >
+                  Sblocca {g.titolo}
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+        <button
+          onClick={onBack}
+          style={{
+            width: "100%", padding: "13px 0", borderRadius: 8, border: `1px solid ${C.panelBorder}`,
+            background: "none", color: C.textDim, fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 14,
+          }}
+        >
+          No grazie, sto bene così
+        </button>
+
+        <p style={{ fontSize: 12.5, color: C.textFainter, lineHeight: 1.5, margin: 0 }}>
+          Durante i test lo sblocco è immediato e gratuito: serve a farti vedere come funziona,
+          non è un acquisto. Puoi tornare al piano gratuito quando vuoi dalle Impostazioni.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransactions, onChangeUser, onOpenRegime, onOpenImport, onOpenImportPDF, onOpenGuida, onOpenLocked, onOpenPremium, currentUser, entries, txFeed, onRestore }) {
   const [restoreMsg, setRestoreMsg] = useState(null); // { ok: bool, testo: string }
   const backupFileRef = useRef(null);
 
@@ -4869,10 +4963,10 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           <span style={{
             fontSize: 12, fontFamily: MONO_FONT, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase",
             padding: "4px 10px", borderRadius: 999,
-            backgroundColor: ACTIVE_TIER === "elite" ? "#171717" : ACTIVE_TIER === "premium" ? "rgba(255,107,74,0.15)" : C.panelBorder,
-            color: ACTIVE_TIER === "elite" ? "#F7F3EA" : ACTIVE_TIER === "premium" ? C.brassText : C.textDim,
+            backgroundColor: hasTier("premium") ? "rgba(255,107,74,0.15)" : C.panelBorder,
+            color: hasTier("premium") ? C.brassText : C.textDim,
           }}>
-            {ACTIVE_TIER === "elite" ? "Elite" : ACTIVE_TIER === "premium" ? "Premium" : "Free"}
+            {hasTier("premium") ? "Premium" : "Free"}
           </span>
         }
       />
@@ -4893,21 +4987,14 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           </div>
         </button>
 
-        {!hasTier("premium") && (
-          <div style={{ backgroundColor: "#171717", borderRadius: 8, padding: "14px 16px", marginBottom: 22, textAlign: "center" }}>
-            <div style={{ color: "#F7F3EA", fontSize: 13.5, fontWeight: 700, marginBottom: 4 }}>Sei sul piano Free</div>
-            <p style={{ fontSize: 13.5, color: "#DED7C4", lineHeight: 1.5, margin: 0 }}>
-              Con Premium sblocchi Calendario, Chiusura, il collegamento dei conti, l'import da file e il confronto con i finanziamenti.
-            </p>
-          </div>
-        )}
+
 
         <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 22 }}>
           <div style={{ fontSize: 12, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
             Cambia fascia (solo per questo test)
           </div>
           <div style={{ display: "flex", gap: 6 }}>
-            {["free", "premium", "elite"].map((t) => {
+            {["free", "premium"].map((t) => {
               const active = (data.tierOverride || TIER) === t;
               return (
                 <button
@@ -4919,7 +5006,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
                     fontSize: 13.5, fontWeight: 700, textTransform: "capitalize",
                   }}
                 >
-                  {t === "free" ? "Free" : t === "premium" ? "Premium" : "Elite"}
+                  {t === "free" ? "Free" : "Premium"}
                 </button>
               );
             })}
@@ -4954,38 +5041,21 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
         </div>
 
         {!KICKSTARTER_BUILD && (() => {
-          const lockedItems = [
-            { key: "conti", show: !hasTier("premium"), icon: Landmark, label: "Conti collegati e Rendiconto", tier: "Premium" },
-            { key: "import", show: !hasTier("premium"), icon: ArrowRight, rotate: -90, label: "Importa spese da file", tier: "Premium" },
-            { key: "chiusura", show: !hasTier("premium"), icon: HandCoins, label: "Periodo di chiusura", tier: "Premium" },
-            { key: "regime", show: data.redditoTipo === "variabile" && !hasTier("elite"), icon: Calculator, label: "Regime fiscale e calcolo del netto", tier: "Elite" },
-          ].filter((i) => i.show);
-          if (lockedItems.length === 0) return null;
+          if (hasTier("premium")) return null;
+          // Una riga discreta, non un riquadro colorato: chi resta sul piano gratuito
+          // non deve avere la sensazione che gli manchi qualcosa o che gli si voglia
+          // vendere qualcosa. Chi è curioso la trova, chi non lo è non la nota.
           return (
-            <div style={{ border: `1px solid ${C.panelBorder}`, borderRadius: 8, marginBottom: 22, overflow: "hidden" }}>
-              <div style={{ padding: "12px 14px 8px 14px", fontSize: 12, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter }}>
-                Funzioni da sbloccare
-              </div>
-              {lockedItems.map((item, i) => (
-                <button
-                  key={item.key}
-                  onClick={() => onOpenLocked(item.key)}
-                  style={{
-                    width: "100%", padding: "13px 14px", border: "none", borderTop: i > 0 ? `1px solid ${C.panelBorder}` : "none",
-                    background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", opacity: 0.9,
-                  }}
-                >
-                  <div style={{ position: "relative", flexShrink: 0 }}>
-                    <item.icon size={16} color={C.textFaint} style={item.rotate ? { transform: `rotate(${item.rotate}deg)` } : undefined} />
-                    <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
-                  </div>
-                  <div style={{ textAlign: "left", flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>{item.label}</div>
-                    <div style={{ fontSize: 13, color: C.textFainter, marginTop: 1 }}>{item.tier} · tocca per saperne di più</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <button
+              onClick={() => onOpenPremium()}
+              style={{
+                width: "100%", textAlign: "left", cursor: "pointer", marginBottom: 22,
+                border: "none", background: "none", padding: "2px 0",
+                color: C.textDim, fontSize: 13, fontWeight: 600, textDecoration: "underline",
+              }}
+            >
+              Cosa c'è oltre il piano gratuito →
+            </button>
           );
         })()}
 
@@ -6170,6 +6240,13 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
           {tab === "report" && <ReportScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("diario")} onOpenClosure={() => setTab("closure")} />}
           {tab === "closure" && <ClosureScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("report")} onAllocate={addToGoalSaved} onCarryOver={setCarryOver} />}
           {tab === "goal" && <GoalScreen profile={profile} hourly={hourlyRate} onAddGoal={addGoal} />}
+          {tab === "premium" && (
+            <PremiumScreen
+              data={data}
+              onBack={() => setTab("settings")}
+              onSetTier={(t) => { setData({ ...data, tierOverride: t }); setTab("settings"); }}
+            />
+          )}
           {tab === "settings" && (
             <SettingsScreen
               data={data}
@@ -6183,6 +6260,7 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
               onOpenImportPDF={() => setTab("importpdf")}
               onOpenGuida={() => setTab("guida")}
               onOpenLocked={(key) => setTab("locked-" + key)}
+              onOpenPremium={() => setTab("premium")}
               currentUser={currentUser}
               entries={entries}
               txFeed={txFeed}
@@ -6229,7 +6307,7 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
           )}
           {tab === "locked-regime" && (
             <LockedFeatureScreen
-              tier="elite"
+              tier="premium"
               titolo="Regime fiscale e calcolo del netto"
               descrizione="Se hai partita IVA, stima quanto ti resta in tasca dopo tasse e contributi — e usa le tue aliquote vere per convertire automaticamente lordo in netto ovunque nell'app."
               onBack={() => setTab("settings")}
@@ -6654,7 +6732,8 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
             </div>
           </PunchTicket>
 
-          {/* Confronto tra modi di pagare: stesso prezzo, stessa domanda, altra angolazione */}
+          {/* Confronto tra modi di pagare: funzione Premium, invisibile se non sbloccata */}
+          {hasTier("premium") && (
           <button
             onClick={() => setApriRate(!apriRate)}
             style={{
@@ -6666,8 +6745,9 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
             <span style={{ fontSize: 13.5, color: C.paper, fontWeight: 600 }}>E se non lo paghi subito?</span>
             <span style={{ fontSize: 12.5, color: C.textDim, fontWeight: 600 }}>{apriRate ? "chiudi" : "confronta"}</span>
           </button>
+          )}
 
-          {apriRate && (
+          {hasTier("premium") && apriRate && (
             <div style={{ marginBottom: 18 }}>
               <div style={{ display: "flex", gap: 6, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: 4, marginBottom: 12 }}>
                 {MODI_PAG.map((m) => (
@@ -6749,6 +6829,8 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
             </div>
           )}
 
+          {onAggiungiSpesa && (
+          <>
           <div style={{ fontSize: 14, color: C.paper, fontWeight: 700, textAlign: "center", marginBottom: 10 }}>
             Ti conviene?
           </div>
@@ -6774,15 +6856,35 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
               Lo prendo
             </button>
           </div>
+          </>
+          )}
         </>
       ) : (
         <div style={{
-          border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "18px 16px",
-          marginBottom: 22, fontSize: 13.5, color: C.textFaint, lineHeight: 1.6, textAlign: "center",
+          border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "16px 16px",
+          marginBottom: 22, fontSize: 13.5, color: C.textFaint, lineHeight: 1.7,
         }}>
-          Un caffè, dieci minuti di lavoro.<br />
-          Un panino a pranzo, mezz'ora.<br />
-          <span style={{ color: C.textDim, fontWeight: 600 }}>Una cena fuori, quasi una giornata.</span>
+          {tariffa > 0 ? (
+            // Numeri calcolati sulla tariffa vera, non frasi fisse: un esempio inventato
+            // che non torna con i propri conti toglie credibilità a tutto il resto.
+            <>
+              <div style={{ textAlign: "center", marginBottom: 8, fontSize: 12.5 }}>Con quello che guadagni tu:</div>
+              {[
+                { nome: "Un caffè", euro: 1.2 },
+                { nome: "Un panino a pranzo", euro: 6 },
+                { nome: "Una cena fuori", euro: 45 },
+              ].map((r) => (
+                <div key={r.nome} style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                  <span>{r.nome}</span>
+                  <strong style={{ color: C.textDim, fontFamily: MONO_FONT }}>{euroToTime(r.euro, tariffa)}</strong>
+                </div>
+              ))}
+            </>
+          ) : (
+            <div style={{ textAlign: "center" }}>
+              Scrivi quanto guadagni e vedrai quanto ti costano davvero le cose di tutti i giorni.
+            </div>
+          )}
         </div>
       )}
 
