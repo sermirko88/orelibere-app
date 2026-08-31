@@ -2180,23 +2180,22 @@ function EditCalEntryInline({ entry, onConfirm }) {
   );
 }
 
-// Il pulsante a tre linee apre un menu, non una schermata: è quello che il simbolo
-// promette. Ci guadagna soprattutto la Guida, che prima era sepolta dentro Impostazioni.
+// Il pulsante a tre linee apre un menu a tendina ancorato sotto di sé, non un pannello
+// dal basso: così la tendina "esce" dal pulsante che l'ha aperta, che è il gesto atteso.
 function MenuSheet({ onClose, voci }) {
   return (
     <div
       onClick={onClose}
-      style={{ position: "absolute", inset: 0, backgroundColor: "rgba(10,20,15,0.45)", zIndex: 60, display: "flex", alignItems: "flex-end" }}
+      style={{ position: "absolute", inset: 0, backgroundColor: "rgba(10,20,15,0.35)", zIndex: 60 }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: "100%", backgroundColor: C.panel, borderRadius: "28px 28px 0 0",
-          padding: "10px 16px calc(22px + env(safe-area-inset-bottom)) 16px",
-          borderTop: `1px solid ${C.panelBorder}`,
+          position: "absolute", top: "calc(52px + env(safe-area-inset-top))", right: 14, width: 268,
+          backgroundColor: C.panel, borderRadius: 20, border: `1px solid ${C.panelBorder}`,
+          boxShadow: "0 16px 40px rgba(10,25,18,0.22)", overflow: "hidden",
         }}
       >
-        <div style={{ width: 44, height: 4, borderRadius: 2, backgroundColor: C.panelBorder, margin: "0 auto 14px auto" }} />
         {voci.map((v, i) => (
           <button
             key={v.label}
@@ -2204,13 +2203,13 @@ function MenuSheet({ onClose, voci }) {
             style={{
               width: "100%", textAlign: "left", cursor: "pointer", background: "none",
               border: "none", borderTop: i > 0 ? `1px solid ${C.panelBorder}` : "none",
-              padding: "15px 6px", display: "flex", alignItems: "center", gap: 13,
+              padding: "13px 15px", display: "flex", alignItems: "center", gap: 11,
             }}
           >
-            <v.icon size={19} color={C.brassText} style={{ flexShrink: 0 }} />
+            <v.icon size={18} color={C.brassText} style={{ flexShrink: 0 }} />
             <span>
-              <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: C.paper }}>{v.label}</span>
-              {v.desc && <span style={{ display: "block", fontSize: 12.5, color: C.textFaint, marginTop: 1 }}>{v.desc}</span>}
+              <span style={{ display: "block", fontSize: 14.5, fontWeight: 700, color: C.paper }}>{v.label}</span>
+              {v.desc && <span style={{ display: "block", fontSize: 12, color: C.textFaint, marginTop: 1, lineHeight: 1.35 }}>{v.desc}</span>}
             </span>
           </button>
         ))}
@@ -2219,7 +2218,7 @@ function MenuSheet({ onClose, voci }) {
   );
 }
 
-function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenMenu, onOpenReport, onOpenGoal, onSimulateBankTx, rateSource, onDeleteEntry, onEditEntry }) {
+function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenReport, onOpenGoal, onSimulateBankTx, rateSource, onDeleteEntry, onEditEntry }) {
   const [showConcept, setShowConcept] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -2253,7 +2252,6 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenMen
                 <span style={{ fontSize: 12, fontFamily: MONO_FONT, color: C.textFaint }}>simula</span>
               </button>
             )}
-            <button onClick={onOpenMenu} style={{ background: "none", border: "none", cursor: "pointer" }} aria-label="Menu"><Menu size={20} color={C.textDim} /></button>
           </div>
         }
       />
@@ -6205,8 +6203,15 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
             <button onClick={() => setSyncError(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontWeight: 700, padding: 0 }}>✕</button>
           </div>
         )}
-        <div style={{ padding: "16px 20px 4px 20px" }}>
+        <div style={{ padding: "16px 20px 4px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", zIndex: 61 }}>
           <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.textDim, letterSpacing: "0.08em" }}>ORELIBERE</span>
+          <button
+            onClick={() => setMenuAperto(!menuAperto)}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 4, marginRight: -4, display: "flex" }}
+            aria-label="Menu"
+          >
+            {menuAperto ? <XIcon size={22} color={C.paper} /> : <Menu size={22} color={C.textDim} />}
+          </button>
         </div>
         <div style={{ padding: "0 20px 12px 20px" }}>
           <span style={{ fontFamily: SERIF_FONT, fontStyle: "italic", fontWeight: 500, fontSize: 12.5, color: C.textFainter }}>
@@ -6230,7 +6235,6 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
               todayEntries={todayEntries}
               hasAnyEntry={entries.length > 0}
               onOpenAdd={() => setAddOpen(true)}
-              onOpenMenu={() => setMenuAperto(true)}
               onOpenReport={() => setTab("report")}
               onOpenGoal={() => setTab("goal")}
               onSimulateBankTx={() => setBankTx(generateFakeTransaction())}
