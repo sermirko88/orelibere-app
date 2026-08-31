@@ -80,7 +80,7 @@ const LIGHT_THEME = {
   textDim: "#14201A",
   textFaint: "#2E3B33",
   textFainter: "#4A574E",
-  fixedBar: "#4A5A50",
+  fixedBar: "#2B3A33",
   outerBg: "#F6EFE8",     // il rame: entra dal basso nel gradiente di sfondo
   sheetBorder: "#DDE2D6",
   ticketBorder: "#DDE3D6",
@@ -106,7 +106,7 @@ const DARK_THEME = {
   textDim: "#EEF6F1",
   textFaint: "#D2E3D8",
   textFainter: "#A8BFB2",
-  fixedBar: "#7FA391",
+  fixedBar: "#9FC4B0",
   outerBg: "#071310",
   sheetBorder: "#2C4E3A",
   ticketBorder: "#2A4A38",
@@ -1652,7 +1652,7 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
                 {newMonthlyTarget > 0 ? (
                   <div style={{
                     display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, padding: "10px 12px", borderRadius: 12,
-                    backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : tight ? "rgba(255,107,74,0.1)" : "rgba(124,179,66,0.1)",
+                    backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : tight ? "rgba(47,107,79,0.1)" : "rgba(124,179,66,0.1)",
                     border: `1px solid ${overBudget ? C.rust : tight ? C.brassText : C.greenText}`,
                   }}>
                     <span style={{ fontSize: 13, marginTop: -1 }}>{overBudget ? "⚠" : tight ? "!" : "✓"}</span>
@@ -1796,7 +1796,7 @@ function OneTapCategorizeSheet({ tx, hourly, onClose, onConfirm }) {
                     onClick={() => pick(c)}
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-                      backgroundColor: isSuggested ? "rgba(255,107,74,0.12)" : C.inputBg,
+                      backgroundColor: isSuggested ? "rgba(47,107,79,0.12)" : C.inputBg,
                       border: `1px solid ${isSuggested ? C.brass : C.panelBorder}`,
                       borderRadius: 12, padding: "16px 0", cursor: "pointer",
                     }}
@@ -2335,7 +2335,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenRep
           onClick={onOpenReport}
           style={{
             width: "100%", textAlign: "left", cursor: "pointer", border: `1px solid ${C.brass}`,
-            backgroundColor: "rgba(255,107,74,0.08)", borderRadius: 12, padding: 16,
+            backgroundColor: "rgba(47,107,79,0.08)", borderRadius: 12, padding: 16,
             display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
           }}
         >
@@ -2423,7 +2423,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenRep
         style={{
           position: "fixed", bottom: 96, right: "calc(50% - 190px + 24px)",
           width: 56, height: 56, borderRadius: "50%", backgroundColor: C.brass, border: "none",
-          display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 20px rgba(255,107,74,0.45)", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 20px rgba(47,107,79,0.45)", cursor: "pointer",
         }}
       >
         <Plus size={26} color={C.ink} strokeWidth={2.5} />
@@ -2549,7 +2549,7 @@ function AddSheet({ hourly, onClose, onAdd }) {
         onClick={() => setShowGiorno(!showGiorno)}
         style={{
           width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
-          backgroundColor: isOggi ? C.inputBg : "rgba(255,107,74,0.10)",
+          backgroundColor: isOggi ? C.inputBg : "rgba(47,107,79,0.10)",
           border: `1px solid ${isOggi ? C.panelBorder : C.brass}`,
           borderRadius: 14, padding: "10px 12px", cursor: "pointer",
         }}
@@ -2787,7 +2787,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
 
       {topCat && (
       <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ backgroundColor: "rgba(255,107,74,0.08)", border: `1px solid ${C.brass}`, borderRadius: 12, padding: 16 }}>
+        <div style={{ backgroundColor: "rgba(47,107,79,0.08)", border: `1px solid ${C.brass}`, borderRadius: 12, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <Lightbulb size={16} color={C.brassText} />
             <span style={{ color: C.brassText, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Suggerimento</span>
@@ -3183,7 +3183,7 @@ function ImportPDFScreen({ calendario, setCalendario, onBack }) {
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 32px 20px" }}>
         {status !== "parsed" && !result && (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(255,107,74,0.1)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "10px 12px", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(47,107,79,0.1)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "10px 12px", marginBottom: 16 }}>
             <Info size={13} color={C.brassDim} style={{ marginTop: 1, flexShrink: 0 }} />
             <span style={{ fontSize: 13.5, color: C.paper, lineHeight: 1.5 }}>
               Funziona con PDF che contengono testo vero, anche con le transazioni spezzate su più righe. L'unico caso che non può leggere è una scansione o una foto (senza testo selezionabile).
@@ -3218,7 +3218,7 @@ function ImportPDFScreen({ calendario, setCalendario, onBack }) {
 
         {status === "parsed" && !result && !showChecklist && (
           <>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(255,107,74,0.14)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "12px 14px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(47,107,79,0.14)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "12px 14px", marginBottom: 16 }}>
               <TriangleAlert size={15} color={C.brassDim} style={{ marginTop: 1, flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: 13, color: C.paper, fontWeight: 700, marginBottom: 3 }}>Trovati {parsedTx.length} movimenti — controlla prima di fidarti</div>
@@ -3481,7 +3481,7 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
         {parsed && !result && (!autoDetected || showManual) && (
           <>
             {!autoDetected && (
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(255,107,74,0.1)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "10px 12px", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(47,107,79,0.1)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "10px 12px", marginBottom: 16 }}>
                 <Info size={13} color={C.brassDim} style={{ marginTop: 1, flexShrink: 0 }} />
                 <span style={{ fontSize: 13.5, color: C.paper, lineHeight: 1.5 }}>Non sono riuscito a capire da solo quali colonne usare — scegli tu qui sotto.</span>
               </div>
@@ -3934,7 +3934,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
       {fatture.filter((f) => f.stato === "attesa").length > 0 && (
         <div style={{ padding: "0 20px", marginBottom: 16 }}>
-          <div style={{ backgroundColor: "rgba(255,107,74,0.08)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: 14 }}>
+          <div style={{ backgroundColor: "rgba(47,107,79,0.08)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
               <Receipt size={13} color={C.brassText} />
               <span style={{ fontSize: 13.5, fontWeight: 700, color: C.paper }}>Compensi che devi ancora ricevere</span>
@@ -4101,7 +4101,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                   onClick={() => { if (dayEntries.length === 0) { setAddMenuDay(d); } else { setSelectedDay(d); setShowAdd(false); } }}
                   style={{
                     aspectRatio: "1", borderRadius: 14, border: `${borderW} solid ${borderColor}`,
-                    backgroundColor: fatturaStato === "pagata" ? "rgba(124,179,66,0.08)" : fatturaStato === "attesa" ? "rgba(255,107,74,0.08)" : dayEntries.length ? C.panel : "transparent",
+                    backgroundColor: fatturaStato === "pagata" ? "rgba(124,179,66,0.08)" : fatturaStato === "attesa" ? "rgba(47,107,79,0.08)" : dayEntries.length ? C.panel : "transparent",
                     display: "flex", flexDirection: "column",
                     alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 2,
                   }}
@@ -4250,7 +4250,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
             {rangeResult ? (
               <div style={{ textAlign: "center", padding: "24px 0" }}>
-                <div style={{ width: 52, height: 52, borderRadius: "50%", backgroundColor: rangeResult.fatturaCreata ? "rgba(255,107,74,0.15)" : "rgba(124,179,66,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px auto" }}>
+                <div style={{ width: 52, height: 52, borderRadius: "50%", backgroundColor: rangeResult.fatturaCreata ? "rgba(47,107,79,0.15)" : "rgba(124,179,66,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px auto" }}>
                   <TrendingUp size={24} color={rangeResult.fatturaCreata ? C.brassText : C.greenText} />
                 </div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.paper, marginBottom: 6 }}>{rangeResult.count} giorni lavorativi aggiunti</div>
@@ -4391,7 +4391,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                           style={{
                             flex: 1, padding: "9px 2px", borderRadius: 999, cursor: "pointer",
                             border: `1px solid ${rangeForm.tipoCompenso === t.id ? C.brass : C.panelBorder}`,
-                            backgroundColor: rangeForm.tipoCompenso === t.id ? "rgba(255,107,74,0.10)" : "transparent",
+                            backgroundColor: rangeForm.tipoCompenso === t.id ? "rgba(47,107,79,0.10)" : "transparent",
                             color: rangeForm.tipoCompenso === t.id ? C.paper : C.textDim,
                             fontSize: 12.5, fontWeight: 700,
                           }}
@@ -4413,7 +4413,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                           style={{
                             flex: 1, padding: "9px 4px", borderRadius: 999, cursor: "pointer",
                             border: `1px solid ${rangeForm.scadenzaModo === m.id ? C.brass : C.panelBorder}`,
-                            backgroundColor: rangeForm.scadenzaModo === m.id ? "rgba(255,107,74,0.10)" : "transparent",
+                            backgroundColor: rangeForm.scadenzaModo === m.id ? "rgba(47,107,79,0.10)" : "transparent",
                             color: rangeForm.scadenzaModo === m.id ? C.paper : C.textDim,
                             fontSize: 12.5, fontWeight: 600,
                           }}
@@ -4501,13 +4501,13 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}><ChevronLeft size={20} color={C.textDim} /></button>
       </div>
       <div style={{ padding: "36px 30px 30px 30px", textAlign: "center" }}>
-        <div style={{ width: 60, height: 60, borderRadius: "50%", backgroundColor: isElite ? "#171717" : "rgba(255,107,74,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px auto" }}>
+        <div style={{ width: 60, height: 60, borderRadius: "50%", backgroundColor: isElite ? "#171717" : "rgba(47,107,79,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px auto" }}>
           <Lock size={24} color={isElite ? "#F7F3EA" : C.brassText} />
         </div>
         <span style={{
           display: "inline-block", fontSize: 12, fontFamily: MONO_FONT, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase",
           padding: "4px 10px", borderRadius: 999, marginBottom: 12,
-          backgroundColor: isElite ? "#171717" : "rgba(255,107,74,0.15)", color: isElite ? "#F7F3EA" : C.brassText,
+          backgroundColor: isElite ? "#171717" : "rgba(47,107,79,0.15)", color: isElite ? "#F7F3EA" : C.brassText,
         }}>
           {isElite ? "Elite" : "Premium"}
         </span>
@@ -4674,7 +4674,7 @@ function GuidaScreen({ onBack, redditoTipo }) {
                 <span style={{ fontSize: 13.5, fontWeight: 700, color: C.paper, display: "flex", alignItems: "center", gap: 8 }}>
                   {s.titolo}
                   {locked && (
-                    <span style={{ fontSize: 10.5, fontFamily: MONO_FONT, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", padding: "2px 7px", borderRadius: 999, backgroundColor: s.minTier === "elite" ? "#171717" : "rgba(255,107,74,0.15)", color: s.minTier === "elite" ? "#F7F3EA" : C.brassText }}>
+                    <span style={{ fontSize: 10.5, fontFamily: MONO_FONT, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", padding: "2px 7px", borderRadius: 999, backgroundColor: s.minTier === "elite" ? "#171717" : "rgba(47,107,79,0.15)", color: s.minTier === "elite" ? "#F7F3EA" : C.brassText }}>
                       {"Premium"}
                     </span>
                   )}
@@ -4730,7 +4730,7 @@ function RegimeFiscaleScreen({ data, setData, onBack }) {
       <ScreenHeader eyebrow="Solo una stima, non una dichiarazione" title="Regime fiscale" />
 
       <div style={{ padding: "0 20px", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(255,107,74,0.1)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "10px 12px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(47,107,79,0.1)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "10px 12px" }}>
           <Info size={13} color={C.brassDim} style={{ marginTop: 1, flexShrink: 0 }} />
           <span style={{ fontSize: 13.5, color: C.paper, lineHeight: 1.5 }}>
             Calcolo indicativo per farti un'idea del tuo netto. Aliquote e regole cambiano ogni anno e dipendono dal tuo caso specifico — verifica sempre con il tuo commercialista prima di decisioni importanti.
@@ -5000,7 +5000,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           <span style={{
             fontSize: 12, fontFamily: MONO_FONT, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase",
             padding: "4px 10px", borderRadius: 999,
-            backgroundColor: hasTier("premium") ? "rgba(255,107,74,0.15)" : C.panelBorder,
+            backgroundColor: hasTier("premium") ? "rgba(47,107,79,0.15)" : C.panelBorder,
             color: hasTier("premium") ? C.brassText : C.textDim,
           }}>
             {hasTier("premium") ? "Premium" : "Free"}
@@ -5013,7 +5013,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           id="tut-guida"
           onClick={onOpenGuida}
           style={{
-            width: "100%", padding: "13px 14px", borderRadius: 16, border: `1px solid ${C.brass}`, backgroundColor: "rgba(255,107,74,0.08)",
+            width: "100%", padding: "13px 14px", borderRadius: 16, border: `1px solid ${C.brass}`, backgroundColor: "rgba(47,107,79,0.08)",
             display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 22,
           }}
         >
@@ -5121,7 +5121,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
                           style={{
                             padding: "6px 12px", borderRadius: 999, fontSize: 13.5, fontFamily: MONO_FONT, fontWeight: 700, cursor: "pointer",
                             border: `1px solid ${connected ? C.green : C.brass}`,
-                            backgroundColor: connected ? "rgba(124,179,66,0.12)" : "rgba(255,107,74,0.12)",
+                            backgroundColor: connected ? "rgba(124,179,66,0.12)" : "rgba(47,107,79,0.12)",
                             color: connected ? C.greenText : C.brassText, flexShrink: 0,
                           }}
                         >
@@ -5141,7 +5141,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
             <button
               onClick={onOpenTransactions}
               style={{
-                width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.brass}`, backgroundColor: "rgba(255,107,74,0.08)",
+                width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.brass}`, backgroundColor: "rgba(47,107,79,0.08)",
                 color: C.brassText, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12,
               }}
             >
@@ -5210,7 +5210,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           onClick={scaricaBackup}
           style={{
             width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.brass}`,
-            backgroundColor: "rgba(255,107,74,0.08)", color: C.paper, fontSize: 13.5, fontWeight: 700,
+            backgroundColor: "rgba(47,107,79,0.08)", color: C.paper, fontSize: 13.5, fontWeight: 700,
             cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8,
           }}
         >
@@ -5267,7 +5267,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
                   padding: "14px 16px", borderRadius: 12, cursor: "pointer",
-                  backgroundColor: active ? "rgba(255,107,74,0.1)" : C.panel,
+                  backgroundColor: active ? "rgba(47,107,79,0.1)" : C.panel,
                   border: `1px solid ${active ? C.brass : C.panelBorder}`,
                 }}
               >
@@ -5445,7 +5445,7 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
         <div style={{ padding: "0 20px", marginTop: 16 }}>
           <div style={{
             display: "flex", alignItems: "flex-start", gap: 10, padding: 16, borderRadius: 12,
-            backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : "rgba(255,107,74,0.1)",
+            backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : "rgba(47,107,79,0.1)",
             border: `1px solid ${overBudget ? C.rust : C.brass}`,
           }}>
             <span style={{ fontSize: 15, marginTop: -1 }}>{overBudget ? "⚠" : "!"}</span>
@@ -5667,7 +5667,7 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
                 {newMonthlyTarget > 0 ? (
                   <div style={{
                     display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, padding: "10px 12px", borderRadius: 12,
-                    backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : tight ? "rgba(255,107,74,0.1)" : "rgba(124,179,66,0.1)",
+                    backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : tight ? "rgba(47,107,79,0.1)" : "rgba(124,179,66,0.1)",
                     border: `1px solid ${overBudget ? C.rust : tight ? C.brassText : C.greenText}`,
                   }}>
                     <span style={{ fontSize: 13, marginTop: -1 }}>{overBudget ? "⚠" : tight ? "!" : "✓"}</span>
@@ -6481,7 +6481,7 @@ class ErrorBoundary extends React.Component {
             </div>
             <button
               onClick={() => { this.setState({ error: null }); }}
-              style={{ padding: "10px 16px", borderRadius: 16, border: "none", backgroundColor: "#FF6B4A", color: "#171717", fontWeight: 700, cursor: "pointer" }}
+              style={{ padding: "10px 16px", borderRadius: 16, border: "none", backgroundColor: "#2F6B4F", color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}
             >
               Riprova
             </button>
@@ -6838,7 +6838,7 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
                         style={{
                           flex: 1, padding: "8px 4px", borderRadius: 999, cursor: "pointer",
                           border: `1px solid ${inputFinanziato === o.id ? C.brass : C.panelBorder}`,
-                          backgroundColor: inputFinanziato === o.id ? "rgba(255,107,74,0.10)" : "transparent",
+                          backgroundColor: inputFinanziato === o.id ? "rgba(47,107,79,0.10)" : "transparent",
                           color: C.textDim, fontSize: 12.5, fontWeight: 600,
                         }}
                       >
@@ -6901,7 +6901,7 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
               onClick={() => { setPrezzoStr(""); }}
               style={{
                 flex: 1, padding: "13px 0", borderRadius: 16, cursor: "pointer",
-                border: `1px solid ${C.brass}`, backgroundColor: "rgba(255,107,74,0.08)",
+                border: `1px solid ${C.brass}`, backgroundColor: "rgba(47,107,79,0.08)",
                 color: C.paper, fontSize: 14, fontWeight: 700,
               }}
             >
