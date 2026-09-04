@@ -1,5 +1,5 @@
 /*
- * OreLibere — quanto ti costa davvero, in ore della tua vita.
+ * OreLibere — quanto ti costa davvero, in ore di lavoro.
  *
  * Copyright (c) 2026 Mirko Serino. Tutti i diritti riservati.
  *
@@ -34,7 +34,7 @@ function ensureAuth() {
 import {
   Home, Calculator, Plus, Coffee, UtensilsCrossed, Beer, Dumbbell, Car,
   MoreHorizontal, X, TrendingDown, Receipt, Zap, Building2, Fuel,
-  Cigarette, Wifi, ArrowRight, Settings2, CreditCard, ShoppingBag, Gift, HeartPulse, BarChart3, ChevronLeft, ChevronRight, Lightbulb, PiggyBank, Landmark, Bell, Info, HandCoins, ExternalLink, TriangleAlert, Calendar, TrendingUp, Clock, HelpCircle, ChevronDown, Lock
+  Cigarette, Wifi, ArrowRight, Settings2, CreditCard, ShoppingBag, Gift, HeartPulse, BarChart3, ChevronLeft, ChevronRight, Lightbulb, PiggyBank, Landmark, Bell, Info, HandCoins, ExternalLink, TriangleAlert, Calendar, TrendingUp, Clock, HelpCircle, ChevronDown, Lock, Trash2, Pencil, Menu, X as XIcon, Repeat, Tv, Music, Smartphone, Newspaper, Cloud, Gamepad2
 } from "lucide-react";
 
 // ---- Versione Kickstarter/MVP: nasconde tutto ciò che è collegamento bancario,
@@ -44,15 +44,18 @@ import {
 // `false` per riattivare le funzionalità di collegamento conto complete.
 const KICKSTARTER_BUILD = false;
 
-// ---- Fasce di abbonamento: Free, Premium, Elite. Questa riga resta il valore di
+// ---- Fasce: Free e Premium. Questa riga resta il valore di
 // PARTENZA per ogni nuovo utente — ma ogni tester può cambiarla da solo, sul proprio
 // telefono, dalle Impostazioni → "Cambia fascia (solo test)", senza bisogno che il
 // codice venga ricaricato ogni volta.
-//   Free: Diario, tariffa oraria, Simulatore (Cash/3 rate), Budget (1 obiettivo)
-//   Premium: + Calendario, Chiusura, Rendiconto, Import file, Simulatore completo, Budget illimitato
-//   Elite: + Regime fiscale, Progetti, tariffa oraria reale dallo storico
-const TIER = "free"; // "free" | "premium" | "elite" — valore di partenza
-const TIER_RANK = { free: 0, premium: 1, elite: 2 };
+//   Free: Convertitore, Diario, tariffa oraria, Budget (1 obiettivo)
+//   Premium: tutto il resto — Calendario, Chiusura, Rendiconto, Import file,
+//            confronto finanziamenti, obiettivi illimitati, regime fiscale, progetti.
+// Un solo sblocco, una volta sola. "elite" resta come sinonimo di "premium" perché
+// nel codice ci sono decine di controlli hasTier("elite"): riscriverli tutti sarebbe
+// rischioso e non cambierebbe nulla, visto che chi ha Premium ha già tutto.
+const TIER = "free"; // "free" | "premium" — valore di partenza
+const TIER_RANK = { free: 0, premium: 1, elite: 1 };
 let ACTIVE_TIER = TIER; // valore effettivo in uso, aggiornato da MainApp ad ogni render
 function hasTier(minTier) {
   return TIER_RANK[ACTIVE_TIER] >= TIER_RANK[minTier];
@@ -60,55 +63,55 @@ function hasTier(minTier) {
 
 // ---- Design tokens (applied via inline style, NOT via bg-[#..] classes) ----
 const LIGHT_THEME = {
-  bg: "#F7F3EA",
+  bg: "#F3F4EF",
   panel: "#FFFFFF",
-  panelBorder: "#E7E1D2",
-  inputBg: "#FBF9F3",
-  ticket: "#F2ECDD",
-  brass: "#FF6B4A",       // riempimenti e bordi: resta acceso
-  brassText: "#C9401B",   // stesso arancio ma leggibile quando è testo o icona su fondo chiaro
-  brassDim: "#E5522F",
-  paper: "#171717",
-  ink: "#171717",       // testo sopra i pulsanti arancioni: scuro in entrambi i temi
-  ticketInk: "#171717", // testo dentro le card "biglietto": segue il tema
-  rust: "#C93E22",
-  green: "#7CB342",       // riempimenti (barre, pallini)
-  greenText: "#4F7D24",   // testo/icone verdi: la versione chiara spariva sul fondo crema
-  textDim: "#1F1E1B",
-  textFaint: "#333029",
-  textFainter: "#4E4B43",
-  fixedBar: "#3D4550",
-  outerBg: "#EDE7D8",
-  sheetBorder: "#DED7C4",
-  ticketBorder: "#E2DAC5",
+  panelBorder: "#DFE3D9",
+  inputBg: "#FAFBF7",
+  ticket: "#EAEEE4",
+  brass: "#2F6B4F",       // salvia profondo: riempimenti, bordi, elementi attivi
+  brassText: "#245A41",   // stessa famiglia, più scuro: leggibile come testo su fondo chiaro
+  brassDim: "#1F5A3E",
+  paper: "#14201A",
+  ink: "#FFFFFF",       // testo sopra i pulsanti verdi
+  ticketInk: "#14201A", // testo dentro le card "biglietto": segue il tema
+  rust: "#B5442A",
+  green: "#4F9E6E",       // riempimenti (barre, pallini)
+  greenText: "#2A6B49",   // testo/icone verdi su fondo chiaro
+  textDim: "#14201A",
+  textFaint: "#2E3B33",
+  textFainter: "#4A574E",
+  fixedBar: "#2B3A33",
+  outerBg: "#F6EFE8",     // il rame: entra dal basso nel gradiente di sfondo
+  sheetBorder: "#DDE2D6",
+  ticketBorder: "#DDE3D6",
   trackBg: "rgba(23,23,23,0.08)",
-  glow: "#FFFFFF",
+  glow: "#E4EDE2",
 };
 
 const DARK_THEME = {
-  bg: "#1A1712",
-  panel: "#211E17",
-  panelBorder: "#3A352A",
-  inputBg: "#28241C",
-  ticket: "#26221A",
-  brass: "#FF7A5C",
-  brassText: "#FF9074",
-  brassDim: "#E5522F",
-  paper: "#F2EEE3",
-  ink: "#171717",
-  ticketInk: "#F2EEE3",
-  rust: "#FF6B52",
-  green: "#8FCB55",
-  greenText: "#A2D96E",
-  textDim: "#F2EEE3",
-  textFaint: "#E0DBCD",
-  textFainter: "#C3BEAF",
-  fixedBar: "#6C7684",
-  outerBg: "#0F0D09",
-  sheetBorder: "#4A4433",
-  ticketBorder: "#3E3928",
+  bg: "#0D2119",
+  panel: "#132A20",
+  panelBorder: "#264635",
+  inputBg: "#12281E",
+  ticket: "#163A2B",
+  brass: "#3FB782",
+  brassText: "#6FE7A8",
+  brassDim: "#2E9668",
+  paper: "#EEF6F1",
+  ink: "#062016",
+  ticketInk: "#EEF6F1",
+  rust: "#FF7A5F",
+  green: "#4FCB8D",
+  greenText: "#6FE7A8",
+  textDim: "#EEF6F1",
+  textFaint: "#D2E3D8",
+  textFainter: "#A8BFB2",
+  fixedBar: "#9FC4B0",
+  outerBg: "#071310",
+  sheetBorder: "#2C4E3A",
+  ticketBorder: "#2A4A38",
   trackBg: "rgba(255,255,255,0.08)",
-  glow: "#2B2620",
+  glow: "#17372A",
 };
 
 // C resta lo stesso oggetto (stessa identità in memoria) per tutta la vita dell'app:
@@ -188,6 +191,37 @@ async function playJackpotSound() {
 
 
 const FIXED_ICONS = { affitto: Building2, bollette: Zap, auto: Car, carburante: Fuel, sigarette: Cigarette, internet: Wifi, altro: Receipt };
+// ---- Abbonamenti: catalogo dei servizi italiani più comuni ----
+// Un tocco precompila nome, icona e prezzo tipico. Il prezzo è un punto di partenza:
+// l'utente lo corregge se il suo piano costa diverso.
+const ABBONAMENTI_CATALOGO = [
+  { id: "netflix", nome: "Netflix", icon: Tv, euro: 12.99, cadenza: "mensile" },
+  { id: "spotify", nome: "Spotify", icon: Music, euro: 11.99, cadenza: "mensile" },
+  { id: "prime", nome: "Amazon Prime", icon: Cloud, euro: 4.99, cadenza: "mensile" },
+  { id: "disney", nome: "Disney+", icon: Tv, euro: 8.99, cadenza: "mensile" },
+  { id: "sky", nome: "Sky", icon: Tv, euro: 29.90, cadenza: "mensile" },
+  { id: "dazn", nome: "DAZN", icon: Tv, euro: 34.99, cadenza: "mensile" },
+  { id: "telefono", nome: "Telefono", icon: Smartphone, euro: 12, cadenza: "mensile" },
+  { id: "internet_casa", nome: "Internet casa", icon: Wifi, euro: 29.90, cadenza: "mensile" },
+  { id: "palestra_ab", nome: "Palestra", icon: Dumbbell, euro: 40, cadenza: "mensile" },
+  { id: "icloud", nome: "iCloud / Google One", icon: Cloud, euro: 2.99, cadenza: "mensile" },
+  { id: "quotidiano", nome: "Quotidiano online", icon: Newspaper, euro: 9.99, cadenza: "mensile" },
+  { id: "gaming", nome: "Xbox / PS Plus", icon: Gamepad2, euro: 8.99, cadenza: "mensile" },
+  { id: "altro_abb", nome: "Altro", icon: Repeat, euro: null, cadenza: "mensile" },
+];
+
+// Ogni cadenza normalizzata al mese: è il minimo comune per confrontare abbonamenti
+// diversi (Sky annuale contro Netflix mensile) nello stesso totale.
+const ABBONAMENTI_CADENZE = {
+  mensile: { label: "al mese", divisoreMese: 1 },
+  annuale: { label: "all'anno", divisoreMese: 12 },
+  settimanale: { label: "a settimana", divisoreMese: 1 / 4.33 },
+};
+function euroAlMese(euro, cadenza) {
+  const c = ABBONAMENTI_CADENZE[cadenza] || ABBONAMENTI_CADENZE.mensile;
+  return (Number(euro) || 0) / c.divisoreMese;
+}
+
 const CATEGORIES = [
   { id: "colazione", label: "Colazione", icon: Coffee, suggested: 2.5 },
   { id: "pranzo", label: "Pranzo", icon: UtensilsCrossed, suggested: 9 },
@@ -325,7 +359,7 @@ function useShellStyles() {
       outerStyle: { height: h, minHeight: 320, backgroundColor: C.bg, colorScheme: "light", overflow: "hidden" },
       frameStyle: {
         position: "relative", width: "100%", height: "100%", minHeight: 320,
-        background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
+        background: `linear-gradient(160deg, ${C.glow} 0%, ${C.bg} 52%, ${C.outerBg} 100%)`,
         overflow: "hidden", display: "flex", flexDirection: "column",
         paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)",
         boxSizing: "border-box",
@@ -337,7 +371,7 @@ function useShellStyles() {
     outerStyle: { minHeight: "100vh", backgroundColor: C.outerBg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, colorScheme: "light" },
     frameStyle: {
       position: "relative", width: 380, height: 780,
-      background: `radial-gradient(circle at 50% 0%, ${C.glow} 0%, ${C.bg} 55%, ${C.outerBg} 100%)`,
+      background: `linear-gradient(160deg, ${C.glow} 0%, ${C.bg} 52%, ${C.outerBg} 100%)`,
       borderRadius: 36, overflow: "hidden", border: `4px solid ${C.panelBorder}`,
       boxShadow: "0 25px 60px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column",
     },
@@ -352,6 +386,26 @@ function euroToTime(euro, hourlyRate) {
   if (h === 0) return `${m} min`;
   if (m === 0) return `${h}h`;
   return `${h}h ${m}min`;
+}
+
+// Accanto al numero preciso serve un metro umano: "9h 46min" è esatto ma astratto,
+// "più di una giornata di lavoro" è la frase che ti fa fermare un attimo.
+function scalaUmana(euro, hourlyRate, oreGiorno = 8) {
+  if (!hourlyRate || hourlyRate <= 0 || !euro) return "";
+  const ore = euro / hourlyRate;
+  const g = oreGiorno > 0 ? oreGiorno : 8;
+  if (ore < 0.5) return "poco più di una pausa";
+  if (ore < 1.5) return "circa un'ora di lavoro";
+  if (ore < g * 0.5) return "una mattinata di lavoro";
+  if (ore < g * 0.95) return "quasi una giornata di lavoro";
+  if (ore < g * 1.5) return "una giornata di lavoro";
+  const giorni = ore / g;
+  if (giorni < 5) return `${giorni.toFixed(giorni < 3 ? 1 : 0)} giornate di lavoro`.replace(".0", "");
+  const settimane = giorni / 5;
+  if (settimane < 1.5) return "una settimana di lavoro";
+  if (settimane < 4.5) return `${Math.round(settimane)} settimane di lavoro`;
+  const mesi = giorni / 22;
+  return `circa ${Math.round(mesi)} mesi di lavoro`;
 }
 
 // Il PIN non viene mai salvato in chiaro: lo trasformiamo in un hash (SHA-256, incluso
@@ -378,7 +432,7 @@ function PinInput({ value, onChange, autoFocus }) {
       style={{
         width: "100%", boxSizing: "border-box", textAlign: "center", fontFamily: MONO_FONT, fontSize: 28, fontWeight: 800,
         letterSpacing: "0.6em", color: C.paper, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`,
-        borderRadius: 8, padding: "14px 0 14px 0.6em", outline: "none",
+        borderRadius: 16, padding: "14px 0 14px 0.6em", outline: "none",
       }}
     />
   );
@@ -426,7 +480,7 @@ function PinMigratePrompt({ name, onDone }) {
       <button
         onClick={save}
         disabled={!ready || saving}
-        style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: ready ? C.brass : C.panelBorder, color: ready ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: ready ? "pointer" : "default" }}
+        style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 16, border: "none", backgroundColor: ready ? C.brass : C.panelBorder, color: ready ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: ready ? "pointer" : "default" }}
       >
         {saving ? "Salvo..." : "Conferma PIN"}
       </button>
@@ -918,7 +972,7 @@ function ScreenHeader({ eyebrow, title, right }) {
 
 function TextInput({ value, onChange, placeholder, type = "text", prefix, suffix, big }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 12px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "12px 12px" }}>
       {prefix && <span style={{ color: C.brassText, fontFamily: MONO_FONT }}>{prefix}</span>}
       <input
         type={type}
@@ -1009,7 +1063,7 @@ function TimeCompareBox({ label, hours, color, delay }) {
           display: "flex", alignItems: "center", justifyContent: "space-between",
           backgroundColor: pressed ? `${color}22` : `${color}14`,
           border: `1px solid ${pressed ? color : `${color}55`}`,
-          borderRadius: 8, padding: "10px 12px", cursor: "pointer",
+          borderRadius: 16, padding: "10px 12px", cursor: "pointer",
           animation: `tcbSlideUp 0.5s ease ${delay}ms both`,
           transition: "background-color 0.15s ease, border-color 0.15s ease",
         }}
@@ -1030,7 +1084,7 @@ function WelcomeScreen({ onStart }) {
       `}</style>
 
       {/* Banda "poster" scura, per non far sembrare la schermata un testo su un foglio */}
-      <div style={{ backgroundColor: C.ink, padding: "36px 24px 30px 24px", borderRadius: "0 0 24px 24px" }}>
+      <div style={{ backgroundColor: "#182620", padding: "36px 24px 30px 24px", borderRadius: "0 0 28px 28px" }}>
         <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.12em", color: C.brass, fontFamily: SANS_FONT, fontWeight: 700, marginBottom: 16, animation: "wsFadeUp 0.6s ease 0ms both" }}>OreLibere</div>
         <h1 style={{ fontSize: 27, fontWeight: 800, color: "#FFFFFF", fontFamily: DISPLAY_FONT, margin: "0 0 8px 0", lineHeight: 1.2, animation: "wsFadeUp 0.6s ease 120ms both" }}>
           Non hai mai pagato il prezzo giusto.
@@ -1058,7 +1112,7 @@ function WelcomeScreen({ onStart }) {
         </p>
 
         <p style={P}>
-          Per risparmiare davvero, smetti di contare gli euro. Conta le ore della tua vita.
+          Per risparmiare davvero, smetti di contare gli euro. Conta le ore che hai dovuto lavorare.
         </p>
 
         <p style={{ ...P, marginBottom: 20 }}>
@@ -1076,7 +1130,7 @@ function WelcomeScreen({ onStart }) {
             OreLibere <strong style={{ color: C.paper }}>non è un salvadanaio e non è una banca.</strong> Non tiene i tuoi soldi, non li sposta, non te ne mette da parte.
           </p>
           <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.6, margin: 0 }}>
-            Fa una cosa sola: ti mostra ogni spesa in <strong style={{ color: C.paper }}>ore della tua vita</strong>. Poi decidi tu. Il risparmio, se arriva, arriva da quello che scegli di non comprare più.
+            Fa una cosa sola: ti mostra ogni spesa in <strong style={{ color: C.paper }}>ore di lavoro</strong> — quante ne devi fare per permettertela. Poi decidi tu. Il risparmio, se arriva, arriva da quello che scegli di non comprare più.
           </p>
         </div>
 
@@ -1085,7 +1139,7 @@ function WelcomeScreen({ onStart }) {
         </p>
         <button
           onClick={onStart}
-          style={{ width: "100%", padding: "14px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
+          style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
         >
           Inizia ora <ArrowRight size={16} />
         </button>
@@ -1118,7 +1172,7 @@ function OnboardingIncome({ data, setData, onNext }) {
 
         <button
           onClick={() => { setData({ ...data, redditoTipo: "fisso", usaOraria: false }); setPhase("form"); }}
-          style={{ width: "100%", textAlign: "left", cursor: "pointer", backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: 16, marginBottom: 12, display: "flex", alignItems: "center", gap: 14 }}
+          style={{ width: "100%", textAlign: "left", cursor: "pointer", backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: 16, marginBottom: 12, display: "flex", alignItems: "center", gap: 14 }}
         >
           <div style={{ width: 38, height: 38, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Landmark size={18} color={C.brassText} />
@@ -1131,7 +1185,7 @@ function OnboardingIncome({ data, setData, onNext }) {
 
         <button
           onClick={() => { setData({ ...data, redditoTipo: "variabile" }); setPhase("form"); }}
-          style={{ width: "100%", textAlign: "left", cursor: "pointer", backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: 16, display: "flex", alignItems: "center", gap: 14 }}
+          style={{ width: "100%", textAlign: "left", cursor: "pointer", backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: 16, display: "flex", alignItems: "center", gap: 14 }}
         >
           <div style={{ width: 38, height: 38, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <TrendingDown size={18} color={C.brassText} style={{ transform: "scaleY(-1)" }} />
@@ -1149,8 +1203,8 @@ function OnboardingIncome({ data, setData, onNext }) {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "24px 20px 32px 20px", overflowY: "auto" }}>
       <button onClick={() => setPhase("choose")} style={{ background: "none", border: "none", color: C.textDim, fontSize: 12, marginBottom: 12, alignSelf: "flex-start", cursor: "pointer" }}>← cambia tipo di reddito</button>
       <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.brassText, fontFamily: MONO_FONT, marginBottom: 4 }}>Passo 1 di 3</div>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>Quanto vale il tuo tempo</h1>
-      <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 24 }}>Serve per convertire ogni spesa in ore di lavoro.</p>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>Quanto vale la tua ora di lavoro</h1>
+      <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 24 }}>Serve per dire, a ogni spesa, quante ore devi lavorare per permettertela.</p>
 
       {isVariabile && (
         <div style={{ display: "flex", gap: 6, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: 4, marginBottom: 20 }}>
@@ -1186,7 +1240,7 @@ function OnboardingIncome({ data, setData, onNext }) {
             <select
               value={data.tariffaUnita || "ora"}
               onChange={(e) => setData({ ...data, tariffaUnita: e.target.value })}
-              style={{ backgroundColor: C.inputBg, color: C.paper, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "0 10px", fontSize: 14, fontFamily: SANS_FONT, outline: "none" }}
+              style={{ backgroundColor: C.inputBg, color: C.paper, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "0 10px", fontSize: 14, fontFamily: SANS_FONT, outline: "none" }}
             >
               <option value="ora">/ora</option>
               <option value="giorno">/giorno</option>
@@ -1250,7 +1304,7 @@ function OnboardingIncome({ data, setData, onNext }) {
             Lascialo a 12 se lavori tutto l'anno. Se hai contratti a termine o lavoro stagionale, mettici quanti mesi lavori davvero — <strong style={{ color: C.paper }}>non cambia la tua tariffa oraria</strong>, che resta quella vera di quando lavori, ma serve a capire quanto puoi permetterti in media al mese, buchi compresi.
           </p>
           {Number(data.mesiLavorati) > 0 && Number(data.mesiLavorati) < 12 && (data.stipendio || data.tariffaOrariaLorda) ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 6, padding: "8px 10px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 14, padding: "8px 10px", marginBottom: 16 }}>
               <TrendingDown size={13} color={C.textFaint} style={{ flexShrink: 0 }} />
               <span style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.4 }}>
                 Per obiettivi e budget useremo circa <strong style={{ color: C.paper }}>{((data.usaOraria ? (hourlyFromRate || 0) * (Number(data.oreSettimana) || 0) * 4.33 : Number(data.stipendio) || 0) * (Number(data.mesiLavorati) / 12)).toFixed(0)}€/mese</strong> in media sull'anno, non {data.usaOraria ? "quello di quando lavori" : Number(data.stipendio || 0).toFixed(0) + "€"}.
@@ -1261,7 +1315,7 @@ function OnboardingIncome({ data, setData, onNext }) {
       )}
 
       {hourly ? (
-        <PunchTicket style={{ borderRadius: 8, padding: 20, border: `1px solid ${C.brass}` }}>
+        <PunchTicket style={{ borderRadius: 16, padding: 20, border: `1px solid ${C.brass}` }}>
           <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>La tua ora di lavoro vale</div>
           <div style={{ fontFamily: SERIF_FONT, fontSize: 36, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>{hourly.toFixed(2)}€/ora</div>
           <p style={{ fontSize: 13.5, color: C.textDim, lineHeight: 1.5, margin: 0 }}>
@@ -1277,7 +1331,7 @@ function OnboardingIncome({ data, setData, onNext }) {
         onClick={onNext}
         disabled={!hourly}
         style={{
-          width: "100%", padding: "14px 0", borderRadius: 4, border: "none",
+          width: "100%", padding: "14px 0", borderRadius: 12, border: "none",
           backgroundColor: hourly ? C.brass : C.sheetBorder,
           color: hourly ? C.ink : C.textDim,
           fontWeight: 700, fontSize: 14,
@@ -1347,7 +1401,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
         {list.map((f) => {
           const Icon = FIXED_ICONS[f.tipo] || Receipt;
           return (
-            <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px" }}>
+            <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px" }}>
               <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Icon size={15} color={C.brassText} />
               </div>
@@ -1383,7 +1437,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
       <button
         onClick={() => { setForm({ nome: "", tipo: "altro", importo: "", frequenza: "mensile" }); setEditingId(null); setShowAdd(true); }}
         style={{
-          width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed ${C.panelBorder}`,
+          width: "100%", padding: "12px 0", borderRadius: 12, border: `1px dashed ${C.panelBorder}`,
           background: "none", color: C.textFainter, fontSize: 13, fontWeight: 400,
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16, cursor: "pointer",
         }}
@@ -1391,7 +1445,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
         <Plus size={15} /> Altra spesa fissa (personalizzata)
       </button>
 
-      <PunchTicket style={{ borderRadius: 4, padding: 16 }}>
+      <PunchTicket style={{ borderRadius: 12, padding: 16 }}>
         <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 4 }}>Totale mensile impegnato</div>
         <div style={{ fontFamily: MONO_FONT, fontSize: 24, fontWeight: 800 }}>{monthlyTotal.toFixed(0)}€</div>
       </PunchTicket>
@@ -1399,7 +1453,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
       <div style={{ flex: 1 }} />
       <button
         onClick={onNext}
-        style={{ width: "100%", padding: "14px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 24, cursor: "pointer" }}
+        style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 24, cursor: "pointer" }}
       >
         Continua <ArrowRight size={16} />
       </button>
@@ -1408,7 +1462,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={closeModal} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>{editingId ? "Modifica spesa fissa" : "Nuova spesa fissa"}</span>
               <button onClick={closeModal} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -1419,7 +1473,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
               type="text" value={form.nome} placeholder="es. Abbonamento palestra"
               autoFocus={!form.nome}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
-              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
             />
 
             <div style={{ marginBottom: 6 }}><FieldLabel>Categoria</FieldLabel></div>
@@ -1429,7 +1483,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
                   key={key}
                   onClick={() => setForm({ ...form, tipo: key })}
                   style={{
-                    width: 40, height: 40, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center",
+                    width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
                     border: `1px solid ${form.tipo === key ? C.brass : C.panelBorder}`,
                     backgroundColor: form.tipo === key ? C.panelBorder : C.inputBg,
                     cursor: "pointer",
@@ -1447,7 +1501,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
                   type="number" value={form.importo} placeholder="0.00"
                   autoFocus={!!form.nome}
                   onChange={(e) => setForm({ ...form, importo: e.target.value })}
-                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}
+                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}
                 />
               </div>
               <div>
@@ -1455,7 +1509,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
                 <select
                   value={form.frequenza}
                   onChange={(e) => setForm({ ...form, frequenza: e.target.value })}
-                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 8px", color: C.paper, fontSize: 13, marginTop: 4, outline: "none", colorScheme: "dark" }}
+                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 8px", color: C.paper, fontSize: 13, marginTop: 4, outline: "none", colorScheme: "dark" }}
                 >
                   <option value="mensile" style={{ backgroundColor: C.panel, color: C.paper }}>Mensile</option>
                   <option value="settimanale" style={{ backgroundColor: C.panel, color: C.paper }}>Settimanale</option>
@@ -1468,12 +1522,12 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
             {editingId && (
               <button
                 onClick={() => { remove(editingId); closeModal(); }}
-                style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.rust}`, backgroundColor: "transparent", color: C.rust, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10 }}
+                style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.rust}`, backgroundColor: "transparent", color: C.rust, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10 }}
               >
                 Elimina
               </button>
             )}
-            <button onClick={saveExpense} style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            <button onClick={saveExpense} style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
               {editingId ? "Salva modifica" : "Aggiungi"}
             </button>
           </div>
@@ -1526,7 +1580,7 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
         {goals.map((g) => (
-          <div key={g.id} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px" }}>
+          <div key={g.id} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px" }}>
             <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {g.tipo === "riserva" ? <Landmark size={15} color={C.brassText} /> : <PiggyBank size={15} color={C.brassText} />}
             </div>
@@ -1548,13 +1602,13 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
 
       <button
         onClick={() => setShowAdd(true)}
-        style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed ${C.sheetBorder}`, background: "none", color: C.textFainter, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16, cursor: "pointer" }}
+        style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: `1px dashed ${C.sheetBorder}`, background: "none", color: C.textFainter, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16, cursor: "pointer" }}
       >
         <Plus size={15} /> Aggiungi obiettivo
       </button>
 
       <div style={{ flex: 1 }} />
-      <button onClick={onNext} style={{ width: "100%", padding: "14px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 24, cursor: "pointer" }}>
+      <button onClick={onNext} style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 24, cursor: "pointer" }}>
         Inizia a usare l'app <ArrowRight size={16} />
       </button>
       <button onClick={onNext} style={{ background: "none", border: "none", textAlign: "center", color: C.textDim, fontSize: 12, marginTop: 12, cursor: "pointer" }}>Salta per ora</button>
@@ -1563,7 +1617,7 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setShowAdd(false)} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Nuovo obiettivo</span>
               <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -1593,19 +1647,19 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
             <input
               type="text" value={form.nome} placeholder={isRiserva ? "es. Fondo emergenza" : "es. Viaggio in Giappone"}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
-              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
             />
             <div style={{ marginBottom: 4 }}><FieldLabel>{isRiserva ? "Cifra minima da mantenere €" : "Importo €"}</FieldLabel></div>
             <input
               type="number" value={form.importo} placeholder={isRiserva ? "10000" : "2000"}
               onChange={(e) => setForm({ ...form, importo: e.target.value })}
-              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
             />
             <div style={{ marginBottom: 4 }}><FieldLabel>{isRiserva ? "Quanto hai adesso, dopo il prelievo (opzionale)" : "Quanto hai già messo da parte (opzionale)"}</FieldLabel></div>
             <input
               type="number" value={form.saved} placeholder="0"
               onChange={(e) => setForm({ ...form, saved: e.target.value })}
-              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }}
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }}
             />
 
             <button
@@ -1624,13 +1678,13 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
                 <input
                   type="number" value={form.mesi} placeholder="12"
                   onChange={(e) => setForm({ ...form, mesi: e.target.value })}
-                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}
+                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}
                 />
                 {newMonthlyTarget > 0 ? (
                   <div style={{
-                    display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, padding: "10px 12px", borderRadius: 4,
-                    backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : tight ? "rgba(255,107,74,0.1)" : "rgba(124,179,66,0.1)",
-                    border: `1px solid ${overBudget ? C.rust : tight ? C.brassText : C.greenTextText}`,
+                    display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, padding: "10px 12px", borderRadius: 12,
+                    backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : tight ? "rgba(47,107,79,0.1)" : "rgba(124,179,66,0.1)",
+                    border: `1px solid ${overBudget ? C.rust : tight ? C.brassText : C.greenText}`,
                   }}>
                     <span style={{ fontSize: 13, marginTop: -1 }}>{overBudget ? "⚠" : tight ? "!" : "✓"}</span>
                     <p style={{ fontSize: 12, color: C.paper, margin: 0, lineHeight: 1.5 }}>
@@ -1652,7 +1706,7 @@ function OnboardingGoal({ data, setData, onNext, onBack }) {
               </p>
             )}
 
-            <button onClick={addGoal} style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            <button onClick={addGoal} style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
               Aggiungi
             </button>
           </div>
@@ -1683,7 +1737,7 @@ function SpendingBar({ fixedHours, extraHours, capHours, hourly }) {
           {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(spentHours * hourly).toFixed(0)}€</span> : null}
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-          <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFaint, marginBottom: 4 }}>Ore disponibili</span>
+          <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFaint, marginBottom: 4 }}>Ore che ti restano</span>
           <span style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em", color: C.greenText }}>{remainingHours.toFixed(1)}h</span>
           {hourly ? <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT, marginTop: 2 }}>≈ {(remainingHours * hourly).toFixed(0)}€</span> : null}
         </div>
@@ -1713,7 +1767,7 @@ function BankNotificationBanner({ tx, onTap, onDismiss }) {
         animation: "none",
       }}
     >
-      <div style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <div style={{ width: 34, height: 34, borderRadius: 16, backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <Landmark size={16} color={C.brassText} />
       </div>
       <button onClick={onTap} style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
@@ -1747,7 +1801,7 @@ function OneTapCategorizeSheet({ tx, hourly, onClose, onConfirm }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 55, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={done ? undefined : onClose} />
       <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
-        <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+        <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 16px auto" }} />
 
         {!done ? (
           <>
@@ -1773,9 +1827,9 @@ function OneTapCategorizeSheet({ tx, hourly, onClose, onConfirm }) {
                     onClick={() => pick(c)}
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-                      backgroundColor: isSuggested ? "rgba(255,107,74,0.12)" : C.inputBg,
+                      backgroundColor: isSuggested ? "rgba(47,107,79,0.12)" : C.inputBg,
                       border: `1px solid ${isSuggested ? C.brass : C.panelBorder}`,
-                      borderRadius: 4, padding: "16px 0", cursor: "pointer",
+                      borderRadius: 12, padding: "16px 0", cursor: "pointer",
                     }}
                   >
                     <c.icon size={22} color={isSuggested ? C.brassText : C.textDim} />
@@ -1789,7 +1843,7 @@ function OneTapCategorizeSheet({ tx, hourly, onClose, onConfirm }) {
           <div style={{ padding: "24px 0", textAlign: "center" }}>
             <div style={{ fontSize: 30, marginBottom: 8, color: C.greenText }}>✓</div>
             <div style={{ fontFamily: MONO_FONT, color: C.paper, fontSize: 18 }}>{tx.euro.toFixed(2)}€ etichettati</div>
-            <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(tx.euro, hourly)} del tuo tempo</div>
+            <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(tx.euro, hourly)} di lavoro</div>
           </div>
         )}
       </div>
@@ -1823,13 +1877,13 @@ function TransactionsScreen({ hourly, connectedAccounts, feed, setFeed, onBack, 
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 32 }}>
         <ScreenHeader eyebrow="Da conti collegati" title="Rendiconto" />
         <div style={{ padding: "0 20px" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 16, borderRadius: 4, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}` }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 16, borderRadius: 12, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}` }}>
             <Landmark size={16} color={C.brassText} style={{ marginTop: 2, flexShrink: 0 }} />
             <div>
               <p style={{ fontSize: 13, color: C.paper, margin: "0 0 10px 0", lineHeight: 1.5 }}>
                 Nessun conto collegato ancora. Collega banca, Revolut o PayPal dalle Impostazioni per vedere qui le transazioni in automatico.
               </p>
-              <button onClick={onOpenSettings} style={{ padding: "8px 14px", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+              <button onClick={onOpenSettings} style={{ padding: "8px 14px", borderRadius: 12, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
                 Vai a Impostazioni
               </button>
             </div>
@@ -1853,7 +1907,7 @@ function TransactionsScreen({ hourly, connectedAccounts, feed, setFeed, onBack, 
       />
 
       <div style={{ padding: "0 20px" }}>
-        <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}`, marginBottom: 16 }}>
+        <PunchTicket style={{ borderRadius: 12, padding: 16, border: `1px solid ${C.ticketBorder}`, marginBottom: 16 }}>
           <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>
             Totale da {activeSources.length} cont{activeSources.length === 1 ? "o" : "i"} collegat{activeSources.length === 1 ? "o" : "i"}
           </div>
@@ -1878,14 +1932,14 @@ function TransactionsScreen({ hourly, connectedAccounts, feed, setFeed, onBack, 
                 const subtotal = txs.reduce((s, t) => s + t.euro, 0);
                 const pct = totalEuro > 0 ? (subtotal / totalEuro) * 100 : 0;
                 return (
-                  <div key={sourceId} style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px" }}>
+                  <div key={sourceId} style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                       <src.icon size={15} color={C.brassText} />
                       <span style={{ color: C.paper, fontSize: 13, fontWeight: 600, flex: 1 }}>{src.label}</span>
                       <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.textFainter }}>{txs.length} tx</span>
                       <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.paper, minWidth: 50, textAlign: "right" }}>{subtotal.toFixed(0)}€</span>
                     </div>
-                    <div style={{ height: 4, backgroundColor: C.panelBorder, borderRadius: 4, overflow: "hidden" }}>
+                    <div style={{ height: 4, backgroundColor: C.panelBorder, borderRadius: 12, overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${pct}%`, backgroundColor: C.brass }} />
                     </div>
                   </div>
@@ -1912,9 +1966,9 @@ function TransactionsScreen({ hourly, connectedAccounts, feed, setFeed, onBack, 
                     <button
                       key={tx.id}
                       onClick={() => setSelectedTx(tx)}
-                      style={{ width: "100%", textAlign: "left", cursor: "pointer", backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}
+                      style={{ width: "100%", textAlign: "left", cursor: "pointer", backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}
                     >
-                      <div style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 16, backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <src.icon size={15} color={C.brassText} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1960,13 +2014,14 @@ function TransactionsScreen({ hourly, connectedAccounts, feed, setFeed, onBack, 
 // passi su Calendario, Progetti e Regime fiscale, che chi ha stipendio fisso non ha.
 function buildTutorialSteps(isVariabile) {
   const steps = [
-    { tab: "diario", targetId: "tut-gauge", radius: 12, text: "Qui in alto vedi subito quante ore hai già \"speso\" oggi: viola per le spese fisse, arancio/rosso per quelle extra." },
+    { tab: "converti", targetId: null, text: "Questa è la cosa che l'app fa meglio: scrivi un prezzo e ti dice quante ore devi lavorare per permettertelo. Usala prima di comprare, quando sei ancora in tempo a cambiare idea." },
+    { tab: "diario", targetId: "tut-gauge", radius: 12, text: "Qui invece tieni il conto di quello che hai già speso oggi: viola per le spese fisse, arancio/rosso per quelle extra." },
     { tab: "diario", targetId: "tut-add", radius: 999, text: "Tocca qui per registrare una spesa: scegli la categoria, conferma l'importo, fatto in pochi secondi." },
     {
       tab: "diario", targetId: "tut-tabbar", radius: 12,
       text: hasTier("premium")
-        ? "Da questa barra passi tra le sezioni dell'app. Diario, Calendario, Simulatore e Budget ci sono sempre; le altre due compaiono quando servono."
-        : "Da questa barra passi tra le sezioni dell'app: Diario, Simulatore e Budget. Con Premium si aggiungono anche Calendario e Chiusura.",
+        ? "Da questa barra passi tra le sezioni dell'app: Converti, Diario, Calendario e Budget. Chiusura e Conti compaiono da soli quando c'è qualcosa da fare."
+        : "Da questa barra passi tra le sezioni dell'app: Converti, Diario e Budget. Bastano per iniziare — le altre funzioni le trovi in Impostazioni, e appena le sblocchi compaiono anche qui.",
     },
   ];
 
@@ -1980,10 +2035,10 @@ function buildTutorialSteps(isVariabile) {
   }
 
   steps.push({
-    tab: "sim", targetId: "tut-tab-sim", radius: 16,
+    tab: "converti", targetId: null,
     text: hasTier("premium")
-      ? "Il Simulatore ti mostra il costo reale di un acquisto prima di farlo: cash, a rate senza interessi, o a rate finanziate — confronta le ore che ti costa ciascuna opzione."
-      : "Il Simulatore ti mostra il costo reale di un acquisto prima di farlo: cash o a rate senza interessi, sempre confrontato in ore. Con Premium si aggiunge anche il confronto con i finanziamenti a rate.",
+      ? "E se stai pensando di pagarlo a rate, nella stessa schermata tocca \"E se non lo paghi subito?\": confronta il pagamento immediato con il finanziamento, e ti dice quante ore di lavoro in più ti costano gli interessi."
+      : "Con Premium, sotto il risultato compare anche \"E se non lo paghi subito?\": confronta il pagamento immediato con un finanziamento a rate e ti dice quante ore di lavoro in più ti costano gli interessi.",
   });
   steps.push({
     tab: "goal", targetId: "tut-tab-goal", radius: 16,
@@ -2070,7 +2125,7 @@ function TutorialOverlay({ step, steps, frameRef, onNext, onFinish }) {
           {step + 1} / {steps.length}
         </div>
         <p style={{ fontSize: 13, color: C.paper, lineHeight: 1.5, margin: "0 0 14px 0" }}>{current.text}</p>
-        <button onClick={onNext} style={{ width: "100%", padding: "10px 0", borderRadius: 6, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+        <button onClick={onNext} style={{ width: "100%", padding: "10px 0", borderRadius: 14, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
           {isLast ? "Ho capito, si parte" : "Avanti"}
         </button>
       </div>
@@ -2096,7 +2151,7 @@ function EditAmountInline({ initial, hourly, onConfirm, onDelete }) {
   return (
     <>
       <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, marginBottom: 6 }}>Importo</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 12px", marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "12px 12px", marginBottom: 10 }}>
         <span style={{ color: C.brassText, fontFamily: MONO_FONT, fontSize: 18 }}>€</span>
         <input
           type="text"
@@ -2112,13 +2167,13 @@ function EditAmountInline({ initial, hourly, onConfirm, onDelete }) {
         />
       </div>
       {hourly ? (
-        <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginBottom: 18 }}>→ {euroToTime(numericValue, hourly)} del tuo tempo</div>
+        <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginBottom: 18 }}>→ {euroToTime(numericValue, hourly)} di lavoro</div>
       ) : null}
       <div style={{ display: "flex", gap: 10 }}>
         {onDelete && (
           <button
             onClick={onDelete}
-            style={{ flex: 1, padding: "13px 0", borderRadius: 6, border: `1px solid ${C.rust}`, backgroundColor: "transparent", color: C.rust, fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+            style={{ flex: 1, padding: "13px 0", borderRadius: 14, border: `1px solid ${C.rust}`, backgroundColor: "transparent", color: C.rust, fontWeight: 700, fontSize: 14, cursor: "pointer" }}
           >
             Elimina
           </button>
@@ -2127,7 +2182,7 @@ function EditAmountInline({ initial, hourly, onConfirm, onDelete }) {
           onClick={() => onConfirm(numericValue)}
           disabled={numericValue <= 0}
           style={{
-            flex: 2, padding: "13px 0", borderRadius: 6, border: "none", cursor: numericValue > 0 ? "pointer" : "default",
+            flex: 2, padding: "13px 0", borderRadius: 14, border: "none", cursor: numericValue > 0 ? "pointer" : "default",
             backgroundColor: numericValue > 0 ? C.panelBorder : C.inputBg, color: numericValue > 0 ? C.paper : C.textFaint,
             fontWeight: 700, fontSize: 14,
           }}
@@ -2156,7 +2211,45 @@ function EditCalEntryInline({ entry, onConfirm }) {
   );
 }
 
-function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSettings, onOpenReport, onOpenGoal, onSimulateBankTx, rateSource, onDeleteEntry, onEditEntry }) {
+// Il pulsante a tre linee apre un menu a tendina ancorato sotto di sé, non un pannello
+// dal basso: così la tendina "esce" dal pulsante che l'ha aperta, che è il gesto atteso.
+function MenuSheet({ onClose, voci }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "absolute", inset: 0, backgroundColor: "rgba(10,20,15,0.35)", zIndex: 60 }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: "absolute", top: "calc(52px + env(safe-area-inset-top))", right: 14, width: 268,
+          backgroundColor: C.panel, borderRadius: 20, border: `1px solid ${C.panelBorder}`,
+          boxShadow: "0 16px 40px rgba(10,25,18,0.22)", overflow: "hidden",
+        }}
+      >
+        {voci.map((v, i) => (
+          <button
+            key={v.label}
+            onClick={() => { onClose(); v.onClick(); }}
+            style={{
+              width: "100%", textAlign: "left", cursor: "pointer", background: "none",
+              border: "none", borderTop: i > 0 ? `1px solid ${C.panelBorder}` : "none",
+              padding: "13px 15px", display: "flex", alignItems: "center", gap: 11,
+            }}
+          >
+            <v.icon size={18} color={C.brassText} style={{ flexShrink: 0 }} />
+            <span>
+              <span style={{ display: "block", fontSize: 14.5, fontWeight: 700, color: C.paper }}>{v.label}</span>
+              {v.desc && <span style={{ display: "block", fontSize: 12, color: C.textFaint, marginTop: 1, lineHeight: 1.35 }}>{v.desc}</span>}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenReport, onOpenGoal, onSimulateBankTx, rateSource, onDeleteEntry, onEditEntry }) {
   const [showConcept, setShowConcept] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -2190,14 +2283,13 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
                 <span style={{ fontSize: 12, fontFamily: MONO_FONT, color: C.textFaint }}>simula</span>
               </button>
             )}
-            <button onClick={onOpenSettings} style={{ background: "none", border: "none", cursor: "pointer" }}><Settings2 size={18} color={C.textDim} /></button>
           </div>
         }
       />
 
       <div style={{ padding: "0 20px", marginBottom: 14, display: "flex", justifyContent: "center" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "6px 8px 6px 14px" }}>
-          <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em" }}>La tua ora di lavoro vale</span>
+          <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em" }}>Un'ora del tuo lavoro vale</span>
           <span style={{ fontFamily: MONO_FONT, fontSize: 13, fontWeight: 800, color: C.brassText }}>{hourly.toFixed(2)}€/h</span>
           {rateSource && (
             <span style={{ fontSize: 11, fontFamily: MONO_FONT, color: rateSource === "reale" ? C.greenText : C.textFainter, border: `1px solid ${rateSource === "reale" ? C.green : C.panelBorder}`, borderRadius: 999, padding: "1px 6px" }}>
@@ -2211,7 +2303,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
       </div>
 
       <div style={{ padding: "0 20px" }}>
-        <PunchTicket id="tut-gauge" style={{ borderRadius: 4, padding: "24px 16px", border: `1px solid ${C.ticketBorder}` }}>
+        <PunchTicket id="tut-gauge" style={{ borderRadius: 12, padding: "24px 16px", border: `1px solid ${C.ticketBorder}` }}>
           <SpendingBar fixedHours={fixedHours} extraHours={extraHours} capHours={dailyHours} hourly={hourly} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 12, marginBottom: over ? 4 : 0, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -2225,7 +2317,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
             {!over && (
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: C.green, display: "inline-block" }} />
-                <span style={{ fontSize: 13, color: C.textFaint }}>Disponibili {remaining.toFixed(1)}h</span>
+                <span style={{ fontSize: 13, color: C.textFaint }}>Ti restano {remaining.toFixed(1)}h</span>
               </div>
             )}
           </div>
@@ -2246,7 +2338,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
           </div>
           <button
             onClick={onOpenGoal}
-            style={{ width: "100%", textAlign: "left", cursor: "pointer", backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: 12 }}
+            style={{ width: "100%", textAlign: "left", cursor: "pointer", backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: 12 }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
               <span style={{ color: C.paper, fontWeight: 600, fontSize: 13.5 }}>{primaryGoal.nome}</span>
@@ -2256,11 +2348,11 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
               <span style={{ fontFamily: MONO_FONT, fontSize: 12.5, color: C.textFainter }}>{primaryGoal.saved.toFixed(0)}€ / {primaryGoal.importo.toFixed(0)}€</span>
               <span style={{ fontFamily: MONO_FONT, fontSize: 12.5, color: C.textFainter }}>{(goalPct || 0).toFixed(0)}%</span>
             </div>
-            <div style={{ height: 5, backgroundColor: C.panelBorder, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+            <div style={{ height: 5, backgroundColor: C.panelBorder, borderRadius: 12, overflow: "hidden", marginBottom: 6 }}>
               <div style={{ height: "100%", backgroundColor: C.brass, width: `${goalPct || 0}%` }} />
             </div>
             <div style={{ fontSize: 12.5, color: C.brassText, fontFamily: MONO_FONT, marginBottom: 6 }}>
-              → ancora {euroToTime(Math.max(primaryGoal.importo - primaryGoal.saved, 0), hourly)} di lavoro
+              ti mancano {euroToTime(Math.max(primaryGoal.importo - primaryGoal.saved, 0), hourly)} di lavoro
             </div>
             <div style={{ fontSize: 13, color: C.textDim, fontWeight: 600 }}>vai a tutti i budget →</div>
           </button>
@@ -2274,7 +2366,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
           onClick={onOpenReport}
           style={{
             width: "100%", textAlign: "left", cursor: "pointer", border: `1px solid ${C.brass}`,
-            backgroundColor: "rgba(255,107,74,0.08)", borderRadius: 4, padding: 16,
+            backgroundColor: "rgba(47,107,79,0.08)", borderRadius: 12, padding: 16,
             display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
           }}
         >
@@ -2289,7 +2381,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
       </div>
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 8 }}>Timbrature di oggi</div>
+        <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 8 }}>Oggi hai speso</div>
         {todayEntries.length === 0 ? (
           <div style={{ color: C.textFaint, fontSize: 13, fontStyle: "italic", padding: "16px 0", textAlign: "center", border: `1px dashed ${C.panelBorder}`, borderRadius: 4 }}>Nessuna spesa registrata oggi</div>
         ) : (
@@ -2298,7 +2390,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
               const EntryIcon = (typeof e.icon === "function" ? e.icon : null) || (CATEGORIES.find((c) => c.id === e.iconId)?.icon) || MoreHorizontal;
               const confirming = confirmDeleteId === e.id;
               return (
-              <div key={e.id ?? i} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: confirming ? "rgba(196,64,42,0.08)" : C.panel, border: `1px solid ${confirming ? C.rust : C.panelBorder}`, borderRadius: 4, padding: "10px 12px" }}>
+              <div key={e.id ?? i} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: confirming ? "rgba(196,64,42,0.08)" : C.panel, border: `1px solid ${confirming ? C.rust : C.panelBorder}`, borderRadius: 12, padding: "10px 12px" }}>
                 <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <EntryIcon size={15} color={C.brassText} />
                 </div>
@@ -2312,10 +2404,10 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
                 </button>
                 {confirming ? (
                   <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                    <button onClick={() => { onDeleteEntry(e.id); setConfirmDeleteId(null); }} style={{ background: C.rust, border: "none", borderRadius: 4, padding: "6px 8px", cursor: "pointer" }}>
+                    <button onClick={() => { onDeleteEntry(e.id); setConfirmDeleteId(null); }} style={{ background: C.rust, border: "none", borderRadius: 12, padding: "6px 8px", cursor: "pointer" }}>
                       <span style={{ fontSize: 12, color: "#FFFFFF", fontWeight: 700 }}>Elimina</span>
                     </button>
-                    <button onClick={() => setConfirmDeleteId(null)} style={{ background: "none", border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "6px 8px", cursor: "pointer" }}>
+                    <button onClick={() => setConfirmDeleteId(null)} style={{ background: "none", border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "6px 8px", cursor: "pointer" }}>
                       <span style={{ fontSize: 12, color: C.textDim }}>Annulla</span>
                     </button>
                   </div>
@@ -2335,7 +2427,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
         <div style={{ position: "fixed", inset: 0, zIndex: 55, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setEditingEntry(null)} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {(() => {
@@ -2362,7 +2454,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
         style={{
           position: "fixed", bottom: 96, right: "calc(50% - 190px + 24px)",
           width: 56, height: 56, borderRadius: "50%", backgroundColor: C.brass, border: "none",
-          display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 20px rgba(255,107,74,0.45)", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 20px rgba(47,107,79,0.45)", cursor: "pointer",
         }}
       >
         <Plus size={26} color={C.ink} strokeWidth={2.5} />
@@ -2372,7 +2464,7 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
         <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.75)" }} onClick={() => setShowConcept(false)} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "20px 22px 32px 22px" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.panelBorder, borderRadius: 4, margin: "0 auto 18px auto" }} />
+            <div style={{ width: 40, height: 4, backgroundColor: C.panelBorder, borderRadius: 12, margin: "0 auto 18px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15, fontFamily: DISPLAY_FONT }}>Perché in ore, non in euro?</span>
               <button onClick={() => setShowConcept(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -2381,11 +2473,11 @@ function DiarioScreen({ profile, todayEntries, hasAnyEntry, onOpenAdd, onOpenSet
               100€ sono 100€ per tutti. Ma per te, con la tua tariffa oraria, potrebbero essere <strong style={{ color: C.paper }}>{(100 / hourly).toFixed(1)}h</strong> di lavoro — per un'altra persona potrebbero essere molte di meno o molte di più.
             </p>
             <p style={{ fontSize: 13.5, color: C.textDim, fontFamily: SANS_FONT, lineHeight: 1.6, margin: "0 0 18px 0" }}>
-              Gli euro sono uguali per tutti. Le ore no: sono la misura vera di quanto ti costa qualcosa, perché sono la tua vita che se ne va. Per questo ogni spesa qui la vedi prima in ore.
+              Gli euro sono uguali per tutti. Le ore no: dipendono da quanto ti rende il tuo lavoro. Per questo ogni spesa qui la vedi prima in ore — quelle che hai dovuto lavorare per pagarla.
             </p>
             <button
               onClick={() => setShowConcept(false)}
-              style={{ width: "100%", padding: "12px 0", borderRadius: 6, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}
+              style={{ width: "100%", padding: "12px 0", borderRadius: 14, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}
             >
               Ho capito
             </button>
@@ -2426,7 +2518,7 @@ function AmountKeypad({ value, onChange, onConfirm, confirmLabel = "Conferma", s
           <button
             key={i}
             onClick={() => { if (k === ",") appendDecimal(); else if (k === "⌫") backspace(); else appendDigit(k); }}
-            style={{ padding: "14px 0", borderRadius: 4, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, color: C.paper, fontFamily: MONO_FONT, fontSize: 18, cursor: "pointer" }}
+            style={{ padding: "14px 0", borderRadius: 12, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, color: C.paper, fontFamily: MONO_FONT, fontSize: 18, cursor: "pointer" }}
           >
             {k}
           </button>
@@ -2436,7 +2528,7 @@ function AmountKeypad({ value, onChange, onConfirm, confirmLabel = "Conferma", s
         onClick={onConfirm}
         disabled={numericValue <= 0}
         style={{
-          width: "100%", padding: "13px 0", borderRadius: 6, border: "none", cursor: numericValue > 0 ? "pointer" : "default",
+          width: "100%", padding: "13px 0", borderRadius: 14, border: "none", cursor: numericValue > 0 ? "pointer" : "default",
           backgroundColor: numericValue > 0 ? C.brass : C.panelBorder, color: numericValue > 0 ? "#FFFFFF" : C.textFaint,
           fontWeight: 700, fontSize: 14,
         }}
@@ -2488,9 +2580,9 @@ function AddSheet({ hourly, onClose, onAdd }) {
         onClick={() => setShowGiorno(!showGiorno)}
         style={{
           width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
-          backgroundColor: isOggi ? C.inputBg : "rgba(255,107,74,0.10)",
+          backgroundColor: isOggi ? C.inputBg : "rgba(47,107,79,0.10)",
           border: `1px solid ${isOggi ? C.panelBorder : C.brass}`,
-          borderRadius: 6, padding: "10px 12px", cursor: "pointer",
+          borderRadius: 14, padding: "10px 12px", cursor: "pointer",
         }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -2535,7 +2627,7 @@ function AddSheet({ hourly, onClose, onAdd }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={onClose} />
       <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
-        <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+        <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 16px auto" }} />
         {step === "category" && (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -2548,7 +2640,7 @@ function AddSheet({ hourly, onClose, onAdd }) {
                 <button
                   key={c.id}
                   onClick={() => { setCategory(c); setAmountStr(""); setStep("amount"); }}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "16px 0", cursor: "pointer" }}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "16px 0", cursor: "pointer" }}
                 >
                   <c.icon size={22} color={C.brassText} />
                   <span style={{ fontSize: 13, color: C.paper }}>{c.label}</span>
@@ -2582,7 +2674,7 @@ function AddSheet({ hourly, onClose, onAdd }) {
           <div style={{ padding: "24px 0", textAlign: "center" }}>
             <div style={{ fontSize: 30, marginBottom: 8, color: C.greenText }}>✓</div>
             <div style={{ fontFamily: MONO_FONT, color: C.paper, fontSize: 18 }}>{amount.toFixed(2)}€</div>
-            <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(amount, hourly)} del tuo tempo</div>
+            <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(amount, hourly)} di lavoro</div>
             {!isOggi && (
               <div style={{ fontSize: 13, color: C.textDim, marginTop: 8 }}>registrata su {longDayLabel(giorno)}</div>
             )}
@@ -2648,7 +2740,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
       <ScreenHeader eyebrow={PERIOD_EYEBROW[period]} title={PERIOD_TITLE[period]} />
       {vuoto && (
         <div style={{ padding: "0 20px", marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: C.panel, border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: C.panel, border: `1px dashed ${C.panelBorder}`, borderRadius: 16, padding: "12px 14px" }}>
             <Info size={13} color={C.textFaint} style={{ marginTop: 1, flexShrink: 0 }} />
             <span style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.5 }}>
               Non hai ancora registrato spese extra in questo periodo. Appena ne segni una nel Diario, qui compaiono le tue ore.
@@ -2658,7 +2750,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
       )}
 
       <div style={{ padding: "0 20px" }}>
-        <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
+        <PunchTicket style={{ borderRadius: 12, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
           <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Tempo extra totale</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{totalHours.toFixed(1)}h</div>
@@ -2678,7 +2770,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
         <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Spesa extra · ultimi 7 giorni</div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 128, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 12px 10px 12px" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 128, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "12px 12px 10px 12px" }}>
           {dayBars.map((d, i) => {
             const h = Math.max((d.extra / maxDayExtra) * 58, 4);
             const isCritical = !!criticalDay && d.key === criticalDay.key;
@@ -2702,12 +2794,12 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
       </div>
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Dove va il tuo tempo</div>
+        <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Dove vanno le tue ore</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {categoryList.map((c, i) => {
             const Icon = CAT_ICON_MAP[c.cat] || MoreHorizontal;
             return (
-              <div key={c.cat} style={{ backgroundColor: C.panel, border: `1px solid ${i === 0 ? C.brass : C.panelBorder}`, borderRadius: 4, padding: "10px 12px" }}>
+              <div key={c.cat} style={{ backgroundColor: C.panel, border: `1px solid ${i === 0 ? C.brass : C.panelBorder}`, borderRadius: 12, padding: "10px 12px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                   <Icon size={15} color={i === 0 ? C.brassText : C.textDim} />
                   <span style={{ color: C.paper, fontSize: 13, fontWeight: 600, flex: 1 }}>{c.cat}</span>
@@ -2715,7 +2807,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
                   <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: i === 0 ? C.brassText : C.paper, minWidth: 44, textAlign: "right" }}>{c.hours.toFixed(1)}h</span>
                   <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.textFaint, minWidth: 38, textAlign: "right" }}>{c.euro.toFixed(0)}€</span>
                 </div>
-                <div style={{ height: 4, backgroundColor: C.panelBorder, borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: 4, backgroundColor: C.panelBorder, borderRadius: 12, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${c.pct}%`, backgroundColor: i === 0 ? C.brass : C.fixedBar }} />
                 </div>
               </div>
@@ -2726,7 +2818,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
 
       {topCat && (
       <div style={{ padding: "0 20px", marginTop: 20 }}>
-        <div style={{ backgroundColor: "rgba(255,107,74,0.08)", border: `1px solid ${C.brass}`, borderRadius: 4, padding: 16 }}>
+        <div style={{ backgroundColor: "rgba(47,107,79,0.08)", border: `1px solid ${C.brass}`, borderRadius: 12, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <Lightbulb size={16} color={C.brassText} />
             <span style={{ color: C.brassText, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Suggerimento</span>
@@ -2746,7 +2838,7 @@ function ReportScreen({ hourly, profile, entries = [], onBack, onOpenClosure }) 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
         <button
           onClick={onOpenClosure}
-          style={{ width: "100%", padding: "14px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
+          style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
         >
           {PERIOD_CTA[period]} <ArrowRight size={16} />
         </button>
@@ -2807,8 +2899,8 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
       <div style={{ padding: "0 20px" }}>
         {!confirmed ? (
           <>
-            <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}`, marginBottom: 14 }}>
-              <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Disponibile da distribuire</div>
+            <PunchTicket style={{ borderRadius: 12, padding: 16, border: `1px solid ${C.ticketBorder}`, marginBottom: 14 }}>
+              <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Ti è avanzato</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                 <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{pool}€</div>
                 <div style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.textFaint }}>{euroToTime(pool, hourly)}</div>
@@ -2836,7 +2928,7 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
                         style={{
                           backgroundColor: C.panel,
                           border: `1px solid ${C.panelBorder}`,
-                          borderRadius: 4,
+                          borderRadius: 12,
                           padding: "10px 12px",
                           opacity: isOggi ? 1 : 0.55,
                         }}
@@ -2870,7 +2962,7 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
                 <div style={{ fontSize: 13, color: C.textFainter, marginBottom: 10 }}>Distribuiscilo tra i tuoi obiettivi:</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
                   {profile.goals.map((g) => (
-                    <div key={g.id} style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", position: "relative" }}>
+                    <div key={g.id} style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", position: "relative" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <PiggyBank size={16} color={C.brassText} style={{ flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -2897,7 +2989,7 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
                             value={allocations[g.id] ?? ""}
                             placeholder="0"
                             onChange={(e) => setAllocations({ ...allocations, [g.id]: e.target.value })}
-                            style={{ width: 60, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "6px 8px", color: C.paper, fontFamily: MONO_FONT, fontSize: 13, textAlign: "right", outline: "none" }}
+                            style={{ width: 60, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "6px 8px", color: C.paper, fontFamily: MONO_FONT, fontSize: 13, textAlign: "right", outline: "none" }}
                           />
                           <span style={{ color: C.textFaint, fontSize: 13, fontFamily: MONO_FONT }}>€</span>
                         </div>
@@ -2929,7 +3021,7 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
                         href={`https://paypal.me/tuonomeutente/${allocatedTotal}EUR`}
                         target="_blank" rel="noopener noreferrer"
                         style={{
-                          flex: 1, padding: "10px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, backgroundColor: C.inputBg,
+                          flex: 1, padding: "10px 0", borderRadius: 12, border: `1px solid ${C.panelBorder}`, backgroundColor: C.inputBg,
                           color: C.paper, fontSize: 12.5, fontWeight: 600, textAlign: "center", textDecoration: "none",
                           display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                         }}
@@ -2940,7 +3032,7 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
                         href={`https://www.satispay.com/app/pay?amount=${allocatedTotal}`}
                         target="_blank" rel="noopener noreferrer"
                         style={{
-                          flex: 1, padding: "10px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, backgroundColor: C.inputBg,
+                          flex: 1, padding: "10px 0", borderRadius: 12, border: `1px solid ${C.panelBorder}`, backgroundColor: C.inputBg,
                           color: C.paper, fontSize: 12.5, fontWeight: 600, textAlign: "center", textDecoration: "none",
                           display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                         }}
@@ -2958,7 +3050,7 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
                   onClick={confirmAllocations}
                   disabled={allocatedTotal === 0 || remaining < 0}
                   style={{
-                    width: "100%", padding: "12px 0", borderRadius: 4, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer",
+                    width: "100%", padding: "12px 0", borderRadius: 12, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer",
                     backgroundColor: allocatedTotal > 0 && remaining >= 0 ? C.brass : C.sheetBorder,
                     color: allocatedTotal > 0 && remaining >= 0 ? C.ink : C.textFaint,
                   }}
@@ -2969,7 +3061,7 @@ function ClosureScreen({ hourly, profile, entries = [], onBack, onAllocate, onCa
             ) : null}
           </>
         ) : (
-          <div style={{ backgroundColor: "rgba(124,179,66,0.1)", border: `1px solid ${C.green}`, borderRadius: 4, padding: 16, display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <div style={{ backgroundColor: "rgba(124,179,66,0.1)", border: `1px solid ${C.green}`, borderRadius: 12, padding: 16, display: "flex", alignItems: "flex-start", gap: 10 }}>
             <span style={{ fontSize: 18, color: C.greenText, lineHeight: 1 }}>✓</span>
             <div style={{ fontSize: 13, color: C.paper, lineHeight: 1.6 }}>
               <strong>{allocatedTotal}€ congelati</strong> così:
@@ -3021,13 +3113,13 @@ function ProgettiScreen({ progetti, setProgetti, hourlyBaseline, onBack }) {
           const rate = p.ore > 0 ? p.prezzoVendita / p.ore : 0;
           const belowBaseline = hourlyBaseline && rate < hourlyBaseline;
           return (
-            <div key={p.id} style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 6, padding: 14, marginBottom: 10 }}>
+            <div key={p.id} style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <span style={{ fontWeight: 700, fontSize: 14, color: C.paper }}>{p.nome}</span>
                 <button onClick={() => remove(p.id)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={14} color={C.textDim} /></button>
               </div>
               <div style={{ fontSize: 13.5, color: C.textFaint, marginBottom: 8, fontFamily: MONO_FONT }}>{p.prezzoVendita.toFixed(0)}€ · {p.ore}h</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: belowBaseline ? "rgba(225,74,46,0.1)" : "rgba(124,179,66,0.1)", border: `1px solid ${belowBaseline ? C.rust : C.green}`, borderRadius: 6, padding: "8px 10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: belowBaseline ? "rgba(225,74,46,0.1)" : "rgba(124,179,66,0.1)", border: `1px solid ${belowBaseline ? C.rust : C.green}`, borderRadius: 14, padding: "8px 10px" }}>
                 {belowBaseline ? <TriangleAlert size={13} color={C.rust} /> : <TrendingUp size={13} color={C.greenText} />}
                 <span style={{ fontSize: 12, fontWeight: 700, color: belowBaseline ? C.rust : C.greenText }}>{rate.toFixed(2)}€/h</span>
                 {hourlyBaseline ? <span style={{ fontSize: 12.5, color: C.textFaint }}>{belowBaseline ? "sotto la tua tariffa base" : "sopra la tua tariffa base"}</span> : null}
@@ -3039,23 +3131,23 @@ function ProgettiScreen({ progetti, setProgetti, hourlyBaseline, onBack }) {
 
       <div style={{ padding: 20 }}>
         {showAdd ? (
-          <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: 16 }}>
+          <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: 16 }}>
             <FieldLabel>Nome progetto</FieldLabel>
             <input type="text" value={form.nome} placeholder="es. Sito web cliente X" onChange={(e) => setForm({ ...form, nome: e.target.value })}
-              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }} />
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }} />
             <FieldLabel>Prezzo di vendita €</FieldLabel>
             <input type="number" value={form.prezzoVendita} placeholder="800" onChange={(e) => setForm({ ...form, prezzoVendita: e.target.value })}
-              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }} />
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }} />
             <FieldLabel>Ore impiegate (stimate o effettive)</FieldLabel>
             <input type="number" value={form.ore} placeholder="20" onChange={(e) => setForm({ ...form, ore: e.target.value })}
-              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }} />
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }} />
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: "10px 0", borderRadius: 6, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 13, cursor: "pointer" }}>Annulla</button>
-              <button onClick={addProgetto} style={{ flex: 1, padding: "10px 0", borderRadius: 6, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Aggiungi</button>
+              <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: "10px 0", borderRadius: 14, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 13, cursor: "pointer" }}>Annulla</button>
+              <button onClick={addProgetto} style={{ flex: 1, padding: "10px 0", borderRadius: 14, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Aggiungi</button>
             </div>
           </div>
         ) : (
-          <button onClick={() => setShowAdd(true)} style={{ width: "100%", padding: "13px 0", borderRadius: 6, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}>
+          <button onClick={() => setShowAdd(true)} style={{ width: "100%", padding: "13px 0", borderRadius: 14, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}>
             <Plus size={16} /> Nuovo progetto
           </button>
         )}
@@ -3122,7 +3214,7 @@ function ImportPDFScreen({ calendario, setCalendario, onBack }) {
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 32px 20px" }}>
         {status !== "parsed" && !result && (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(255,107,74,0.1)", border: `1px solid ${C.brass}`, borderRadius: 8, padding: "10px 12px", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(47,107,79,0.1)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "10px 12px", marginBottom: 16 }}>
             <Info size={13} color={C.brassDim} style={{ marginTop: 1, flexShrink: 0 }} />
             <span style={{ fontSize: 13.5, color: C.paper, lineHeight: 1.5 }}>
               Funziona con PDF che contengono testo vero, anche con le transazioni spezzate su più righe. L'unico caso che non può leggere è una scansione o una foto (senza testo selezionabile).
@@ -3131,7 +3223,7 @@ function ImportPDFScreen({ calendario, setCalendario, onBack }) {
         )}
 
         {status === "idle" && (
-          <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "32px 16px", cursor: "pointer", backgroundColor: C.panel }}>
+          <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, border: `1px dashed ${C.panelBorder}`, borderRadius: 16, padding: "32px 16px", cursor: "pointer", backgroundColor: C.panel }}>
             <Receipt size={22} color={C.brassText} />
             <span style={{ fontSize: 13, color: C.paper, fontWeight: 600 }}>Scegli il file PDF</span>
             <span style={{ fontSize: 13, color: C.textFaint, textAlign: "center" }}>L'estratto conto scaricato dalla tua banca</span>
@@ -3145,11 +3237,11 @@ function ImportPDFScreen({ calendario, setCalendario, onBack }) {
 
         {status === "error" && (
           <>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(225,74,46,0.1)", border: `1px solid ${C.rust}`, borderRadius: 8, padding: "12px 14px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(225,74,46,0.1)", border: `1px solid ${C.rust}`, borderRadius: 16, padding: "12px 14px", marginBottom: 16 }}>
               <TriangleAlert size={14} color={C.rust} style={{ marginTop: 1, flexShrink: 0 }} />
               <span style={{ fontSize: 12.5, color: C.paper, lineHeight: 1.5 }}>{errorMsg}</span>
             </div>
-            <button onClick={() => setStatus("idle")} style={{ width: "100%", padding: "12px 0", borderRadius: 6, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 13, cursor: "pointer" }}>
+            <button onClick={() => setStatus("idle")} style={{ width: "100%", padding: "12px 0", borderRadius: 14, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 13, cursor: "pointer" }}>
               Riprova con un altro file
             </button>
           </>
@@ -3157,7 +3249,7 @@ function ImportPDFScreen({ calendario, setCalendario, onBack }) {
 
         {status === "parsed" && !result && !showChecklist && (
           <>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(255,107,74,0.14)", border: `1px solid ${C.brass}`, borderRadius: 8, padding: "12px 14px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(47,107,79,0.14)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "12px 14px", marginBottom: 16 }}>
               <TriangleAlert size={15} color={C.brassDim} style={{ marginTop: 1, flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: 13, color: C.paper, fontWeight: 700, marginBottom: 3 }}>Trovati {parsedTx.length} movimenti — controlla prima di fidarti</div>
@@ -3188,7 +3280,7 @@ function ImportPDFScreen({ calendario, setCalendario, onBack }) {
               </div>
             </div>
 
-            <button onClick={doImport} style={{ width: "100%", padding: "13px 0", borderRadius: 6, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            <button onClick={doImport} style={{ width: "100%", padding: "13px 0", borderRadius: 14, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
               Importa {parsedTx.length} movimenti
             </button>
             <button onClick={() => setShowChecklist(true)} style={{ width: "100%", padding: "10px 0", background: "none", border: "none", color: C.textDim, fontSize: 12, marginTop: 10, cursor: "pointer" }}>
@@ -3205,7 +3297,7 @@ function ImportPDFScreen({ calendario, setCalendario, onBack }) {
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
               {parsedTx.map((t) => (
-                <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 6, padding: "8px 10px", cursor: "pointer", opacity: t.include ? 1 : 0.4 }}>
+                <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 14, padding: "8px 10px", cursor: "pointer", opacity: t.include ? 1 : 0.4 }}>
                   <input type="checkbox" checked={t.include} onChange={() => toggleInclude(t.id)} style={{ flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, color: C.paper, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc || "(senza descrizione)"}</div>
@@ -3217,7 +3309,7 @@ function ImportPDFScreen({ calendario, setCalendario, onBack }) {
                 </label>
               ))}
             </div>
-            <button onClick={doImport} style={{ width: "100%", padding: "13px 0", borderRadius: 6, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            <button onClick={doImport} style={{ width: "100%", padding: "13px 0", borderRadius: 14, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
               Importa {parsedTx.filter((t) => t.include).length} movimenti
             </button>
             <button onClick={() => { setStatus("idle"); setParsedTx([]); setShowChecklist(false); }} style={{ width: "100%", padding: "10px 0", background: "none", border: "none", color: C.textDim, fontSize: 12, marginTop: 10, cursor: "pointer" }}>Scegli un altro file</button>
@@ -3231,7 +3323,7 @@ function ImportPDFScreen({ calendario, setCalendario, onBack }) {
             </div>
             <div style={{ fontSize: 15, fontWeight: 700, color: C.paper, marginBottom: 6 }}>{result.count} movimenti importati</div>
             <div style={{ fontSize: 12, color: C.textFaint, marginBottom: 20 }}>Entrate {result.entrate.toFixed(0)}€ · Uscite {result.uscite.toFixed(0)}€</div>
-            <button onClick={onBack} style={{ padding: "12px 24px", borderRadius: 6, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            <button onClick={onBack} style={{ padding: "12px 24px", borderRadius: 14, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
               Vai al calendario
             </button>
           </div>
@@ -3356,14 +3448,14 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
         </p>
 
         {error && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: "rgba(225,74,46,0.1)", border: `1px solid ${C.rust}`, borderRadius: 6, padding: "10px 12px", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: "rgba(225,74,46,0.1)", border: `1px solid ${C.rust}`, borderRadius: 14, padding: "10px 12px", marginBottom: 16 }}>
             <TriangleAlert size={14} color={C.rust} />
             <span style={{ fontSize: 12, color: C.paper }}>{error}</span>
           </div>
         )}
 
         {!parsed && (
-          <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "32px 16px", cursor: "pointer", backgroundColor: C.panel }}>
+          <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, border: `1px dashed ${C.panelBorder}`, borderRadius: 16, padding: "32px 16px", cursor: "pointer", backgroundColor: C.panel }}>
             <Receipt size={22} color={C.brassText} />
             <span style={{ fontSize: 13, color: C.paper, fontWeight: 600 }}>Scegli il file CSV o Excel</span>
             <span style={{ fontSize: 13, color: C.textFaint, textAlign: "center" }}>Formato .csv, .xlsx o .xls esportato dalla tua banca</span>
@@ -3373,7 +3465,7 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
 
         {parsed && !result && autoDetected && !showManual && (
           <>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(124,179,66,0.1)", border: `1px solid ${C.green}`, borderRadius: 8, padding: "12px 14px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(124,179,66,0.1)", border: `1px solid ${C.green}`, borderRadius: 16, padding: "12px 14px", marginBottom: 16 }}>
               <TrendingUp size={15} color={C.greenText} style={{ marginTop: 1, flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: 13, color: C.paper, fontWeight: 700, marginBottom: 2 }}>Riconosciuto automaticamente</div>
@@ -3406,7 +3498,7 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
 
             <button
               onClick={doImport}
-              style={{ width: "100%", padding: "13px 0", borderRadius: 6, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+              style={{ width: "100%", padding: "13px 0", borderRadius: 14, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
             >
               Importa {parsed.rows.length} movimenti
             </button>
@@ -3420,7 +3512,7 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
         {parsed && !result && (!autoDetected || showManual) && (
           <>
             {!autoDetected && (
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(255,107,74,0.1)", border: `1px solid ${C.brass}`, borderRadius: 8, padding: "10px 12px", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(47,107,79,0.1)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "10px 12px", marginBottom: 16 }}>
                 <Info size={13} color={C.brassDim} style={{ marginTop: 1, flexShrink: 0 }} />
                 <span style={{ fontSize: 13.5, color: C.paper, lineHeight: 1.5 }}>Non sono riuscito a capire da solo quali colonne usare — scegli tu qui sotto.</span>
               </div>
@@ -3428,7 +3520,7 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
             <div style={{ marginBottom: 16 }}>
               <FieldLabel>Colonna data</FieldLabel>
               <select value={colData} onChange={(e) => setColData(Number(e.target.value))}
-                style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}>
+                style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}>
                 <option value={-1}>— seleziona —</option>
                 {parsed.header.map((h, i) => <option key={i} value={i}>{h || `Colonna ${i + 1}`}</option>)}
               </select>
@@ -3436,7 +3528,7 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
             <div style={{ marginBottom: 16 }}>
               <FieldLabel>Colonna importo</FieldLabel>
               <select value={colImporto} onChange={(e) => setColImporto(Number(e.target.value))}
-                style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}>
+                style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}>
                 <option value={-1}>— seleziona —</option>
                 {parsed.header.map((h, i) => <option key={i} value={i}>{h || `Colonna ${i + 1}`}</option>)}
               </select>
@@ -3445,7 +3537,7 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
             <div style={{ marginBottom: 20 }}>
               <FieldLabel>Colonna descrizione (opzionale)</FieldLabel>
               <select value={colDesc} onChange={(e) => setColDesc(Number(e.target.value))}
-                style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}>
+                style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}>
                 <option value={-1}>— nessuna —</option>
                 {parsed.header.map((h, i) => <option key={i} value={i}>{h || `Colonna ${i + 1}`}</option>)}
               </select>
@@ -3476,7 +3568,7 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
             <button
               onClick={doImport}
               disabled={colData < 0 || colImporto < 0}
-              style={{ width: "100%", padding: "13px 0", borderRadius: 6, border: "none", backgroundColor: colData >= 0 && colImporto >= 0 ? C.brass : C.panelBorder, color: colData >= 0 && colImporto >= 0 ? "#FFFFFF" : C.textFaint, fontWeight: 700, fontSize: 14, cursor: colData >= 0 && colImporto >= 0 ? "pointer" : "default" }}
+              style={{ width: "100%", padding: "13px 0", borderRadius: 14, border: "none", backgroundColor: colData >= 0 && colImporto >= 0 ? C.brass : C.panelBorder, color: colData >= 0 && colImporto >= 0 ? "#FFFFFF" : C.textFaint, fontWeight: 700, fontSize: 14, cursor: colData >= 0 && colImporto >= 0 ? "pointer" : "default" }}
             >
               Importa {parsed.rows.length} movimenti
             </button>
@@ -3492,7 +3584,7 @@ function ImportEstrattoContoScreen({ calendario, setCalendario, onBack }) {
             <div style={{ fontSize: 15, fontWeight: 700, color: C.paper, marginBottom: 6 }}>{result.count} movimenti importati</div>
             <div style={{ fontSize: 12, color: C.textFaint, marginBottom: 4 }}>Entrate {result.entrate.toFixed(0)}€ · Uscite {result.uscite.toFixed(0)}€</div>
             <p style={{ fontSize: 13.5, color: C.textFainter, lineHeight: 1.5, margin: "10px 0 20px 0" }}>Sono stati aggiunti al Calendario come voci già confermate — contribuiscono da subito alla tua tariffa oraria reale, se hai anche dei turni registrati.</p>
-            <button onClick={onBack} style={{ padding: "12px 24px", borderRadius: 6, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            <button onClick={onBack} style={{ padding: "12px 24px", borderRadius: 14, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
               Vai al calendario
             </button>
           </div>
@@ -3511,7 +3603,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   const [addMenuDay, setAddMenuDay] = useState(null); // null = chiuso, Date = menu aperto per quel giorno
   const [editingCalEntry, setEditingCalEntry] = useState(null); // { key, entry } della voce in modifica
   const [showAddRange, setShowAddRange] = useState(false);
-  const [rangeForm, setRangeForm] = useState({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", lordoNetto: "netto", percentualeNettaManuale: "65", scadenzaPagamento: "", descrizione: "" });
+  const [rangeForm, setRangeForm] = useState({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", lordoNetto: "netto", percentualeNettaManuale: "65", scadenzaPagamento: "", descrizione: "", tipoCompenso: "fattura", scadenzaModo: "data", giornoDelMese: "10" });
   const [rangeResult, setRangeResult] = useState(null);
   const [showInfoLordoNetto, setShowInfoLordoNetto] = useState(false);
   const [form, setForm] = useState({ tipo: redditoTipo === "variabile" ? "turno" : "uscita", ore: "", importo: "", descrizione: "" });
@@ -3585,6 +3677,21 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
     return lordo * percentualeNettaEffettiva;
   })();
 
+  // Uno stipendio non si "fattura": arriva il 10, il 15 o il 27 del mese dopo.
+  // Meglio far scegliere il giorno del mese che obbligare a una data precisa.
+  const scadenzaCalcolata = () => {
+    if (rangeForm.scadenzaModo === "giorno") {
+      const g = Math.min(Math.max(Number(rangeForm.giornoDelMese) || 1, 1), 31);
+      const fine = rangeForm.a ? new Date(rangeForm.a + "T00:00:00") : new Date();
+      // Il mese successivo alla fine del periodo, troncando se il mese è più corto
+      const anno = fine.getFullYear();
+      const mese = fine.getMonth() + 1;
+      const ultimoGiorno = new Date(anno, mese + 1, 0).getDate();
+      return dateKey(new Date(anno, mese, Math.min(g, ultimoGiorno)));
+    }
+    return rangeForm.scadenzaPagamento;
+  };
+
   const submitRange = () => {
     const giorni = giorniLavorativiRange(rangeForm.da, rangeForm.a, rangeForm.skipWeekend);
     if (giorni.length === 0) return;
@@ -3615,7 +3722,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
         id: Date.now() + Math.random(),
         descrizione: rangeForm.descrizione || "Compenso periodo",
         importo: importoTotale,
-        scadenza: rangeForm.scadenzaPagamento || dateKey(giorni[giorni.length - 1]),
+        scadenza: scadenzaCalcolata() || dateKey(giorni[giorni.length - 1]),
+        tipoCompenso: rangeForm.tipoCompenso,
         stato: "attesa",
         giorni: giorniKey,
         dataPagamento: null,
@@ -3624,7 +3732,55 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
     }
 
     setRangeResult({ count: giorni.length, daStr: rangeForm.da, aStr: rangeForm.a, fatturaCreata: importoTotale > 0 });
-    setRangeForm({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", scadenzaPagamento: "", descrizione: "" });
+    setRangeForm({ da: "", a: "", skipWeekend: true, oreAlGiorno: "8", tariffaImporto: "", tariffaUnita: "ora", lordoNetto: "netto", percentualeNettaManuale: "65", scadenzaPagamento: "", descrizione: "", tipoCompenso: "fattura", scadenzaModo: "data", giornoDelMese: "10" });
+  };
+
+  // Un periodo inserito per sbaglio va potuto disfare: si cancella il compenso in attesa
+  // e con lui i turni dei giorni che aveva generato, altrimenti resterebbero ore fantasma.
+  const [confermaAnnulla, setConfermaAnnulla] = useState(null); // id della fattura da annullare
+  // Modifica di un compenso già inserito: nome, importo e data di pagamento.
+  // Sbagliare a scrivere è normale; costringere a cancellare e rifare tutto no.
+  const [modificaFattura, setModificaFattura] = useState(null); // { id, descrizione, importo, scadenza }
+
+  const apriModifica = (f) => {
+    setConfermaAnnulla(null);
+    setModificaFattura({ id: f.id, descrizione: f.descrizione || "", importo: String(Math.round(f.importo * 100) / 100), scadenza: f.scadenza || "" });
+  };
+
+  const salvaModifica = () => {
+    const m = modificaFattura;
+    if (!m) return;
+    const nuovoImporto = Number(String(m.importo).replace(",", ".")) || 0;
+    if (nuovoImporto <= 0) return;
+    setFatture(fatture.map((f) => (f.id === m.id
+      ? { ...f, descrizione: m.descrizione.trim() || "Compenso periodo", importo: nuovoImporto, scadenza: m.scadenza || f.scadenza }
+      : f)));
+    // I turni collegati portano la stessa descrizione: se cambia il nome, cambia anche lì
+    const fatt = fatture.find((f) => f.id === m.id);
+    if (fatt && Array.isArray(fatt.giorni) && fatt.giorni.length > 0) {
+      const newCal = { ...calendario };
+      fatt.giorni.forEach((k) => {
+        if (!newCal[k]) return;
+        newCal[k] = newCal[k].map((e) => (e.tipo === "turno" ? { ...e, descrizione: m.descrizione.trim() } : e));
+      });
+      setCalendario(newCal);
+    }
+    setModificaFattura(null);
+  };
+  const annullaPeriodo = (fatturaId) => {
+    const fatt = fatture.find((f) => f.id === fatturaId);
+    if (!fatt) return;
+    if (Array.isArray(fatt.giorni) && fatt.giorni.length > 0) {
+      const newCal = { ...calendario };
+      fatt.giorni.forEach((k) => {
+        const restanti = (newCal[k] || []).filter((e) => e.tipo !== "turno");
+        if (restanti.length > 0) newCal[k] = restanti;
+        else delete newCal[k];
+      });
+      setCalendario(newCal);
+    }
+    setFatture(fatture.filter((f) => f.id !== fatturaId));
+    setConfermaAnnulla(null);
   };
 
   const segnaFatturaPagata = (fatturaId) => {
@@ -3640,8 +3796,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
   };
 
   const scaricaPromemoriaFattura = (fatt) => {
-    const ics = generateICS([{ date: new Date(fatt.scadenza + "T00:00:00"), title: `Fattura: ${fatt.descrizione} · ${fatt.importo.toFixed(0)}€`, notes: "Promemoria pagamento da OreLibere" }]);
-    downloadBlob(ics, `fattura-${fatt.scadenza}.ics`, "text/calendar;charset=utf-8;");
+    const ics = generateICS([{ date: new Date(fatt.scadenza + "T00:00:00"), title: `Da incassare: ${fatt.descrizione} · ${fatt.importo.toFixed(0)}€`, notes: "Promemoria pagamento da OreLibere" }]);
+    downloadBlob(ics, `compenso-${fatt.scadenza}.ics`, "text/calendar;charset=utf-8;");
   };
 
   const addEntry = () => {
@@ -3680,7 +3836,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
         <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setAddMenuDay(null)} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Cosa vuoi registrare?</span>
               <button onClick={() => setAddMenuDay(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -3691,9 +3847,9 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
             <button
               onClick={() => { const d = addMenuDay; setAddMenuDay(null); setSelectedDay(d); setShowAdd(true); }}
-              style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 8, cursor: "pointer" }}
+              style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: "12px 14px", marginBottom: 8, cursor: "pointer" }}
             >
-              <div style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.panel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 16, backgroundColor: C.panel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Plus size={16} color={C.brassText} />
               </div>
               <div>
@@ -3704,9 +3860,9 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
             <button
               onClick={() => { const d = addMenuDay; setAddMenuDay(null); setRangeForm((f) => ({ ...f, da: dateKey(d) })); setShowAddRange(true); }}
-              style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 8, cursor: "pointer" }}
+              style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: "12px 14px", marginBottom: 8, cursor: "pointer" }}
             >
-              <div style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.panel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 16, backgroundColor: C.panel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Calendar size={16} color={C.brassText} />
               </div>
               <div>
@@ -3715,23 +3871,22 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
               </div>
             </button>
 
-            <button
-              onClick={() => { setAddMenuDay(null); if (hasTier("elite")) setShowProgetti(true); else setShowLockedProgetti(true); }}
-              style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", opacity: hasTier("elite") ? 1 : 0.7 }}
+            {hasTier("premium") && (
+              <button
+              onClick={() => { setAddMenuDay(null); setShowProgetti(true); }}
+              style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: "12px 14px", cursor: "pointer", opacity: hasTier("elite") ? 1 : 0.7 }}
             >
-              <div style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.panel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 16, backgroundColor: C.panel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Receipt size={16} color={C.brassText} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: C.paper, display: "flex", alignItems: "center", gap: 6 }}>
                   Un progetto
-                  {!hasTier("elite") && (
-                    <span style={{ fontSize: 10.5, fontFamily: MONO_FONT, fontWeight: 800, textTransform: "uppercase", padding: "1px 6px", borderRadius: 999, backgroundColor: "#171717", color: "#F7F3EA" }}>Elite</span>
-                  )}
                 </div>
                 <div style={{ fontSize: 13, color: C.textFaint, marginTop: 1 }}>Prezzo di vendita e ore di un lavoro, per sapere la tua tariffa oraria vera su quel progetto</div>
               </div>
             </button>
+              )}
           </div>
         </div>
       )}
@@ -3742,7 +3897,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
       {!hasTier("elite") && showLockedProgetti && (
         <div style={{ position: "fixed", inset: 0, zIndex: 70, backgroundColor: C.bg, display: "flex", flexDirection: "column" }}>
           <LockedFeatureScreen
-            tier="elite"
+            tier="premium"
             titolo="Progetti"
             descrizione="Per ogni lavoro che accetti, inserisci prezzo di vendita e ore che ci impieghi: l'app ti dice la tua tariffa oraria reale su quel progetto, e ti avvisa se stai lavorando sotto la tua tariffa base."
             onBack={() => setShowLockedProgetti(false)}
@@ -3754,7 +3909,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
       )}
 
       <div style={{ padding: "0 20px", marginBottom: 14 }}>
-        <PunchTicket style={{ borderRadius: 8, padding: 16 }}>
+        <PunchTicket style={{ borderRadius: 16, padding: 16 }}>
           <div style={{ display: "grid", gridTemplateColumns: redditoTipo === "variabile" ? "1fr 1fr" : "1fr", gap: 12, marginBottom: 10 }}>
             {redditoTipo === "variabile" && (
               <div>
@@ -3777,7 +3932,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
       {prossimeUscite.length > 0 && (
         <div style={{ padding: "0 20px", marginBottom: 16 }}>
-          <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: 14 }}>
+          <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: 14 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Bell size={13} color={C.brassText} />
@@ -3810,16 +3965,16 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
       {fatture.filter((f) => f.stato === "attesa").length > 0 && (
         <div style={{ padding: "0 20px", marginBottom: 16 }}>
-          <div style={{ backgroundColor: "rgba(255,107,74,0.08)", border: `1px solid ${C.brass}`, borderRadius: 8, padding: 14 }}>
+          <div style={{ backgroundColor: "rgba(47,107,79,0.08)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
               <Receipt size={13} color={C.brassText} />
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: C.paper }}>Fatture in attesa di pagamento</span>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: C.paper }}>Compensi che devi ancora ricevere</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {fatture.filter((f) => f.stato === "attesa").sort((a, b) => a.scadenza.localeCompare(b.scadenza)).map((f) => {
                 const giorniAllaScadenza = Math.round((new Date(f.scadenza + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
                 return (
-                  <div key={f.id} style={{ backgroundColor: C.panel, borderRadius: 6, padding: "10px 12px" }}>
+                  <div key={f.id} style={{ backgroundColor: C.panel, borderRadius: 14, padding: "10px 12px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                       <span style={{ color: C.paper, fontSize: 12.5, fontWeight: 600, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.descrizione}</span>
                       <span style={{ color: C.brassText, fontWeight: 800, fontFamily: MONO_FONT, fontSize: 13, flexShrink: 0, marginLeft: 8 }}>{f.importo.toFixed(0)}€</span>
@@ -3832,11 +3987,78 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                         <button onClick={() => scaricaPromemoriaFattura(f)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} title="Promemoria al telefono">
                           <Bell size={13} color={C.textFaint} />
                         </button>
+                        <button onClick={() => (modificaFattura && modificaFattura.id === f.id ? setModificaFattura(null) : apriModifica(f))} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} aria-label="Modifica">
+                          <Pencil size={13} color={C.textFaint} />
+                        </button>
+                        <button onClick={() => setConfermaAnnulla(confermaAnnulla === f.id ? null : f.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} aria-label="Annulla periodo">
+                          <Trash2 size={13} color={C.textFaint} />
+                        </button>
                         <button onClick={() => segnaFatturaPagata(f.id)} style={{ background: "none", border: `1px solid ${C.green}`, borderRadius: 999, padding: "3px 9px", fontSize: 12, color: C.greenText, fontWeight: 700, cursor: "pointer" }}>
                           Segna pagata
                         </button>
                       </div>
                     </div>
+                    {modificaFattura && modificaFattura.id === f.id && (
+                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${C.panelBorder}` }}>
+                        <div style={{ marginBottom: 5 }}><FieldLabel>Nome</FieldLabel></div>
+                        <input
+                          type="text" value={modificaFattura.descrizione}
+                          onChange={(e) => setModificaFattura({ ...modificaFattura, descrizione: e.target.value })}
+                          placeholder="es. Compenso settembre"
+                          style={{ width: "100%", boxSizing: "border-box", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "9px 11px", color: C.paper, fontSize: 14, marginBottom: 10, outline: "none" }}
+                        />
+                        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ marginBottom: 5 }}><FieldLabel>Compenso (€)</FieldLabel></div>
+                            <input
+                              type="number" inputMode="decimal" value={modificaFattura.importo}
+                              onChange={(e) => setModificaFattura({ ...modificaFattura, importo: e.target.value })}
+                              style={{ width: "100%", boxSizing: "border-box", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "9px 11px", color: C.paper, fontSize: 14, fontFamily: MONO_FONT, outline: "none" }}
+                            />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ marginBottom: 5 }}><FieldLabel>Pagamento</FieldLabel></div>
+                            <input
+                              type="date" value={modificaFattura.scadenza}
+                              onChange={(e) => setModificaFattura({ ...modificaFattura, scadenza: e.target.value })}
+                              style={{ width: "100%", boxSizing: "border-box", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "9px 11px", color: C.paper, fontSize: 14, outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                        {Number(String(modificaFattura.importo).replace(",", ".")) > 0 && (
+                          <div style={{ fontSize: 12.5, color: C.brassText, fontWeight: 700, marginBottom: 10 }}>
+                            ≈ {euroToTime(Number(String(modificaFattura.importo).replace(",", ".")), hourlyEstimate)} di lavoro
+                          </div>
+                        )}
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={salvaModifica} style={{ flex: 1, padding: "9px 0", borderRadius: 12, border: "none", backgroundColor: C.brass, color: C.ink, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                            Salva modifica
+                          </button>
+                          <button onClick={() => setModificaFattura(null)} style={{ flex: 1, padding: "9px 0", borderRadius: 12, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                            Annulla
+                          </button>
+                        </div>
+                        <p style={{ fontSize: 12, color: C.textFainter, lineHeight: 1.4, margin: "8px 0 0 0" }}>
+                          Le date del periodo e le ore dei turni restano quelle: per cambiarle serve annullare il periodo col cestino e reinserirlo.
+                        </p>
+                      </div>
+                    )}
+
+                    {confermaAnnulla === f.id && (
+                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${C.panelBorder}` }}>
+                        <div style={{ fontSize: 12.5, color: C.textDim, lineHeight: 1.45, marginBottom: 8 }}>
+                          Annullo questo compenso e i turni dei {(f.giorni || []).length} giorni collegati?
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => annullaPeriodo(f.id)} style={{ flex: 1, padding: "8px 0", borderRadius: 12, border: `1px solid ${C.rust}`, background: "none", color: C.rust, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+                            Sì, annulla
+                          </button>
+                          <button onClick={() => setConfermaAnnulla(null)} style={{ flex: 1, padding: "8px 0", borderRadius: 12, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>
+                            No, lascia
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -3847,7 +4069,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
       {redditoTipo === "variabile" && hasTier("elite") && (
       <div style={{ padding: "0 20px", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, backgroundColor: real.ready ? "rgba(124,179,66,0.1)" : C.panel, border: `1px solid ${real.ready ? C.green : C.panelBorder}`, borderRadius: 8, padding: "12px 14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, backgroundColor: real.ready ? "rgba(124,179,66,0.1)" : C.panel, border: `1px solid ${real.ready ? C.green : C.panelBorder}`, borderRadius: 16, padding: "12px 14px" }}>
           <TrendingUp size={16} color={real.ready ? C.greenText : C.textFaint} style={{ flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             {real.ready ? (
@@ -3862,7 +4084,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                   {real.ore < REAL_RATE_MIN_HOURS
                     ? `Registra almeno ${REAL_RATE_MIN_HOURS}h di turni a consuntivo (ne hai ${real.ore.toFixed(1)}h) per passare a un numero calcolato sui tuoi dati veri.`
                     : real.entrate <= 0
-                    ? "Hai abbastanza ore registrate, ma nessuna entrata confermata: finché i tuoi compensi restano \"in attesa\" nelle fatture, l'app resta sulla stima invece di calcolare un numero da un incasso che non è ancora arrivato davvero."
+                    ? "Hai abbastanza ore registrate, ma nessuna entrata confermata: finché i tuoi compensi restano \"in attesa\", l'app resta sulla stima invece di calcolare un numero da un incasso che non è ancora arrivato davvero."
                     : `In questo periodo le uscite registrate (${real.uscite.toFixed(0)}€) superano le entrate (${real.entrate.toFixed(0)}€): il conto darebbe una tariffa oraria negativa, che non vorrebbe dire nulla. L'app resta sulla stima finché il saldo non torna positivo.`}
                 </div>
               </>
@@ -3909,8 +4131,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                   key={i}
                   onClick={() => { if (dayEntries.length === 0) { setAddMenuDay(d); } else { setSelectedDay(d); setShowAdd(false); } }}
                   style={{
-                    aspectRatio: "1", borderRadius: 6, border: `${borderW} solid ${borderColor}`,
-                    backgroundColor: fatturaStato === "pagata" ? "rgba(124,179,66,0.08)" : fatturaStato === "attesa" ? "rgba(255,107,74,0.08)" : dayEntries.length ? C.panel : "transparent",
+                    aspectRatio: "1", borderRadius: 14, border: `${borderW} solid ${borderColor}`,
+                    backgroundColor: fatturaStato === "pagata" ? "rgba(124,179,66,0.08)" : fatturaStato === "attesa" ? "rgba(47,107,79,0.08)" : dayEntries.length ? C.panel : "transparent",
                     display: "flex", flexDirection: "column",
                     alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 2,
                   }}
@@ -3930,8 +4152,8 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: C.fixedBar, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Turno</span></div>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: C.green, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Entrata</span></div>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: C.rust, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Uscita</span></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.brass}`, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Fattura in attesa</span></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.green}`, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Fattura pagata</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.brass}`, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>In attesa</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.green}`, display: "inline-block" }} /><span style={{ fontSize: 12.5, color: C.textFaint }}>Incassato</span></div>
         </div>
       </div>
 
@@ -3939,7 +4161,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setSelectedDay(null)} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "80vh", overflowY: "auto" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>{selectedDay.getDate()} {MESI_IT[selectedDay.getMonth()]}</span>
               <button onClick={() => setSelectedDay(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -3950,7 +4172,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
             )}
 
             {selectedEntries.map((e) => (
-              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 6, padding: "10px 12px", marginBottom: 8 }}>
+              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 14, padding: "10px 12px", marginBottom: 8 }}>
                 <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {e.tipo === "turno" ? <Clock size={13} color={C.fixedBar} /> : e.tipo === "entrata" ? <TrendingUp size={13} color={C.greenText} /> : <TrendingDown size={13} color={C.rust} />}
                 </div>
@@ -3983,7 +4205,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
               <div style={{ position: "fixed", inset: 0, zIndex: 65, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                 <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setEditingCalEntry(null)} />
                 <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px" }}>
-                  <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+                  <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 16px auto" }} />
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                     <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>
                       Modifica {editingCalEntry.entry.tipo === "turno" ? "turno" : editingCalEntry.entry.tipo === "entrata" ? "entrata" : "uscita"}
@@ -4015,30 +4237,30 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                   <>
                     <FieldLabel>Ore lavorate</FieldLabel>
                     <input type="number" value={form.ore} placeholder="8" onChange={(e) => setForm({ ...form, ore: e.target.value })}
-                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }} />
+                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }} />
                   </>
                 ) : (
                   <>
                     <FieldLabel>Importo €</FieldLabel>
                     <input type="number" value={form.importo} placeholder="150" onChange={(e) => setForm({ ...form, importo: e.target.value })}
-                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }} />
+                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }} />
                   </>
                 )}
                 <FieldLabel>Descrizione (opzionale)</FieldLabel>
                 <input
                   type="text" value={form.descrizione}
-                  placeholder={form.tipo === "turno" ? "es. Progetto cliente X" : form.tipo === "entrata" ? "es. Fattura cliente X" : "es. Materiale"}
+                  placeholder={form.tipo === "turno" ? "es. Progetto cliente X" : form.tipo === "entrata" ? "es. Compenso cliente X" : "es. Materiale"}
                   onChange={(e) => setForm({ ...form, descrizione: e.target.value })}
-                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }}
+                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }}
                 />
-                <button onClick={addEntry} style={{ width: "100%", padding: "12px 0", borderRadius: 6, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}>
+                <button onClick={addEntry} style={{ width: "100%", padding: "12px 0", borderRadius: 14, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}>
                   Aggiungi
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => setAddMenuDay(selectedDay)}
-                style={{ width: "100%", padding: "12px 0", borderRadius: 6, border: `1px dashed ${C.panelBorder}`, background: "none", color: C.textFaint, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
+                style={{ width: "100%", padding: "12px 0", borderRadius: 14, border: `1px dashed ${C.panelBorder}`, background: "none", color: C.textFaint, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
               >
                 <Plus size={15} /> Aggiungi voce
               </button>
@@ -4051,7 +4273,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
         <div style={{ position: "fixed", inset: 0, zIndex: 55, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => { setShowAddRange(false); setRangeResult(null); }} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "88vh", overflowY: "auto" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Aggiungi un periodo di lavoro</span>
               <button onClick={() => { setShowAddRange(false); setRangeResult(null); }} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -4059,15 +4281,15 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
             {rangeResult ? (
               <div style={{ textAlign: "center", padding: "24px 0" }}>
-                <div style={{ width: 52, height: 52, borderRadius: "50%", backgroundColor: rangeResult.fatturaCreata ? "rgba(255,107,74,0.15)" : "rgba(124,179,66,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px auto" }}>
-                  <TrendingUp size={24} color={rangeResult.fatturaCreata ? C.brassText : C.greenTextText} />
+                <div style={{ width: 52, height: 52, borderRadius: "50%", backgroundColor: rangeResult.fatturaCreata ? "rgba(47,107,79,0.15)" : "rgba(124,179,66,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px auto" }}>
+                  <TrendingUp size={24} color={rangeResult.fatturaCreata ? C.brassText : C.greenText} />
                 </div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.paper, marginBottom: 6 }}>{rangeResult.count} giorni lavorativi aggiunti</div>
                 <div style={{ fontSize: 12, color: C.textFaint, marginBottom: 20 }}>
                   Dal {new Date(rangeResult.daStr).toLocaleDateString("it-IT")} al {new Date(rangeResult.aStr).toLocaleDateString("it-IT")}, sabati e domeniche esclusi se avevi scelto così.
                   {rangeResult.fatturaCreata ? " È stata creata anche una fattura in attesa di pagamento, la trovi qui sotto nel Calendario." : ""}
                 </div>
-                <button onClick={() => { setShowAddRange(false); setRangeResult(null); }} style={{ padding: "12px 24px", borderRadius: 6, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                <button onClick={() => { setShowAddRange(false); setRangeResult(null); }} style={{ padding: "12px 24px", borderRadius: 14, border: "none", backgroundColor: C.brass, color: "#FFFFFF", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   Vai al calendario
                 </button>
               </div>
@@ -4081,12 +4303,12 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                   <div>
                     <FieldLabel>Da</FieldLabel>
                     <input type="date" value={rangeForm.da} onChange={(e) => setRangeForm({ ...rangeForm, da: e.target.value })}
-                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "9px 10px", color: C.paper, fontSize: 13, marginTop: 4, outline: "none" }} />
+                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "9px 10px", color: C.paper, fontSize: 13, marginTop: 4, outline: "none" }} />
                   </div>
                   <div>
                     <FieldLabel>A</FieldLabel>
                     <input type="date" value={rangeForm.a} onChange={(e) => setRangeForm({ ...rangeForm, a: e.target.value })}
-                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "9px 10px", color: C.paper, fontSize: 13, marginTop: 4, outline: "none" }} />
+                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "9px 10px", color: C.paper, fontSize: 13, marginTop: 4, outline: "none" }} />
                   </div>
                 </div>
 
@@ -4102,18 +4324,18 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
                 <div style={{ marginBottom: 6 }}><FieldLabel>Ore lavorate al giorno</FieldLabel></div>
                 <input type="number" value={rangeForm.oreAlGiorno} placeholder="8" onChange={(e) => setRangeForm({ ...rangeForm, oreAlGiorno: e.target.value })}
-                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }} />
+                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }} />
 
                 <div style={{ marginBottom: 6 }}><FieldLabel>Quanto ti pagano (opzionale)</FieldLabel></div>
                 <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
                   <div style={{ flex: 1 }}>
                     <input type="number" value={rangeForm.tariffaImporto} placeholder="0" onChange={(e) => setRangeForm({ ...rangeForm, tariffaImporto: e.target.value })}
-                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, outline: "none" }} />
+                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, outline: "none" }} />
                   </div>
                   <select
                     value={rangeForm.tariffaUnita}
                     onChange={(e) => setRangeForm({ ...rangeForm, tariffaUnita: e.target.value })}
-                    style={{ backgroundColor: C.inputBg, color: C.paper, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "0 10px", fontSize: 13, fontFamily: SANS_FONT, outline: "none" }}
+                    style={{ backgroundColor: C.inputBg, color: C.paper, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "0 10px", fontSize: 13, fontFamily: SANS_FONT, outline: "none" }}
                   >
                     <option value="ora">/ora</option>
                     <option value="giorno">/giorno</option>
@@ -4137,7 +4359,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                       </button>
                     </div>
                     {showInfoLordoNetto && (
-                      <div style={{ backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 6, padding: "10px 12px", marginBottom: 10 }}>
+                      <div style={{ backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 14, padding: "10px 12px", marginBottom: 10 }}>
                         <p style={{ fontSize: 13.5, color: C.textDim, lineHeight: 1.55, margin: 0 }}>
                           <strong style={{ color: C.paper }}>Lordo</strong> è la cifra scritta in fattura, prima di tasse e contributi. <strong style={{ color: C.paper }}>Netto</strong> è quello che ti resta davvero in tasca — ed è quello che conta per l'app, perché le ore le calcoliamo su cosa puoi spendere per davvero, non su un numero che in parte andrà comunque via.
                         </p>
@@ -4163,7 +4385,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
                     {rangeForm.lordoNetto === "lordo" && (
                       percentualeNettaAuto !== null ? (
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(124,179,66,0.1)", border: `1px solid ${C.green}`, borderRadius: 6, padding: "10px 12px", marginBottom: 16 }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(124,179,66,0.1)", border: `1px solid ${C.green}`, borderRadius: 14, padding: "10px 12px", marginBottom: 16 }}>
                           <TrendingUp size={13} color={C.greenText} style={{ marginTop: 1, flexShrink: 0 }} />
                           <p style={{ fontSize: 13.5, color: C.paper, lineHeight: 1.5, margin: 0 }}>
                             Uso le aliquote del tuo Regime fiscale: circa <strong>{(percentualeNettaAuto * 100).toFixed(0)}%</strong> ti resta netto. Le ore verranno calcolate su quello, non sul lordo.
@@ -4175,7 +4397,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                           <input type="number" value={rangeForm.percentualeNettaManuale}
                             onChange={(e) => setRangeForm({ ...rangeForm, percentualeNettaManuale: e.target.value })}
                             placeholder="65"
-                            style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 8, outline: "none" }} />
+                            style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 8, outline: "none" }} />
                           <p style={{ fontSize: 13, color: C.textFainter, lineHeight: 1.4, marginBottom: 16 }}>
                             Di solito tra il 55% e il 75%, a seconda di tasse e contributi. Non hai ancora configurato il Regime fiscale nelle Impostazioni — fallo una volta sola e la prossima volta questo calcolo lo farà l'app da sola, con le tue aliquote vere.
                           </p>
@@ -4187,9 +4409,73 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
                 {rangeForm.tariffaImporto && (
                   <>
+                    <div style={{ marginBottom: 6 }}><FieldLabel>Come ti pagano</FieldLabel></div>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                      {[
+                        { id: "fattura", label: "A fattura" },
+                        { id: "stipendio", label: "Stipendio" },
+                        { id: "progetto", label: "A progetto" },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setRangeForm({ ...rangeForm, tipoCompenso: t.id, scadenzaModo: t.id === "stipendio" ? "giorno" : rangeForm.scadenzaModo })}
+                          style={{
+                            flex: 1, padding: "9px 2px", borderRadius: 999, cursor: "pointer",
+                            border: `1px solid ${rangeForm.tipoCompenso === t.id ? C.brass : C.panelBorder}`,
+                            backgroundColor: rangeForm.tipoCompenso === t.id ? "rgba(47,107,79,0.10)" : "transparent",
+                            color: rangeForm.tipoCompenso === t.id ? C.paper : C.textDim,
+                            fontSize: 12.5, fontWeight: 700,
+                          }}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+
                     <div style={{ marginBottom: 6 }}><FieldLabel>Quando ti aspetti il pagamento</FieldLabel></div>
-                    <input type="date" value={rangeForm.scadenzaPagamento} onChange={(e) => setRangeForm({ ...rangeForm, scadenzaPagamento: e.target.value })}
-                      style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 8, outline: "none" }} />
+                    <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                      {[
+                        { id: "data", label: "Una data precisa" },
+                        { id: "giorno", label: "Un giorno del mese" },
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => setRangeForm({ ...rangeForm, scadenzaModo: m.id })}
+                          style={{
+                            flex: 1, padding: "9px 4px", borderRadius: 999, cursor: "pointer",
+                            border: `1px solid ${rangeForm.scadenzaModo === m.id ? C.brass : C.panelBorder}`,
+                            backgroundColor: rangeForm.scadenzaModo === m.id ? "rgba(47,107,79,0.10)" : "transparent",
+                            color: rangeForm.scadenzaModo === m.id ? C.paper : C.textDim,
+                            fontSize: 12.5, fontWeight: 600,
+                          }}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {rangeForm.scadenzaModo === "giorno" ? (
+                      <>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                          <span style={{ fontSize: 13.5, color: C.textDim }}>Il giorno</span>
+                          <input
+                            type="number" inputMode="numeric" min="1" max="31"
+                            value={rangeForm.giornoDelMese}
+                            onChange={(e) => setRangeForm({ ...rangeForm, giornoDelMese: e.target.value })}
+                            style={{ width: 70, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 15, fontFamily: MONO_FONT, textAlign: "center" }}
+                          />
+                          <span style={{ fontSize: 13.5, color: C.textDim }}>del mese successivo</span>
+                        </div>
+                        <p style={{ fontSize: 13, color: C.textFainter, lineHeight: 1.4, marginBottom: 16 }}>
+                          {scadenzaCalcolata()
+                            ? `Con questo periodo, il pagamento è atteso per il ${new Date(scadenzaCalcolata() + "T00:00:00").toLocaleDateString("it-IT")}.`
+                            : "Scegli prima le date del periodo."}
+                        </p>
+                      </>
+                    ) : (
+                      <input type="date" value={rangeForm.scadenzaPagamento} onChange={(e) => setRangeForm({ ...rangeForm, scadenzaPagamento: e.target.value })}
+                        style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 8, outline: "none" }} />
+                    )}
                     <p style={{ fontSize: 13, color: C.textFainter, lineHeight: 1.4, marginBottom: 16 }}>
                       Finché non la segni come pagata, questo compenso resta "in attesa" (arancione, solo una stima) — non conta ancora nei tuoi totali reali. Puoi anche scaricare un promemoria per non dimenticartene.
                     </p>
@@ -4198,16 +4484,16 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 
                 <div style={{ marginBottom: 6 }}><FieldLabel>Descrizione (opzionale)</FieldLabel></div>
                 <input type="text" value={rangeForm.descrizione} placeholder="es. Progetto cliente X" onChange={(e) => setRangeForm({ ...rangeForm, descrizione: e.target.value })}
-                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }} />
+                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }} />
 
                 {giorniAnteprima.length > 0 && (
-                  <div style={{ backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 6, padding: "10px 12px", marginBottom: 16 }}>
+                  <div style={{ backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 14, padding: "10px 12px", marginBottom: 16 }}>
                     <div style={{ fontSize: 12.5, color: C.paper, fontWeight: 600 }}>{giorniAnteprima.length} giorni lavorativi nel periodo</div>
                     {rangeForm.tariffaImporto && rangeForm.tariffaUnita !== "progetto" && (
                       <div style={{ fontSize: 13.5, color: C.brassText, marginTop: 3, fontWeight: 700 }}>≈ {importoGiornaliero.toFixed(2)}€/giorno → {(importoGiornaliero * giorniAnteprima.length).toFixed(0)}€ netti in attesa (stima)</div>
                     )}
                     {rangeForm.tariffaImporto && rangeForm.tariffaUnita === "progetto" && (
-                      <div style={{ fontSize: 13.5, color: C.brassText, marginTop: 3, fontWeight: 700 }}>{(Number(rangeForm.tariffaImporto) * percentualeNettaEffettiva).toFixed(0)}€ netti in attesa (stima), fattura unica</div>
+                      <div style={{ fontSize: 13.5, color: C.brassText, marginTop: 3, fontWeight: 700 }}>{(Number(rangeForm.tariffaImporto) * percentualeNettaEffettiva).toFixed(0)}€ netti in attesa (stima), pagamento unico</div>
                     )}
                     {rangeForm.tariffaImporto && rangeForm.lordoNetto === "lordo" && (
                       <div style={{ fontSize: 12.5, color: C.textFainter, marginTop: 3 }}>
@@ -4220,7 +4506,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
                 <button
                   onClick={submitRange}
                   disabled={giorniAnteprima.length === 0}
-                  style={{ width: "100%", padding: "13px 0", borderRadius: 6, border: "none", backgroundColor: giorniAnteprima.length > 0 ? C.brass : C.panelBorder, color: giorniAnteprima.length > 0 ? "#FFFFFF" : C.textFaint, fontWeight: 700, fontSize: 14, cursor: giorniAnteprima.length > 0 ? "pointer" : "default" }}
+                  style={{ width: "100%", padding: "13px 0", borderRadius: 14, border: "none", backgroundColor: giorniAnteprima.length > 0 ? C.brass : C.panelBorder, color: giorniAnteprima.length > 0 ? "#FFFFFF" : C.textFaint, fontWeight: 700, fontSize: 14, cursor: giorniAnteprima.length > 0 ? "pointer" : "default" }}
                 >
                   {giorniAnteprima.length > 0 ? `Aggiungi ${giorniAnteprima.length} giorni` : "Scegli le date"}
                 </button>
@@ -4237,7 +4523,7 @@ function CalendarioScreen({ calendario, setCalendario, hourlyEstimate, progetti,
 // voce di menu, resta visibile in grigio col lucchetto — tocchi e vedi cosa sblocchi,
 // senza dover indovinare che esiste.
 function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData, onUnlocked }) {
-  const isElite = tier === "elite";
+  const isElite = false; // resta una fascia sola: Premium
   const currentTier = data.tierOverride || TIER;
   const giaSbloccata = TIER_RANK[currentTier] >= TIER_RANK[tier];
   return (
@@ -4246,13 +4532,13 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}><ChevronLeft size={20} color={C.textDim} /></button>
       </div>
       <div style={{ padding: "36px 30px 30px 30px", textAlign: "center" }}>
-        <div style={{ width: 60, height: 60, borderRadius: "50%", backgroundColor: isElite ? "#171717" : "rgba(255,107,74,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px auto" }}>
+        <div style={{ width: 60, height: 60, borderRadius: "50%", backgroundColor: isElite ? "#171717" : "rgba(47,107,79,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px auto" }}>
           <Lock size={24} color={isElite ? "#F7F3EA" : C.brassText} />
         </div>
         <span style={{
           display: "inline-block", fontSize: 12, fontFamily: MONO_FONT, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase",
           padding: "4px 10px", borderRadius: 999, marginBottom: 12,
-          backgroundColor: isElite ? "#171717" : "rgba(255,107,74,0.15)", color: isElite ? "#F7F3EA" : C.brassText,
+          backgroundColor: isElite ? "#171717" : "rgba(47,107,79,0.15)", color: isElite ? "#F7F3EA" : C.brassText,
         }}>
           {isElite ? "Elite" : "Premium"}
         </span>
@@ -4263,15 +4549,9 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
           <div style={{ fontSize: 12, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, marginBottom: 10 }}>
             Cosa include ogni piano
           </div>
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: C.brassText, marginBottom: 4 }}>Premium</div>
-            {["Calendario", "Chiusura periodica", "Conti collegati e Rendiconto", "Import da file (CSV/PDF)", "Simulatore completo (anche a rate)", "Budget senza limite di obiettivi"].map((f) => (
-              <div key={f} style={{ fontSize: 12, color: C.textDim, padding: "2px 0" }}>· {f}</div>
-            ))}
-          </div>
           <div>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: C.paper, marginBottom: 4 }}>Elite <span style={{ fontWeight: 400, color: C.textFainter }}>(tutto Premium, più)</span></div>
-            {["Regime fiscale e calcolo del netto", "Progetti (tariffa oraria per lavoro)", "Tariffa oraria reale dallo storico"].map((f) => (
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: C.brassText, marginBottom: 4 }}>Premium</div>
+            {["Calendario", "Chiusura periodica", "Conti collegati e Rendiconto", "Import da file (CSV/PDF)", "Confronto con i finanziamenti a rate", "Obiettivi illimitati", "Regime fiscale e calcolo del netto", "Progetti e tariffa oraria reale"].map((f) => (
               <div key={f} style={{ fontSize: 12, color: C.textDim, padding: "2px 0" }}>· {f}</div>
             ))}
           </div>
@@ -4282,7 +4562,7 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
             Cambia fascia (solo per questo test)
           </div>
           <div style={{ display: "flex", gap: 6 }}>
-            {["free", "premium", "elite"].map((t) => {
+            {["free", "premium"].map((t) => {
               const active = currentTier === t;
               return (
                 <button
@@ -4294,7 +4574,7 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
                     fontSize: 13.5, fontWeight: 700, textTransform: "capitalize",
                   }}
                 >
-                  {t === "free" ? "Free" : t === "premium" ? "Premium" : "Elite"}
+                  {t === "free" ? "Free" : "Premium"}
                 </button>
               );
             })}
@@ -4303,7 +4583,7 @@ function LockedFeatureScreen({ titolo, descrizione, tier, onBack, data, setData,
           {giaSbloccata ? (
             <button
               onClick={onUnlocked}
-              style={{ width: "100%", padding: "11px 0", borderRadius: 6, border: "none", backgroundColor: C.green, color: "#FFFFFF", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 10 }}
+              style={{ width: "100%", padding: "11px 0", borderRadius: 14, border: "none", backgroundColor: C.green, color: "#FFFFFF", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 10 }}
             >
               Sbloccata ✓ — vai a "{titolo}"
             </button>
@@ -4334,18 +4614,30 @@ function GuidaScreen({ onBack, redditoTipo }) {
       esempio: "L'app converte ogni spesa in ore di lavoro invece che in euro. Se guadagni 12€ all'ora, un gelato da 4€ diventa \"20 minuti\": è il tempo che hai lavorato per pagartelo. Ogni numero che vedi nell'app parte da questo conto.",
     },
     {
+      id: "converti",
+      titolo: "Converti — quanto costa in ore",
+      minTier: "free",
+      esempio: "È la prima schermata, e serve prima di comprare, non dopo. Scrivi quanto guadagni (all'ora o al mese) e quanto costa la cosa che stai guardando: l'app ti dice quante ore devi lavorare per permettertela. Un telefono da 800€ con 12€ l'ora sono 66 ore, cioè più di una settimana di lavoro. Poi decidi tu: \"Lascio perdere\" azzera e basta, \"Lo prendo\" la segna tra le spese di oggi. Non serve aver inserito nient'altro per usarla.",
+    },
+    {
+      id: "abbonamenti",
+      titolo: "Abbonamenti — le spese che tornano ogni mese",
+      minTier: "free",
+      esempio: "Netflix, il telefono, la palestra: tutto quello che paghi in automatico, in un posto solo. Tocca \"Aggiungi abbonamento\", scegli dal catalogo o scrivine uno tuo, metti il prezzo e ogni quanto viene addebitato (mese, anno o settimana). In cima trovi il totale al mese e all'anno, sia in euro sia in ore di lavoro — spesso è più di quanto sembra guardando i singoli prezzi uno per uno. Resta separato dal Diario e dalle spese fisse: non vuole contare due volte la stessa spesa, solo farti vedere quanto pesano tutti insieme.",
+    },
+    {
       id: "diario",
       titolo: "Diario — registrare una spesa",
       minTier: "free",
-      esempio: "Serve per segnare cosa spendi ogni giorno. Tocca il bottone rosso con il \"+\" in basso, scegli una categoria (Bar, Spesa, Bollette...), scrivi l'importo e conferma. L'app calcola subito quante ore ti è costata e la trovi nella lista \"Timbrature di oggi\". Se ti sei dimenticato di segnare qualcosa, tocca \"cambia giorno\" nella stessa schermata e scegli il giorno giusto fino a due settimane indietro: la spesa non conta nelle ore di oggi, ma entra nella chiusura del periodo. Per una spesa che deve ancora arrivare (il bollo, una multa) usa invece il Calendario: lì resta una previsione finché non succede davvero.",
+      esempio: "Serve per segnare cosa spendi ogni giorno. Tocca il bottone rosso con il \"+\" in basso, scegli una categoria (Bar, Spesa, Bollette...), scrivi l'importo e conferma. L'app calcola subito quante ore ti è costata e la trovi nella lista \"Oggi hai speso\". Se ti sei dimenticato di segnare qualcosa, tocca \"cambia giorno\" nella stessa schermata e scegli il giorno giusto fino a due settimane indietro: la spesa non conta nelle ore di oggi, ma entra nella chiusura del periodo. Per una spesa che deve ancora arrivare (il bollo, una multa) usa invece il Calendario: lì resta una previsione finché non succede davvero.",
     },
     {
       id: "simulatore",
-      titolo: "Simulatore — prima di un acquisto",
+      titolo: "E se lo paghi a rate",
       minTier: "free",
       esempio: hasTier("premium")
-        ? "Serve per capire quanto ti costa davvero, in ore, comprare qualcosa prima di farlo. Scrivi il prezzo, scegli come lo pagheresti (subito, a rate PayPal, o a rate con finanziamento), e l'app confronta le ore di lavoro che ti costa ogni opzione — utile soprattutto per capire quanto ti costano gli interessi."
-        : "Serve per capire quanto ti costa davvero, in ore, comprare qualcosa prima di farlo. Scrivi il prezzo e confronta pagamento subito o a rate PayPal senza interessi. Con Premium si aggiunge anche il confronto con i finanziamenti a rate, per vedere quanto ti costano gli interessi in ore.",
+        ? "Sotto il risultato del Convertitore c'è la riga \"E se non lo paghi subito?\". Aprila e confronti pagamento immediato e finanziamento a rate: inserisci quanto paghi al mese e per quanti mesi (oppure il TAN, se lo conosci) e l'app ti dice il costo totale, gli interessi, e soprattutto quante ore di lavoro in più ti costano. Si parte sempre da \"Subito\", che è il termine di paragone."
+        : "Con Premium, sotto il risultato del Convertitore compare la riga \"E se non lo paghi subito?\": confronta il pagamento immediato con un finanziamento a rate e ti mostra gli interessi non come percentuale, ma come giornate di lavoro in più.",
     },
     {
       id: "budget",
@@ -4394,7 +4686,7 @@ function GuidaScreen({ onBack, redditoTipo }) {
     id: "backup",
     titolo: "Copia di sicurezza",
     minTier: "free",
-    esempio: "Il tuo profilo è salvato online, ma è legato a questo dispositivo: l'app ti riconosce grazie a un'impronta che il browser tiene da parte. Se svuoti i dati di Chrome, cambi telefono o reinstalli l'app, quell'impronta sparisce e il profilo non è più recuperabile — nemmeno da chi ha fatto l'app. Per questo in Impostazioni trovi \"Scarica una copia del profilo\": ti salva un file con dentro tutto (reddito, spese fisse, obiettivi, spese registrate, calendario). Tienilo dove tieni le altre cose importanti. Se un giorno ti ritrovi con l'app vuota, da Impostazioni scegli \"Ripristina da un backup\", selezioni quel file e torna tutto com'era. Attenzione: il ripristino sostituisce quello che c'è, quindi fallo su un profilo nuovo o quando sei sicuro. Consiglio: scaricane uno appena hai finito di inserire le spese fisse, che è la parte più noiosa da rifare.",
+    esempio: "Il tuo profilo è salvato online, ma è legato a questo dispositivo: l'app ti riconosce grazie a un'impronta che il browser tiene da parte. Se svuoti i dati di Chrome, cambi telefono o reinstalli l'app, quell'impronta sparisce e il profilo non è più recuperabile — nemmeno da chi ha fatto l'app. Per questo in Impostazioni trovi \"Salva una copia\": ti salva un file con dentro tutto (reddito, spese fisse, obiettivi, spese registrate, calendario). Tienilo dove tieni le altre cose importanti. Se un giorno ti ritrovi con l'app vuota, da Impostazioni scegli \"Ripristina da un backup\", selezioni quel file e torna tutto com'era. Attenzione: il ripristino sostituisce quello che c'è, quindi fallo su un profilo nuovo o quando sei sicuro. Consiglio: scaricane uno appena hai finito di inserire le spese fisse, che è la parte più noiosa da rifare.",
   });
 
   return (
@@ -4411,7 +4703,7 @@ function GuidaScreen({ onBack, redditoTipo }) {
         {SEZIONI.map((s) => {
           const locked = !hasTier(s.minTier);
           return (
-            <div key={s.id} style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 8, overflow: "hidden", opacity: locked ? 0.75 : 1 }}>
+            <div key={s.id} style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 16, overflow: "hidden", opacity: locked ? 0.75 : 1 }}>
               <button
                 onClick={() => toggle(s.id)}
                 style={{ width: "100%", padding: "13px 14px", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
@@ -4419,8 +4711,8 @@ function GuidaScreen({ onBack, redditoTipo }) {
                 <span style={{ fontSize: 13.5, fontWeight: 700, color: C.paper, display: "flex", alignItems: "center", gap: 8 }}>
                   {s.titolo}
                   {locked && (
-                    <span style={{ fontSize: 10.5, fontFamily: MONO_FONT, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", padding: "2px 7px", borderRadius: 999, backgroundColor: s.minTier === "elite" ? "#171717" : "rgba(255,107,74,0.15)", color: s.minTier === "elite" ? "#F7F3EA" : C.brassText }}>
-                      {s.minTier === "elite" ? "Elite" : "Premium"}
+                    <span style={{ fontSize: 10.5, fontFamily: MONO_FONT, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", padding: "2px 7px", borderRadius: 999, backgroundColor: s.minTier === "elite" ? "#171717" : "rgba(47,107,79,0.15)", color: s.minTier === "elite" ? "#F7F3EA" : C.brassText }}>
+                      {"Premium"}
                     </span>
                   )}
                 </span>
@@ -4475,7 +4767,7 @@ function RegimeFiscaleScreen({ data, setData, onBack }) {
       <ScreenHeader eyebrow="Solo una stima, non una dichiarazione" title="Regime fiscale" />
 
       <div style={{ padding: "0 20px", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(255,107,74,0.1)", border: `1px solid ${C.brass}`, borderRadius: 8, padding: "10px 12px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(47,107,79,0.1)", border: `1px solid ${C.brass}`, borderRadius: 16, padding: "10px 12px" }}>
           <Info size={13} color={C.brassDim} style={{ marginTop: 1, flexShrink: 0 }} />
           <span style={{ fontSize: 13.5, color: C.paper, lineHeight: 1.5 }}>
             Calcolo indicativo per farti un'idea del tuo netto. Aliquote e regole cambiano ogni anno e dipendono dal tuo caso specifico — verifica sempre con il tuo commercialista prima di decisioni importanti.
@@ -4552,7 +4844,7 @@ function RegimeFiscaleScreen({ data, setData, onBack }) {
         </div>
 
         {redditoLordo > 0 && (
-          <PunchTicket style={{ borderRadius: 8, padding: 18, marginBottom: 20 }}>
+          <PunchTicket style={{ borderRadius: 16, padding: 18, marginBottom: 20 }}>
             <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textDim, marginBottom: 10 }}>Il tuo netto stimato</div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12.5 }}>
               <span style={{ color: C.textDim }}>Contributi INPS</span>
@@ -4585,7 +4877,105 @@ function RegimeFiscaleScreen({ data, setData, onBack }) {
   );
 }
 
-function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransactions, onChangeUser, onOpenRegime, onOpenImport, onOpenImportPDF, onOpenGuida, onOpenLocked, currentUser, entries, txFeed, onRestore }) {
+// ---- Cosa c'è oltre il piano gratuito ----
+// Una pagina sola, raggiunta da un solo pulsante. Elenca tutto quello che si sblocca,
+// e da qui si torna indietro senza aver cambiato niente: chi sta bene com'è non deve
+// incontrare lucchetti sparsi per l'app.
+function PremiumScreen({ data, onBack, onSetTier }) {
+  const isVariabile = data.redditoTipo === "variabile";
+  const gruppi = [
+    {
+      tier: "premium",
+      titolo: "Premium",
+      sotto: "Un solo sblocco, una volta sola",
+      voci: [
+        { icon: Calendar, label: "Calendario", desc: "Turni, entrate e uscite giorno per giorno. Utile se il tuo reddito cambia ogni mese." },
+        { icon: HandCoins, label: "Chiusura del periodo", desc: "A fine settimana o mese ti dice quanto ti è avanzato e ti aiuta a decidere dove metterlo." },
+        { icon: Landmark, label: "Conti collegati e Rendiconto", desc: "Le transazioni arrivano da sole invece di inserirle a mano." },
+        { icon: ArrowRight, rotate: -90, label: "Importa spese da file", desc: "Carichi l'estratto conto in CSV o PDF e l'app lo legge." },
+        { icon: CreditCard, label: "Confronto con i finanziamenti", desc: "Quante ore di lavoro in più ti costano gli interessi di un pagamento a rate." },
+        { icon: PiggyBank, label: "Obiettivi illimitati", desc: "Nel piano gratuito ne puoi seguire uno alla volta." },
+        ...(isVariabile ? [
+          { icon: Calculator, label: "Regime fiscale e calcolo del netto", desc: "Stima cosa resta davvero dopo tasse e contributi, con forfettario o ordinario." },
+          { icon: TrendingUp, label: "Tariffa oraria reale", desc: "Non più una stima: calcolata sulle ore e sugli incassi che registri davvero." },
+        ] : []),
+      ],
+    },
+  ];
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", paddingBottom: 32 }}>
+      <div style={{ padding: "8px 20px 4px 20px", display: "flex", alignItems: "center", gap: 8 }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
+          <ChevronLeft size={20} color={C.textDim} />
+        </button>
+        <span style={{ fontSize: 12, color: C.textDim, fontFamily: MONO_FONT }}>Impostazioni</span>
+      </div>
+      <ScreenHeader eyebrow="Cosa c'è oltre" title="Le altre funzioni" />
+
+      <div style={{ padding: "0 20px" }}>
+        <p style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.55, marginTop: 0, marginBottom: 20 }}>
+          OreLibere è completa così com'è: converti, segni le spese, ti dai un obiettivo.
+          Queste sono in più, per chi vuole tenere i conti nel dettaglio.
+        </p>
+
+        {gruppi.map((g) => {
+          const giaAttivo = hasTier(g.tier);
+          return (
+            <div key={g.tier} style={{ marginBottom: 22 }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 3 }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: C.paper }}>{g.titolo}</span>
+                {giaAttivo && <span style={{ fontSize: 12, color: C.greenText, fontWeight: 700 }}>già attivo</span>}
+              </div>
+              <div style={{ fontSize: 13, color: C.textFaint, marginBottom: 12 }}>{g.sotto}</div>
+
+              <div style={{ border: `1px solid ${C.panelBorder}`, borderRadius: 16, overflow: "hidden" }}>
+                {g.voci.map((v, i) => (
+                  <div key={v.label} style={{ display: "flex", gap: 11, padding: "13px 14px", borderTop: i > 0 ? `1px solid ${C.panelBorder}` : "none" }}>
+                    <v.icon size={17} color={C.brassText} style={{ flexShrink: 0, marginTop: 2, ...(v.rotate ? { transform: `rotate(${v.rotate}deg)` } : {}) }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.paper }}>{v.label}</div>
+                      <div style={{ fontSize: 13, color: C.textFaint, lineHeight: 1.45, marginTop: 2 }}>{v.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {!giaAttivo && (
+                <button
+                  onClick={() => onSetTier(g.tier)}
+                  style={{
+                    width: "100%", marginTop: 10, padding: "13px 0", borderRadius: 16, border: "none",
+                    backgroundColor: C.brass, color: C.ink, fontSize: 14.5, fontWeight: 800, cursor: "pointer",
+                  }}
+                >
+                  Sblocca {g.titolo}
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+        <button
+          onClick={onBack}
+          style={{
+            width: "100%", padding: "13px 0", borderRadius: 16, border: `1px solid ${C.panelBorder}`,
+            background: "none", color: C.textDim, fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 14,
+          }}
+        >
+          No grazie, sto bene così
+        </button>
+
+        <p style={{ fontSize: 12.5, color: C.textFainter, lineHeight: 1.5, margin: 0 }}>
+          Durante i test lo sblocco è immediato e gratuito: serve a farti vedere come funziona,
+          non è un acquisto. Puoi tornare al piano gratuito quando vuoi dalle Impostazioni.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransactions, onChangeUser, onOpenRegime, onOpenImport, onOpenImportPDF, onOpenGuida, onOpenLocked, onOpenPremium, currentUser, entries, txFeed, onRestore }) {
   const [restoreMsg, setRestoreMsg] = useState(null); // { ok: bool, testo: string }
   const backupFileRef = useRef(null);
 
@@ -4647,10 +5037,10 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           <span style={{
             fontSize: 12, fontFamily: MONO_FONT, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase",
             padding: "4px 10px", borderRadius: 999,
-            backgroundColor: ACTIVE_TIER === "elite" ? "#171717" : ACTIVE_TIER === "premium" ? "rgba(255,107,74,0.15)" : C.panelBorder,
-            color: ACTIVE_TIER === "elite" ? "#F7F3EA" : ACTIVE_TIER === "premium" ? C.brassText : C.textDim,
+            backgroundColor: hasTier("premium") ? "rgba(47,107,79,0.15)" : C.panelBorder,
+            color: hasTier("premium") ? C.brassText : C.textDim,
           }}>
-            {ACTIVE_TIER === "elite" ? "Elite" : ACTIVE_TIER === "premium" ? "Premium" : "Free"}
+            {hasTier("premium") ? "Premium" : "Free"}
           </span>
         }
       />
@@ -4660,7 +5050,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           id="tut-guida"
           onClick={onOpenGuida}
           style={{
-            width: "100%", padding: "13px 14px", borderRadius: 8, border: `1px solid ${C.brass}`, backgroundColor: "rgba(255,107,74,0.08)",
+            width: "100%", padding: "13px 14px", borderRadius: 16, border: `1px solid ${C.brass}`, backgroundColor: "rgba(47,107,79,0.08)",
             display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 22,
           }}
         >
@@ -4671,21 +5061,14 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           </div>
         </button>
 
-        {!hasTier("premium") && (
-          <div style={{ backgroundColor: "#171717", borderRadius: 8, padding: "14px 16px", marginBottom: 22, textAlign: "center" }}>
-            <div style={{ color: "#F7F3EA", fontSize: 13.5, fontWeight: 700, marginBottom: 4 }}>Sei sul piano Free</div>
-            <p style={{ fontSize: 13.5, color: "#DED7C4", lineHeight: 1.5, margin: 0 }}>
-              Con Premium sblocchi Calendario, Chiusura, il collegamento dei conti, l'import da file e il Simulatore completo.
-            </p>
-          </div>
-        )}
 
-        <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 22 }}>
+
+        <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 16, padding: "12px 14px", marginBottom: 22 }}>
           <div style={{ fontSize: 12, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
             Cambia fascia (solo per questo test)
           </div>
           <div style={{ display: "flex", gap: 6 }}>
-            {["free", "premium", "elite"].map((t) => {
+            {["free", "premium"].map((t) => {
               const active = (data.tierOverride || TIER) === t;
               return (
                 <button
@@ -4697,7 +5080,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
                     fontSize: 13.5, fontWeight: 700, textTransform: "capitalize",
                   }}
                 >
-                  {t === "free" ? "Free" : t === "premium" ? "Premium" : "Elite"}
+                  {t === "free" ? "Free" : "Premium"}
                 </button>
               );
             })}
@@ -4707,7 +5090,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           </p>
         </div>
 
-        <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: 22 }}>
+        <div style={{ border: `1px dashed ${C.panelBorder}`, borderRadius: 16, padding: "12px 14px", marginBottom: 22 }}>
           <div style={{ fontSize: 12, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter, marginBottom: 8 }}>
             Tema
           </div>
@@ -4732,38 +5115,21 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
         </div>
 
         {!KICKSTARTER_BUILD && (() => {
-          const lockedItems = [
-            { key: "conti", show: !hasTier("premium"), icon: Landmark, label: "Conti collegati e Rendiconto", tier: "Premium" },
-            { key: "import", show: !hasTier("premium"), icon: ArrowRight, rotate: -90, label: "Importa spese da file", tier: "Premium" },
-            { key: "chiusura", show: !hasTier("premium"), icon: HandCoins, label: "Periodo di chiusura", tier: "Premium" },
-            { key: "regime", show: data.redditoTipo === "variabile" && !hasTier("elite"), icon: Calculator, label: "Regime fiscale e calcolo del netto", tier: "Elite" },
-          ].filter((i) => i.show);
-          if (lockedItems.length === 0) return null;
+          if (hasTier("premium")) return null;
+          // Una riga discreta, non un riquadro colorato: chi resta sul piano gratuito
+          // non deve avere la sensazione che gli manchi qualcosa o che gli si voglia
+          // vendere qualcosa. Chi è curioso la trova, chi non lo è non la nota.
           return (
-            <div style={{ border: `1px solid ${C.panelBorder}`, borderRadius: 8, marginBottom: 22, overflow: "hidden" }}>
-              <div style={{ padding: "12px 14px 8px 14px", fontSize: 12, fontFamily: MONO_FONT, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textFainter }}>
-                Funzioni da sbloccare
-              </div>
-              {lockedItems.map((item, i) => (
-                <button
-                  key={item.key}
-                  onClick={() => onOpenLocked(item.key)}
-                  style={{
-                    width: "100%", padding: "13px 14px", border: "none", borderTop: i > 0 ? `1px solid ${C.panelBorder}` : "none",
-                    background: "none", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", opacity: 0.9,
-                  }}
-                >
-                  <div style={{ position: "relative", flexShrink: 0 }}>
-                    <item.icon size={16} color={C.textFaint} style={item.rotate ? { transform: `rotate(${item.rotate}deg)` } : undefined} />
-                    <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -3, right: -4, backgroundColor: C.panel, borderRadius: "50%", padding: 1 }} />
-                  </div>
-                  <div style={{ textAlign: "left", flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: C.textDim }}>{item.label}</div>
-                    <div style={{ fontSize: 13, color: C.textFainter, marginTop: 1 }}>{item.tier} · tocca per saperne di più</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <button
+              onClick={() => onOpenPremium()}
+              style={{
+                width: "100%", textAlign: "left", cursor: "pointer", marginBottom: 22,
+                border: "none", background: "none", padding: "2px 0",
+                color: C.textDim, fontSize: 13, fontWeight: 600, textDecoration: "underline",
+              }}
+            >
+              Cosa c'è oltre il piano gratuito →
+            </button>
           );
         })()}
 
@@ -4777,9 +5143,9 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
               {ACCOUNTS.map((acc, i) => {
                 const connected = !!connectedAccounts[acc.id];
                 return (
-                  <div key={acc.id} id={i === 0 ? "tut-bank-connect" : undefined} style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 14px" }}>
+                  <div key={acc.id} id={i === 0 ? "tut-bank-connect" : undefined} style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "12px 14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 16, backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <acc.icon size={16} color={acc.connectable ? C.brassText : C.textFaint} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -4792,7 +5158,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
                           style={{
                             padding: "6px 12px", borderRadius: 999, fontSize: 13.5, fontFamily: MONO_FONT, fontWeight: 700, cursor: "pointer",
                             border: `1px solid ${connected ? C.green : C.brass}`,
-                            backgroundColor: connected ? "rgba(124,179,66,0.12)" : "rgba(255,107,74,0.12)",
+                            backgroundColor: connected ? "rgba(124,179,66,0.12)" : "rgba(47,107,79,0.12)",
                             color: connected ? C.greenText : C.brassText, flexShrink: 0,
                           }}
                         >
@@ -4812,7 +5178,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
             <button
               onClick={onOpenTransactions}
               style={{
-                width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.brass}`, backgroundColor: "rgba(255,107,74,0.08)",
+                width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.brass}`, backgroundColor: "rgba(47,107,79,0.08)",
                 color: C.brassText, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12,
               }}
             >
@@ -4822,11 +5188,11 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
         ) : null)}
 
         {KICKSTARTER_BUILD ? (
-          <div style={{ width: "100%", padding: "12px 14px", borderRadius: 4, border: `1px dashed ${C.panelBorder}`, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px dashed ${C.panelBorder}`, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
             <Clock size={14} color={C.textFainter} style={{ flexShrink: 0 }} />
             <div>
               <div style={{ fontSize: 13, color: C.textDim, fontWeight: 600 }}>Anche i tuoi file, presto, diventeranno ore</div>
-              <div style={{ fontSize: 13, color: C.textFainter, marginTop: 1, lineHeight: 1.4 }}>La stessa conversione da soldi a tempo, ma per tutto quello che hai già speso — in arrivo</div>
+              <div style={{ fontSize: 13, color: C.textFainter, marginTop: 1, lineHeight: 1.4 }}>La stessa conversione da euro a ore di lavoro, ma per tutto quello che hai già speso — in arrivo</div>
             </div>
           </div>
         ) : hasTier("premium") ? (
@@ -4835,7 +5201,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
               id="tut-import-csv"
               onClick={onOpenImport}
               style={{
-                width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, background: "none",
+                width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.panelBorder}`, background: "none",
                 color: C.textDim, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 10,
               }}
             >
@@ -4845,7 +5211,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
             <button
               onClick={onOpenImportPDF}
               style={{
-                width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, background: "none",
+                width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.panelBorder}`, background: "none",
                 color: C.textDim, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 10,
               }}
             >
@@ -4859,7 +5225,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           onClick={() => exportCalendarioCSV(data.calendario || {})}
           disabled={!data.calendario || Object.keys(data.calendario).length === 0}
           style={{
-            width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, background: "none",
+            width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.panelBorder}`, background: "none",
             color: !data.calendario || Object.keys(data.calendario).length === 0 ? C.textFainter : C.textDim, fontSize: 13, fontWeight: 600,
             cursor: !data.calendario || Object.keys(data.calendario).length === 0 ? "default" : "pointer",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24,
@@ -4880,12 +5246,12 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           id="tut-backup"
           onClick={scaricaBackup}
           style={{
-            width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.brass}`,
-            backgroundColor: "rgba(255,107,74,0.08)", color: C.paper, fontSize: 13.5, fontWeight: 700,
+            width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.brass}`,
+            backgroundColor: "rgba(47,107,79,0.08)", color: C.paper, fontSize: 13.5, fontWeight: 700,
             cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8,
           }}
         >
-          <ArrowRight size={15} color={C.brassText} style={{ transform: "rotate(90deg)" }} /> Scarica una copia del profilo
+          <ArrowRight size={15} color={C.brassText} style={{ transform: "rotate(90deg)" }} /> Salva una copia
         </button>
 
         <input
@@ -4898,7 +5264,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
         <button
           onClick={() => backupFileRef.current && backupFileRef.current.click()}
           style={{
-            width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, background: "none",
+            width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.panelBorder}`, background: "none",
             color: C.textDim, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8,
           }}
@@ -4914,7 +5280,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           <div style={{
             border: `1px solid ${restoreMsg.ok ? C.green : C.rust}`,
             backgroundColor: restoreMsg.ok ? "rgba(124,179,66,0.10)" : "rgba(201,62,34,0.10)",
-            borderRadius: 4, padding: "10px 12px", marginBottom: 22,
+            borderRadius: 12, padding: "10px 12px", marginBottom: 22,
             fontSize: 12.5, color: C.paper, lineHeight: 1.45,
           }}>
             {restoreMsg.testo}
@@ -4937,8 +5303,8 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
                 onClick={() => setData({ ...data, closurePeriod: opt.id })}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
-                  padding: "14px 16px", borderRadius: 4, cursor: "pointer",
-                  backgroundColor: active ? "rgba(255,107,74,0.1)" : C.panel,
+                  padding: "14px 16px", borderRadius: 12, cursor: "pointer",
+                  backgroundColor: active ? "rgba(47,107,79,0.1)" : C.panel,
                   border: `1px solid ${active ? C.brass : C.panelBorder}`,
                 }}
               >
@@ -4962,7 +5328,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
 
         <button
           onClick={onFullOnboarding}
-          style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed ${C.sheetBorder}`, background: "none", color: C.textFainter, fontSize: 13, cursor: "pointer" }}
+          style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: `1px dashed ${C.sheetBorder}`, background: "none", color: C.textFainter, fontSize: 13, cursor: "pointer" }}
         >
           Modifica reddito, spese fisse e obiettivi iniziali
         </button>
@@ -4970,7 +5336,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
         {data.redditoTipo === "variabile" && hasTier("elite") && (
           <button
             onClick={onOpenRegime}
-            style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px dashed ${C.sheetBorder}`, background: "none", color: C.textFainter, fontSize: 13, cursor: "pointer", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: `1px dashed ${C.sheetBorder}`, background: "none", color: C.textFainter, fontSize: 13, cursor: "pointer", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           >
             <Calculator size={14} /> Regime fiscale e calcolo del netto
           </button>
@@ -4985,7 +5351,7 @@ function SettingsScreen({ data, setData, onBack, onFullOnboarding, onOpenTransac
           </div>
           <button
             onClick={onChangeUser}
-            style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 13, cursor: "pointer" }}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 13, cursor: "pointer" }}
           >
             Cambia utente
           </button>
@@ -5015,14 +5381,14 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
         <ScreenHeader eyebrow="Budget libero · senza scadenza" title={nome || "Obiettivo"} />
 
         <div style={{ padding: "0 20px" }}>
-          <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
+          <PunchTicket style={{ borderRadius: 12, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
             <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Accumulato</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 2 }}>
               <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{saved.toFixed(0)}€</div>
               <div style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.textFaint }}>/ {importo.toFixed(0)}€</div>
             </div>
             <div style={{ fontFamily: MONO_FONT, fontSize: 12, color: C.brassText, marginBottom: 8 }}>≈ {euroToTime(saved, hourly)} di lavoro già recuperate</div>
-            <div style={{ height: 8, backgroundColor: C.ticketBorder, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+            <div style={{ height: 8, backgroundColor: C.ticketBorder, borderRadius: 12, overflow: "hidden", marginBottom: 6 }}>
               <div style={{ height: "100%", backgroundColor: C.brass, width: `${pct}%` }} />
             </div>
             <div style={{ fontSize: 12, color: C.textFaint }}>{pct.toFixed(0)}% del percorso · {remainingHours.toFixed(0)}h ({remainingEuro.toFixed(0)}€) ancora da mettere via</div>
@@ -5030,7 +5396,7 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
         </div>
 
         <div style={{ padding: "0 20px", marginTop: 16 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 16, borderRadius: 4, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}` }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 16, borderRadius: 12, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}` }}>
             <PiggyBank size={16} color={C.brassText} style={{ marginTop: 2, flexShrink: 0 }} />
             <p style={{ fontSize: 13, color: C.paper, margin: 0, lineHeight: 1.5 }}>
               Nessuna scadenza impostata: niente target da rispettare. A fine settimana, dal Report, decidi tu quanto e se destinare a questo obiettivo — anche zero, anche tutto il budget libero.
@@ -5074,14 +5440,14 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
       <ScreenHeader eyebrow={`Scadenza: ${mesi} mesi`} title={nome || "Obiettivo"} />
 
       <div style={{ padding: "0 20px" }}>
-        <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
+        <PunchTicket style={{ borderRadius: 12, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
           <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Accumulato</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 2 }}>
             <div style={{ fontFamily: MONO_FONT, fontSize: 32, fontWeight: 800 }}>{saved.toFixed(0)}€</div>
             <div style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.textFaint }}>/ {importo.toFixed(0)}€</div>
           </div>
           <div style={{ fontFamily: MONO_FONT, fontSize: 12, color: C.brassText, marginBottom: 8 }}>≈ {euroToTime(saved, hourly)} di lavoro già recuperate</div>
-          <div style={{ height: 8, backgroundColor: C.ticketBorder, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+          <div style={{ height: 8, backgroundColor: C.ticketBorder, borderRadius: 12, overflow: "hidden", marginBottom: 6 }}>
             <div style={{ height: "100%", backgroundColor: C.brass, width: `${pct}%` }} />
           </div>
           <div style={{ fontSize: 12, color: C.textFaint }}>{pct.toFixed(0)}% del percorso completato</div>
@@ -5089,12 +5455,12 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
       </div>
 
       <div style={{ padding: "0 20px", marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: 14 }}>
+        <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: 14 }}>
           <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6 }}>Ti mancano</div>
           <div style={{ fontFamily: MONO_FONT, fontSize: 20, fontWeight: 800, color: C.paper }}>{remainingHours.toFixed(0)}h</div>
           <div style={{ fontFamily: MONO_FONT, fontSize: 12, color: C.textFaint }}>{remainingEuro.toFixed(0)}€</div>
         </div>
-        <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: 14 }}>
+        <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
             <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.08em", color: C.textDim, fontFamily: MONO_FONT }}>Target</span>
             <select
@@ -5115,8 +5481,8 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
       {(overBudget || tight) ? (
         <div style={{ padding: "0 20px", marginTop: 16 }}>
           <div style={{
-            display: "flex", alignItems: "flex-start", gap: 10, padding: 16, borderRadius: 4,
-            backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : "rgba(255,107,74,0.1)",
+            display: "flex", alignItems: "flex-start", gap: 10, padding: 16, borderRadius: 12,
+            backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : "rgba(47,107,79,0.1)",
             border: `1px solid ${overBudget ? C.rust : C.brass}`,
           }}>
             <span style={{ fontSize: 15, marginTop: -1 }}>{overBudget ? "⚠" : "!"}</span>
@@ -5134,7 +5500,7 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
 
       <div style={{ padding: "0 20px", marginTop: 20 }}>
         <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 10 }}>Ritmo di accumulo mensile</div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 110, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "12px 12px 10px 12px", position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 110, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "12px 12px 10px 12px", position: "relative" }}>
           <div style={{ position: "absolute", left: 12, right: 12, bottom: `${18 + (monthlyTarget / maxPace) * 58}px`, borderTop: `1px dashed ${C.brass}`, opacity: 0.6 }} />
           {monthlyPace.map((m, i) => {
             const h = Math.max((m.risparmiato / maxPace) * 58, 4);
@@ -5156,7 +5522,7 @@ function GoalDetailScreen({ goal, profile, hourly, onBack }) {
 
       <div style={{ padding: "0 20px", marginTop: 16 }}>
         <div style={{
-          display: "flex", alignItems: "flex-start", gap: 10, padding: 16, borderRadius: 4,
+          display: "flex", alignItems: "flex-start", gap: 10, padding: 16, borderRadius: 12,
           backgroundColor: onTrack ? "rgba(124,179,66,0.1)" : "rgba(225,74,46,0.08)",
           border: `1px solid ${onTrack ? C.green : C.rust}`,
         }}>
@@ -5221,7 +5587,7 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
               <button
                 key={g.id}
                 onClick={() => onSelect(g.id)}
-                style={{ width: "100%", textAlign: "left", cursor: "pointer", backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: 16 }}
+                style={{ width: "100%", textAlign: "left", cursor: "pointer", backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: 16 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                   <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: C.panelBorder, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -5239,11 +5605,11 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
                   <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.textFainter }}>{g.saved.toFixed(0)}€ / {g.tipo === "riserva" ? "min " : ""}{g.importo.toFixed(0)}€</span>
                   <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.textFainter }}>{pct.toFixed(0)}%</span>
                 </div>
-                <div style={{ height: 6, backgroundColor: C.panelBorder, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+                <div style={{ height: 6, backgroundColor: C.panelBorder, borderRadius: 12, overflow: "hidden", marginBottom: 6 }}>
                   <div style={{ height: "100%", backgroundColor: C.brass, width: `${pct}%` }} />
                 </div>
                 <div style={{ fontSize: 13, color: C.brassText, fontFamily: MONO_FONT }}>
-                  → ancora {euroToTime(Math.max(g.importo - g.saved, 0), hourly)} di lavoro
+                  ti mancano {euroToTime(Math.max(g.importo - g.saved, 0), hourly)} di lavoro
                 </div>
               </button>
             );
@@ -5255,13 +5621,13 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setShowAdd(false)} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "24px 20px 32px 20px", textAlign: "center" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 20px auto" }} />
+            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 20px auto" }} />
             <PiggyBank size={28} color={C.brassText} style={{ marginBottom: 10 }} />
             <div style={{ color: C.paper, fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Il piano Free include 1 obiettivo</div>
             <p style={{ fontSize: 13, color: C.textFaint, lineHeight: 1.5, marginBottom: 20 }}>
               Con Premium puoi tenerne quanti vuoi in parallelo — un viaggio, un fondo di sicurezza, un acquisto, tutti insieme.
             </p>
-            <button onClick={() => setShowAdd(false)} style={{ width: "100%", padding: "12px 0", borderRadius: 6, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            <button onClick={() => setShowAdd(false)} style={{ width: "100%", padding: "12px 0", borderRadius: 14, border: `1px solid ${C.panelBorder}`, background: "none", color: C.textDim, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               Ho capito
             </button>
           </div>
@@ -5272,7 +5638,7 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.8)" }} onClick={() => setShowAdd(false)} />
           <div style={{ position: "relative", backgroundColor: C.panel, borderTop: `1px solid ${C.sheetBorder}`, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "16px 20px 32px 20px", maxHeight: "85vh", overflowY: "auto" }}>
-            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 4, margin: "0 auto 16px auto" }} />
+            <div style={{ width: 40, height: 4, backgroundColor: C.sheetBorder, borderRadius: 12, margin: "0 auto 16px auto" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ color: C.paper, fontWeight: 700, fontSize: 15 }}>Nuovo obiettivo</span>
               <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color={C.textDim} /></button>
@@ -5302,19 +5668,19 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
             <input
               type="text" value={form.nome} placeholder={isRiserva ? "es. Fondo emergenza" : "es. Nuovo scooter"}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
-              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
             />
             <div style={{ marginBottom: 4 }}><FieldLabel>{isRiserva ? "Cifra minima da mantenere €" : "Importo €"}</FieldLabel></div>
             <input
               type="number" value={form.importo} placeholder={isRiserva ? "10000" : "2000"}
               onChange={(e) => setForm({ ...form, importo: e.target.value })}
-              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 12, outline: "none" }}
             />
             <div style={{ marginBottom: 4 }}><FieldLabel>{isRiserva ? "Quanto hai adesso, dopo il prelievo (opzionale)" : "Quanto hai già messo da parte (opzionale)"}</FieldLabel></div>
             <input
               type="number" value={form.saved} placeholder="0"
               onChange={(e) => setForm({ ...form, saved: e.target.value })}
-              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }}
+              style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, marginBottom: 16, outline: "none" }}
             />
 
             <button
@@ -5333,13 +5699,13 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
                 <input
                   type="number" value={form.mesi} placeholder="12"
                   onChange={(e) => setForm({ ...form, mesi: e.target.value })}
-                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}
+                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none" }}
                 />
                 {newMonthlyTarget > 0 ? (
                   <div style={{
-                    display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, padding: "10px 12px", borderRadius: 4,
-                    backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : tight ? "rgba(255,107,74,0.1)" : "rgba(124,179,66,0.1)",
-                    border: `1px solid ${overBudget ? C.rust : tight ? C.brassText : C.greenTextText}`,
+                    display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, padding: "10px 12px", borderRadius: 12,
+                    backgroundColor: overBudget ? "rgba(225,74,46,0.1)" : tight ? "rgba(47,107,79,0.1)" : "rgba(124,179,66,0.1)",
+                    border: `1px solid ${overBudget ? C.rust : tight ? C.brassText : C.greenText}`,
                   }}>
                     <span style={{ fontSize: 13, marginTop: -1 }}>{overBudget ? "⚠" : tight ? "!" : "✓"}</span>
                     <p style={{ fontSize: 12, color: C.paper, margin: 0, lineHeight: 1.5 }}>
@@ -5361,7 +5727,7 @@ function GoalListScreen({ goals, profile, hourly, onSelect, onAddGoal }) {
               </p>
             )}
 
-            <button onClick={submit} style={{ width: "100%", padding: "12px 0", borderRadius: 4, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            <button onClick={submit} style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
               Aggiungi
             </button>
           </div>
@@ -5379,220 +5745,6 @@ function GoalScreen({ profile, hourly, onAddGoal }) {
     return <GoalDetailScreen goal={selectedGoal} profile={profile} hourly={hourly} onBack={() => setSelectedId(null)} />;
   }
   return <GoalListScreen goals={profile.goals} profile={profile} hourly={hourly} onSelect={setSelectedId} onAddGoal={onAddGoal} />;
-}
-
-function SimulatoreScreen({ hourly }) {
-  const [modo, setModo] = useState(hasTier("premium") ? "finanziato" : "cash"); // finanziato | cash | paypal3
-  const [prezzo, setPrezzo] = useState(1000);
-  const [rata, setRata] = useState(95);
-  const [numRate, setNumRate] = useState(14);
-  const [inputFinanziato, setInputFinanziato] = useState("rata"); // rata | tasso
-  const [tasso, setTasso] = useState(9.9); // TAN annuo %
-
-  const oreCash = prezzo / hourly;
-
-  // Se si conosce il tasso (TAN annuo) invece della rata, la calcoliamo con la
-  // formula standard di ammortamento francese (piano a rate costanti).
-  const rataDaTasso = (() => {
-    const i = (Number(tasso) || 0) / 100 / 12; // tasso mensile
-    const n = Number(numRate) || 0;
-    if (n <= 0) return 0;
-    if (i === 0) return prezzo / n;
-    return (prezzo * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
-  })();
-  const rataEffettiva = inputFinanziato === "tasso" ? rataDaTasso : rata;
-
-  let costoTotale, interessi, rataMostrata, numRateMostrate;
-  if (modo === "cash") {
-    costoTotale = prezzo;
-    interessi = 0;
-    rataMostrata = prezzo;
-    numRateMostrate = 1;
-  } else if (modo === "paypal3") {
-    costoTotale = prezzo;
-    interessi = 0;
-    rataMostrata = prezzo / 3;
-    numRateMostrate = 3;
-  } else {
-    costoTotale = rataEffettiva * numRate;
-    interessi = costoTotale - prezzo;
-    rataMostrata = rataEffettiva;
-    numRateMostrate = numRate;
-  }
-
-  const oreReali = costoTotale / hourly;
-  const oreDiff = oreReali - oreCash;
-
-  const MODES = [
-    { id: "cash", label: "Cash subito" },
-    { id: "paypal3", label: "3 rate PayPal" },
-    ...(hasTier("premium") ? [{ id: "finanziato", label: "Finanziamento" }] : []),
-  ];
-
-  return (
-    <div style={{ flex: 1, overflowY: "auto", paddingBottom: 96 }}>
-      <ScreenHeader eyebrow="Prima di firmare" title="Simulatore" />
-      <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ display: "flex", gap: 6, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: 4 }}>
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setModo(m.id)}
-              style={{
-                flex: 1, padding: "8px 6px", borderRadius: 999, border: "none", cursor: "pointer",
-                backgroundColor: modo === m.id ? C.brass : "transparent",
-                color: modo === m.id ? C.ink : C.textFaint,
-                fontSize: 13.5, fontWeight: 700, fontFamily: MONO_FONT,
-              }}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-        {!hasTier("premium") && (
-          <p style={{ fontSize: 13, color: C.textFainter, textAlign: "center", margin: "-8px 0 0 0" }}>
-            Con Premium confronti anche i finanziamenti a rate, con il calcolo degli interessi in ore.
-          </p>
-        )}
-
-        <div style={{ backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 4, padding: 16, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <FieldLabel>Prezzo oggetto</FieldLabel>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, borderBottom: `1px solid ${C.sheetBorder}`, paddingBottom: 4 }}>
-              <span style={{ color: C.brassText, fontFamily: MONO_FONT, fontSize: 20 }}>€</span>
-              <input type="number" value={prezzo} onChange={(e) => setPrezzo(Number(e.target.value))}
-                style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 20, width: "100%", border: "none", outline: "none" }} />
-            </div>
-          </div>
-
-          {modo === "finanziato" && (
-            <>
-              <div style={{ display: "flex", gap: 6, backgroundColor: C.bg, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: 4 }}>
-                <button
-                  onClick={() => setInputFinanziato("rata")}
-                  style={{ flex: 1, padding: "7px 6px", borderRadius: 999, border: "none", cursor: "pointer", backgroundColor: inputFinanziato === "rata" ? C.brass : "transparent", color: inputFinanziato === "rata" ? "#FFFFFF" : C.textFaint, fontSize: 13, fontWeight: 700 }}
-                >
-                  Conosco la rata
-                </button>
-                <button
-                  onClick={() => setInputFinanziato("tasso")}
-                  style={{ flex: 1, padding: "7px 6px", borderRadius: 999, border: "none", cursor: "pointer", backgroundColor: inputFinanziato === "tasso" ? C.brass : "transparent", color: inputFinanziato === "tasso" ? "#FFFFFF" : C.textFaint, fontSize: 13, fontWeight: 700 }}
-                >
-                  Conosco il tasso
-                </button>
-              </div>
-
-              {inputFinanziato === "rata" ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div>
-                    <FieldLabel>Rata/mese</FieldLabel>
-                    <input type="number" value={rata} onChange={(e) => setRata(Number(e.target.value))}
-                      style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
-                  </div>
-                  <div>
-                    <FieldLabel>N. rate</FieldLabel>
-                    <input type="number" value={numRate} onChange={(e) => setNumRate(Number(e.target.value))}
-                      style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <FieldLabel>Tasso annuo (TAN) %</FieldLabel>
-                      <input type="number" value={tasso} onChange={(e) => setTasso(Number(e.target.value))}
-                        style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
-                    </div>
-                    <div>
-                      <FieldLabel>N. rate</FieldLabel>
-                      <input type="number" value={numRate} onChange={(e) => setNumRate(Number(e.target.value))}
-                        style={{ backgroundColor: "transparent", color: C.paper, fontFamily: MONO_FONT, fontSize: 16, width: "100%", border: "none", borderBottom: `1px solid ${C.sheetBorder}`, outline: "none", marginTop: 4, paddingBottom: 4 }} />
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 12, color: C.textFaint, display: "flex", justifyContent: "space-between" }}>
-                    <span>Rata calcolata</span>
-                    <span style={{ fontFamily: MONO_FONT, color: C.paper, fontWeight: 700 }}>{rataDaTasso.toFixed(2)}€/mese</span>
-                  </div>
-                  <p style={{ fontSize: 13, color: C.textFainter, lineHeight: 1.4, margin: 0 }}>
-                    Trovi il TAN nel documento del finanziamento — è il tasso di interesse puro, diverso dal TAEG che include anche le spese.
-                  </p>
-                </>
-              )}
-            </>
-          )}
-
-          {modo === "cash" && (
-            <div style={{ fontSize: 12, color: C.textFaint, lineHeight: 1.5 }}>
-              Pagamento unico, oggi. Nessuna rata da seguire.
-            </div>
-          )}
-
-          {modo === "paypal3" && (
-            <div style={{ fontSize: 12, color: C.textFaint, lineHeight: 1.5 }}>
-              3 rate mensili uguali, senza interessi: {(prezzo / 3).toFixed(0)}€ al mese.
-            </div>
-          )}
-        </div>
-
-        <PunchTicket style={{ borderRadius: 4, padding: 16, border: `1px solid ${C.ticketBorder}` }}>
-          <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT, marginBottom: 12 }}>Il costo reale</div>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-            <span style={{ fontSize: 13, color: C.textFaint }}>
-              {modo === "finanziato" ? "Costo totale finanziamento" : modo === "paypal3" ? "Costo totale (3 rate)" : "Costo totale"}
-            </span>
-            <span style={{ fontFamily: MONO_FONT, fontSize: 18, fontWeight: 800 }}>{costoTotale.toFixed(0)}€</span>
-          </div>
-
-          {modo === "paypal3" && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-              <span style={{ fontSize: 13, color: C.textFaint }}>{numRateMostrate} rate da</span>
-              <span style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.paper }}>{rataMostrata.toFixed(0)}€/mese</span>
-            </div>
-          )}
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, color: C.textFaint }}>di cui interessi</span>
-            {interessi > 0 ? (
-              <span style={{ fontFamily: MONO_FONT, fontSize: 14, color: C.rust }}>+{interessi.toFixed(0)}€</span>
-            ) : (
-              <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.greenText, fontWeight: 700 }}>zero</span>
-            )}
-          </div>
-
-          <div style={{ borderTop: `1px dashed ${C.sheetBorder}`, paddingTop: 16 }}>
-            <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textFaint, fontFamily: MONO_FONT, marginBottom: 4 }}>Il tuo tempo</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <div style={{ fontFamily: MONO_FONT, fontSize: 30, fontWeight: 800 }}>{Math.round(oreReali)}h</div>
-              <div style={{ fontFamily: MONO_FONT, fontSize: 15, color: C.textFaint }}>≈ {euroToDaysHours(costoTotale, hourly)}</div>
-            </div>
-            {modo === "finanziato" ? (
-              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>
-                vs {Math.round(oreCash)}h se pagato subito — <span style={{ color: C.rust, fontWeight: 700 }}>{Math.round(oreDiff)}h in più</span> per gli interessi
-              </div>
-            ) : modo === "paypal3" ? (
-              <div style={{ fontSize: 12, color: C.greenText, marginTop: 4 }}>
-                stesse ore del pagamento cash, solo divise in 3 tranche da {(oreCash / 3).toFixed(1)}h ciascuna
-              </div>
-            ) : (
-              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>
-                nessun costo aggiuntivo: paghi esattamente il prezzo di oggi
-              </div>
-            )}
-          </div>
-        </PunchTicket>
-
-        {modo === "finanziato" && oreDiff > 0 && (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px", borderRadius: 4, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}` }}>
-            <TriangleAlert size={14} color={C.rust} style={{ marginTop: 1, flexShrink: 0 }} />
-            <span style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.5 }}>
-              Confrontalo con "3 rate PayPal" o "Cash subito" qui sopra: potresti evitare {Math.round(oreDiff)}h di lavoro in più.
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
 function UserPickerScreen({ onSelect }) {
@@ -5727,7 +5879,7 @@ function UserPickerScreen({ onSelect }) {
         <button
           onClick={verifyPin}
           disabled={pin.length !== 4}
-          style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: pin.length === 4 ? C.brass : C.panelBorder, color: pin.length === 4 ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: pin.length === 4 ? "pointer" : "default" }}
+          style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 16, border: "none", backgroundColor: pin.length === 4 ? C.brass : C.panelBorder, color: pin.length === 4 ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: pin.length === 4 ? "pointer" : "default" }}
         >
           Entra
         </button>
@@ -5766,7 +5918,7 @@ function UserPickerScreen({ onSelect }) {
         <button
           onClick={savePin}
           disabled={!ready || saving}
-          style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 8, border: "none", backgroundColor: ready ? C.brass : C.panelBorder, color: ready ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: ready ? "pointer" : "default" }}
+          style={{ marginTop: 18, width: "100%", padding: "13px 0", borderRadius: 16, border: "none", backgroundColor: ready ? C.brass : C.panelBorder, color: ready ? C.ink : C.textFaint, fontWeight: 700, fontSize: 14, cursor: ready ? "pointer" : "default" }}
         >
           {saving ? "Salvo..." : "Conferma PIN"}
         </button>
@@ -5784,7 +5936,7 @@ function UserPickerScreen({ onSelect }) {
       </div>
 
       {!supabaseConfigured && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px", borderRadius: 4, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px", borderRadius: 12, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, marginBottom: 20 }}>
           <TriangleAlert size={14} color={C.brassDim} style={{ marginTop: 1, flexShrink: 0 }} />
           <span style={{ fontSize: 13.5, color: C.textFaint, lineHeight: 1.5 }}>
             Il salvataggio online non è ancora collegato: per ora i dati restano solo su questo dispositivo.
@@ -5817,12 +5969,12 @@ function UserPickerScreen({ onSelect }) {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && pickNew()}
               placeholder="Scrivi il tuo nome"
-              style={{ flex: 1, backgroundColor: C.inputBg, color: C.paper, border: `1px solid ${C.panelBorder}`, borderRadius: 8, padding: "12px 14px", fontSize: 15, outline: "none" }}
+              style={{ flex: 1, backgroundColor: C.inputBg, color: C.paper, border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: "12px 14px", fontSize: 15, outline: "none" }}
             />
             <button
               onClick={pickNew}
               disabled={!name.trim()}
-              style={{ padding: "12px 16px", borderRadius: 8, border: "none", backgroundColor: name.trim() ? C.brass : C.panelBorder, color: C.ink, fontWeight: 700, cursor: name.trim() ? "pointer" : "default" }}
+              style={{ padding: "12px 16px", borderRadius: 16, border: "none", backgroundColor: name.trim() ? C.brass : C.panelBorder, color: C.ink, fontWeight: 700, cursor: name.trim() ? "pointer" : "default" }}
             >
               <ArrowRight size={18} />
             </button>
@@ -5843,7 +5995,7 @@ function UserPickerScreen({ onSelect }) {
             <button
               onClick={() => backupFileRef.current && backupFileRef.current.click()}
               style={{
-                width: "100%", padding: "11px 0", borderRadius: 8, border: `1px solid ${C.panelBorder}`,
+                width: "100%", padding: "11px 0", borderRadius: 16, border: `1px solid ${C.panelBorder}`,
                 background: "none", color: C.textDim, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               }}
@@ -5860,16 +6012,18 @@ function UserPickerScreen({ onSelect }) {
   );
 }
 
-function MainApp({ currentUser, onChangeUser }) {
+function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
   const [onboarded, setOnboarded] = useState(false);
-  const [welcomeDone, setWelcomeDone] = useState(false);
+  const [welcomeDone, setWelcomeDone] = useState(rateIniziale > 0);
   const [tutorialDone, setTutorialDone] = useState(true); // true di default: chi torna con onboarding già fatto non deve rivederlo
   const [tutorialStep, setTutorialStep] = useState(0);
   const [step, setStep] = useState(0);
   const [data, setData] = useState({
-    stipendio: "", oreSettimana: "40",
+    // Se ha già scritto quanto guadagna nel convertitore, non glielo si richiede da capo
+    stipendio: rateIniziale > 0 ? String(Math.round(rateIniziale * 4.33 * 40)) : "", oreSettimana: "40",
     fixedList: [], // niente preset: ogni tester parte da zero e inserisce le proprie spese fisse
     goals: [], // nessun obiettivo demo: si imposta nel Passo 3 dell'onboarding
+    abbonamenti: [], // Netflix, telefono, palestra... si aggiungono dalla sezione Abbonamenti
     closurePeriod: "settimana", // giorno | settimana | mese
     carryOver: 0, // quanto non è stato allocato nell'ultima chiusura, si somma al prossimo periodo
     connectedAccounts: {}, // { banca: true, revolut: false, paypal: true }
@@ -5893,7 +6047,8 @@ function MainApp({ currentUser, onChangeUser }) {
   const saveTimer = useRef(null);
   const frameRef = useRef(null); // per misurare la posizione reale dei pulsanti nel tutorial
 
-  const [tab, setTab] = useState("diario");
+  const [tab, setTab] = useState("converti");
+  const [menuAperto, setMenuAperto] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [bankTx, setBankTx] = useState(null); // transazione simulata in attesa
   const [categorizeOpen, setCategorizeOpen] = useState(false);
@@ -5974,7 +6129,7 @@ function MainApp({ currentUser, onChangeUser }) {
     const nextStep = tutorialStep + 1;
     if (nextStep >= tutorialSteps.length) {
       setTutorialDone(true);
-      setTab("diario");
+      setTab("converti");
     } else {
       setTutorialStep(nextStep);
       setTab(tutorialSteps[nextStep].tab);
@@ -5983,7 +6138,7 @@ function MainApp({ currentUser, onChangeUser }) {
 
   const skipTutorial = () => {
     setTutorialDone(true);
-    setTab("diario");
+    setTab("converti");
   };
 
   if (!cloudLoaded) {
@@ -6015,7 +6170,7 @@ function MainApp({ currentUser, onChangeUser }) {
       <div style={outerStyle}>
         <div style={frameStyle}>
           {syncError && (
-            <div style={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 90, backgroundColor: C.rust, color: "#fff", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, lineHeight: 1.4, display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <div style={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 90, backgroundColor: C.rust, color: "#fff", borderRadius: 16, padding: "10px 12px", fontSize: 13.5, lineHeight: 1.4, display: "flex", alignItems: "flex-start", gap: 8 }}>
               <span style={{ flex: 1 }}>⚠ Sincronizzazione: {syncError}</span>
               <button onClick={() => setSyncError(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontWeight: 700, padding: 0 }}>✕</button>
             </div>
@@ -6069,29 +6224,55 @@ function MainApp({ currentUser, onChangeUser }) {
   return (
     <div style={outerStyle}>
       <div style={frameStyle} ref={frameRef}>
+        {menuAperto && (
+          <MenuSheet
+            onClose={() => setMenuAperto(false)}
+            voci={[
+              { icon: HelpCircle, label: "Guida all'uso", desc: "Un esempio semplice per ogni parte dell'app", onClick: () => setTab("guida") },
+              { icon: Settings2, label: "Impostazioni", desc: "Reddito, spese fisse, tema, backup", onClick: () => setTab("settings") },
+              { icon: ArrowRight, label: "Cambia utente", desc: "Passa a un altro profilo di questo dispositivo", onClick: onChangeUser },
+            ]}
+          />
+        )}
         {!tutorialDone && <TutorialOverlay step={tutorialStep} steps={tutorialSteps} frameRef={frameRef} onNext={advanceTutorial} onFinish={skipTutorial} />}
         {syncError && (
-          <div style={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 90, backgroundColor: C.rust, color: "#fff", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, lineHeight: 1.4, display: "flex", alignItems: "flex-start", gap: 8 }}>
+          <div style={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 90, backgroundColor: C.rust, color: "#fff", borderRadius: 16, padding: "10px 12px", fontSize: 13.5, lineHeight: 1.4, display: "flex", alignItems: "flex-start", gap: 8 }}>
             <span style={{ flex: 1 }}>⚠ Sincronizzazione: {syncError}</span>
             <button onClick={() => setSyncError(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontWeight: 700, padding: 0 }}>✕</button>
           </div>
         )}
-        <div style={{ padding: "16px 20px 4px 20px" }}>
+        <div style={{ padding: "16px 20px 4px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", zIndex: 61 }}>
           <span style={{ fontFamily: MONO_FONT, fontSize: 13, color: C.textDim, letterSpacing: "0.08em" }}>ORELIBERE</span>
+          <button
+            onClick={() => setMenuAperto(!menuAperto)}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 4, marginRight: -4, display: "flex" }}
+            aria-label="Menu"
+          >
+            {menuAperto ? <XIcon size={22} color={C.paper} /> : <Menu size={22} color={C.textDim} />}
+          </button>
         </div>
         <div style={{ padding: "0 20px 12px 20px" }}>
           <span style={{ fontFamily: SERIF_FONT, fontStyle: "italic", fontWeight: 500, fontSize: 12.5, color: C.textFainter }}>
-            I soldi vanno e vengono. Il tuo tempo no — scorre e basta.
+            I soldi vanno e vengono. Il tempo va e basta.
           </span>
         </div>
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+          {tab === "converti" && (
+            <ConvertitoreScreen
+              hourly={hourlyRate}
+              showEntra={false}
+              onAggiungiSpesa={(euro) => {
+                addEntry({ id: Date.now() + Math.random(), cat: "Altro", iconId: "altro", euro, time: "adesso" });
+                setTab("diario");
+              }}
+            />
+          )}
           {tab === "diario" && (
             <DiarioScreen
               profile={profile}
               todayEntries={todayEntries}
               hasAnyEntry={entries.length > 0}
               onOpenAdd={() => setAddOpen(true)}
-              onOpenSettings={() => setTab("settings")}
               onOpenReport={() => setTab("report")}
               onOpenGoal={() => setTab("goal")}
               onSimulateBankTx={() => setBankTx(generateFakeTransaction())}
@@ -6100,7 +6281,6 @@ function MainApp({ currentUser, onChangeUser }) {
               onEditEntry={(id, newEuro) => setEntries(entries.map((e) => (e.id === id ? { ...e, euro: newEuro } : e)))}
             />
           )}
-          {tab === "sim" && <SimulatoreScreen hourly={hourlyRate} />}
           {tab === "calendario" && (
             <CalendarioScreen
               calendario={data.calendario || {}}
@@ -6151,7 +6331,22 @@ function MainApp({ currentUser, onChangeUser }) {
           )}
           {tab === "report" && <ReportScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("diario")} onOpenClosure={() => setTab("closure")} />}
           {tab === "closure" && <ClosureScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("report")} onAllocate={addToGoalSaved} onCarryOver={setCarryOver} />}
+          {tab === "abbonamenti" && (
+            <AbbonamentiScreen
+              abbonamenti={data.abbonamenti}
+              setAbbonamenti={(next) => setData({ ...data, abbonamenti: typeof next === "function" ? next(data.abbonamenti) : next })}
+              hourly={hourlyRate}
+              onBack={() => setTab("diario")}
+            />
+          )}
           {tab === "goal" && <GoalScreen profile={profile} hourly={hourlyRate} onAddGoal={addGoal} />}
+          {tab === "premium" && (
+            <PremiumScreen
+              data={data}
+              onBack={() => setTab("settings")}
+              onSetTier={(t) => { setData({ ...data, tierOverride: t }); setTab("settings"); }}
+            />
+          )}
           {tab === "settings" && (
             <SettingsScreen
               data={data}
@@ -6165,6 +6360,7 @@ function MainApp({ currentUser, onChangeUser }) {
               onOpenImportPDF={() => setTab("importpdf")}
               onOpenGuida={() => setTab("guida")}
               onOpenLocked={(key) => setTab("locked-" + key)}
+              onOpenPremium={() => setTab("premium")}
               currentUser={currentUser}
               entries={entries}
               txFeed={txFeed}
@@ -6211,7 +6407,7 @@ function MainApp({ currentUser, onChangeUser }) {
           )}
           {tab === "locked-regime" && (
             <LockedFeatureScreen
-              tier="elite"
+              tier="premium"
               titolo="Regime fiscale e calcolo del netto"
               descrizione="Se hai partita IVA, stima quanto ti resta in tasca dopo tasse e contributi — e usa le tue aliquote vere per convertire automaticamente lordo in netto ovunque nell'app."
               onBack={() => setTab("settings")}
@@ -6260,36 +6456,31 @@ function MainApp({ currentUser, onChangeUser }) {
             />
           )}
         </div>
-        {(tab === "diario" || tab === "goal" || tab === "sim" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
+        {(tab === "converti" || tab === "diario" || tab === "abbonamenti" || tab === "goal" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
           <div id="tut-tabbar" style={{ flexShrink: 0, borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 6px" }}>
+            <button onClick={() => setTab("converti")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <Calculator size={20} color={tab === "converti" ? C.brassText : C.textFaint} />
+              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "converti" ? C.brassText : C.textFaint }}>Converti</span>
+            </button>
             <button onClick={() => setTab("diario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <Home size={20} color={tab === "diario" ? C.brassText : C.textFaint} />
               <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "diario" ? C.brassText : C.textFaint }}>Diario</span>
             </button>
-            {hasTier("premium") ? (
+            <button onClick={() => setTab("abbonamenti")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <Repeat size={20} color={tab === "abbonamenti" ? C.brassText : C.textFaint} />
+              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "abbonamenti" ? C.brassText : C.textFaint }}>Abbon.</span>
+            </button>
+            {hasTier("premium") && (
               <button id="tut-tab-calendario" onClick={() => setTab("calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
                 <Calendar size={20} color={tab === "calendario" ? C.brassText : C.textFaint} />
                 <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "calendario" ? C.brassText : C.textFaint }}>Calendario</span>
               </button>
-            ) : (
-              <button onClick={() => setTab("locked-calendario")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
-                <div style={{ position: "relative" }}>
-                  <Calendar size={20} color={C.textFaint} />
-                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: C.textFaint }}>Calendario</span>
-              </button>
             )}
-            <button id="tut-tab-sim" onClick={() => setTab("sim")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <Calculator size={20} color={tab === "sim" ? C.brassText : C.textFaint} />
-              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "sim" ? C.brassText : C.textFaint }}>Simula</span>
-            </button>
             <button id="tut-tab-goal" onClick={() => setTab("goal")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <PiggyBank size={20} color={tab === "goal" ? C.brassText : C.textFaint} />
               <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "goal" ? C.brassText : C.textFaint }}>Budget</span>
             </button>
-            {hasTier("premium") ? (
-              closurePool > 0 && (
+            {hasTier("premium") && closurePool > 0 && (
                 <button id="tut-tab-closure" onClick={() => setTab("closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
                   <div style={{ position: "relative" }}>
                     <HandCoins size={20} color={tab === "closure" ? C.brassText : C.textFaint} />
@@ -6297,18 +6488,8 @@ function MainApp({ currentUser, onChangeUser }) {
                   </div>
                   <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "closure" ? C.brassText : C.textFaint }}>Chiusura</span>
                 </button>
-              )
-            ) : (
-              <button onClick={() => setTab("locked-closure")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
-                <div style={{ position: "relative" }}>
-                  <HandCoins size={20} color={C.textFaint} />
-                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: C.textFaint }}>Chiusura</span>
-              </button>
             )}
-            {hasTier("premium") ? (
-              hasAnyAccountConnected && (
+            {hasTier("premium") && hasAnyAccountConnected && (
                 <button onClick={() => setTab("transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", position: "relative" }}>
                   <div style={{ position: "relative" }}>
                     <BarChart3 size={20} color={tab === "transactions" ? C.brassText : C.textFaint} />
@@ -6323,15 +6504,6 @@ function MainApp({ currentUser, onChangeUser }) {
                   </div>
                   <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: tab === "transactions" ? C.brassText : C.textFaint }}>Conti</span>
                 </button>
-              )
-            ) : (
-              <button onClick={() => setTab("locked-transactions")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", opacity: 0.8 }}>
-                <div style={{ position: "relative" }}>
-                  <BarChart3 size={20} color={C.textFaint} />
-                  <Lock size={9} color={C.textFainter} style={{ position: "absolute", bottom: -2, right: -3, backgroundColor: C.bg, borderRadius: "50%", padding: 1 }} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO_FONT, color: C.textFaint }}>Conti</span>
-              </button>
             )}
           </div>
         )}
@@ -6359,7 +6531,7 @@ class ErrorBoundary extends React.Component {
             </div>
             <button
               onClick={() => { this.setState({ error: null }); }}
-              style={{ padding: "10px 16px", borderRadius: 8, border: "none", backgroundColor: "#FF6B4A", color: "#171717", fontWeight: 700, cursor: "pointer" }}
+              style={{ padding: "10px 16px", borderRadius: 16, border: "none", backgroundColor: "#2F6B4F", color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}
             >
               Riprova
             </button>
@@ -6369,6 +6541,739 @@ class ErrorBoundary extends React.Component {
     }
     return this.props.children;
   }
+}
+
+// ---- Introduzione ----
+// Tre schermate, un'idea per schermata. Non spiega perché il tempo vale più dei soldi:
+// fa fare il conto alla persona sui propri numeri e su una cosa che ha fatto stamattina.
+// Chi entra senza già avere questa prospettiva ha bisogno di vederla, non di leggerla.
+const CAFFE_EURO = 1.2;
+
+function IntroScreen({ onFine }) {
+  const [passo, setPasso] = useState(0);
+  const [modo, setModo] = useState("ora"); // ora | mese
+  const [valore, setValore] = useState("");
+
+  const tariffa = modo === "ora"
+    ? Number(String(valore).replace(",", ".")) || 0
+    : (Number(String(valore).replace(",", ".")) || 0) / (4.33 * 40);
+
+  const premiTasto = (k) => {
+    if (k === "⌫") return setValore(valore.slice(0, -1));
+    if (k === ",") return valore.includes(",") ? null : setValore((valore || "0") + ",");
+    if (valore.replace(",", "").length >= 7) return;
+    setValore(valore === "0" ? k : valore + k);
+  };
+
+  const wrap = { flex: 1, display: "flex", flexDirection: "column", padding: "0 24px 28px 24px", overflowY: "auto" };
+  const avanti = (label, onClick, attivo = true) => (
+    <button
+      onClick={onClick}
+      disabled={!attivo}
+      style={{
+        width: "100%", padding: "15px 0", borderRadius: 16, border: "none", marginTop: 22,
+        backgroundColor: attivo ? C.brass : C.panelBorder, color: attivo ? C.ink : C.textFaint,
+        fontSize: 15, fontWeight: 800, cursor: attivo ? "pointer" : "default",
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  if (passo === 0) {
+    return (
+      <div style={wrap}>
+        <div style={{ paddingTop: 40, marginBottom: 22 }}>
+          <h1 style={{ fontFamily: DISPLAY_FONT, fontSize: 30, color: C.paper, margin: 0, lineHeight: 1.15 }}>
+            Quanto guadagni?
+          </h1>
+        </div>
+
+        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+          {[{ id: "ora", label: "all'ora" }, { id: "mese", label: "al mese" }].map((m) => (
+            <button
+              key={m.id}
+              onClick={() => { setModo(m.id); setValore(""); }}
+              style={{
+                flex: 1, padding: "10px 0", borderRadius: 999, cursor: "pointer",
+                border: `1px solid ${modo === m.id ? C.brass : C.panelBorder}`,
+                backgroundColor: modo === m.id ? C.brass : "transparent",
+                color: modo === m.id ? C.ink : C.textDim,
+                fontSize: 14, fontWeight: 700, fontFamily: MONO_FONT,
+              }}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{
+          backgroundColor: C.inputBg, border: `2px solid ${C.brass}`, borderRadius: 16,
+          padding: "16px 16px", display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 18,
+        }}>
+          <span style={{ fontFamily: MONO_FONT, fontSize: 26, fontWeight: 700, color: valore ? C.paper : C.textFainter }}>
+            {valore || "0"}
+          </span>
+          <span style={{ fontFamily: MONO_FONT, fontSize: 17, color: C.textFaint }}>€</span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+          {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫"].map((k, i) => (
+            <button
+              key={i}
+              onClick={() => premiTasto(k)}
+              style={{ padding: "15px 0", borderRadius: 14, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, color: C.paper, fontFamily: MONO_FONT, fontSize: 19, cursor: "pointer" }}
+            >
+              {k}
+            </button>
+          ))}
+        </div>
+
+        {avanti("Avanti", () => setPasso(1), tariffa > 0)}
+      </div>
+    );
+  }
+
+  if (passo === 1) {
+    return (
+      <div style={{ ...wrap, justifyContent: "center", textAlign: "center" }}>
+        <div style={{ fontSize: 16, color: C.textDim, marginBottom: 10 }}>Il caffè di stamattina</div>
+        <div style={{ fontFamily: SERIF_FONT, fontSize: 58, fontWeight: 700, color: C.paper, lineHeight: 1 }}>
+          {euroToTime(CAFFE_EURO, tariffa)}
+        </div>
+        <div style={{ fontSize: 16, color: C.textDim, marginTop: 10 }}>di lavoro</div>
+        {avanti("Avanti", () => setPasso(2))}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...wrap, justifyContent: "center", textAlign: "center" }}>
+      <div style={{ fontSize: 17, color: C.textDim, lineHeight: 1.5, marginBottom: 14 }}>
+        Otto ore di lavoro al giorno.
+      </div>
+      <div style={{ fontFamily: DISPLAY_FONT, fontSize: 28, color: C.paper, lineHeight: 1.25 }}>
+        Quante te ne restano davvero?
+      </div>
+      {avanti("Scoprilo", () => onFine(tariffa))}
+    </div>
+  );
+}
+
+// ---- Convertitore euro → ore ----
+// È il gesto che distingue OreLibere da un'app di spese: sei davanti a una cosa che
+// vorresti, digiti il prezzo, e vedi quanto devi lavorare per permettertela — PRIMA
+// di comprarla. Per questo è la prima cosa che si vede, e per questo chiede soltanto
+// la tariffa oraria: tutto il resto (spese fisse, obiettivi) serve al Diario, non a
+// questo conto, e chiederlo qui vorrebbe dire mettere sei schermate prima del primo
+// momento in cui l'app dimostra di servire a qualcosa.
+// ---- Abbonamenti ----
+// Sezione a sé stante e non un filtro del Diario: il Diario ragiona per giornata,
+// qui si ragiona per mese. Mischiare le due logiche nella stessa schermata avrebbe
+// reso ambiguo cosa si sta guardando.
+function AbbonamentiScreen({ abbonamenti, setAbbonamenti, hourly, onBack }) {
+  const [showCatalogo, setShowCatalogo] = useState(false);
+  const [editing, setEditing] = useState(null); // abbonamento in modifica, o {} per uno nuovo
+
+  const attivi = (abbonamenti || []).filter((a) => a.attivo !== false);
+  const totaleMese = attivi.reduce((s, a) => s + euroAlMese(a.euro, a.cadenza), 0);
+  const totaleAnno = totaleMese * 12;
+  const oreMese = hourly > 0 ? totaleMese / hourly : 0;
+  const oreAnno = hourly > 0 ? totaleAnno / hourly : 0;
+
+  const oggi = new Date();
+  const prossimaScadenza = (a) => {
+    if (!a.giorno) return null;
+    const g = Math.min(Math.max(Number(a.giorno) || 1, 1), 28);
+    let d = new Date(oggi.getFullYear(), oggi.getMonth(), g);
+    if (d < oggi) d = new Date(oggi.getFullYear(), oggi.getMonth() + 1, g);
+    return d;
+  };
+  const ordinati = [...attivi].sort((x, y) => {
+    const dx = prossimaScadenza(x), dy = prossimaScadenza(y);
+    if (!dx && !dy) return 0;
+    if (!dx) return 1;
+    if (!dy) return -1;
+    return dx - dy;
+  });
+
+  const salva = (voce) => {
+    if (voce.id && (abbonamenti || []).some((a) => a.id === voce.id)) {
+      setAbbonamenti(abbonamenti.map((a) => (a.id === voce.id ? voce : a)));
+    } else {
+      setAbbonamenti([...(abbonamenti || []), { ...voce, id: voce.id || Date.now() + Math.random() }]);
+    }
+    setEditing(null);
+  };
+  const elimina = (id) => setAbbonamenti((abbonamenti || []).filter((a) => a.id !== id));
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+      <ScreenHeader eyebrow="Spese che tornano ogni mese" title="Abbonamenti" />
+
+      <div style={{ padding: "0 20px" }}>
+        {attivi.length === 0 ? (
+          <div style={{
+            border: `1px dashed ${C.panelBorder}`, borderRadius: 16, padding: "22px 18px",
+            marginBottom: 20, textAlign: "center",
+          }}>
+            <div style={{ fontSize: 13.5, color: C.textDim, lineHeight: 1.55, marginBottom: 4 }}>
+              Netflix, il telefono, la palestra: tutto quello che paghi senza più pensarci.
+            </div>
+            <div style={{ fontSize: 13, color: C.textFaint }}>Aggiungi il primo qui sotto.</div>
+          </div>
+        ) : (
+          <div style={{
+            background: "linear-gradient(150deg, #20342A 0%, #12211B 100%)",
+            borderRadius: 24, padding: "20px 20px", marginBottom: 20,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8FA396", fontFamily: MONO_FONT, marginBottom: 4 }}>Al mese</div>
+                <div style={{ fontFamily: SANS_FONT, fontSize: 26, fontWeight: 800, color: "#FFFFFF" }}>{totaleMese.toFixed(2)}€</div>
+                {hourly > 0 && <div style={{ fontSize: 12.5, color: "#8FE3B4", marginTop: 2 }}>{euroToTime(totaleMese, hourly)} di lavoro</div>}
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8FA396", fontFamily: MONO_FONT, marginBottom: 4 }}>All'anno</div>
+                <div style={{ fontFamily: SANS_FONT, fontSize: 26, fontWeight: 800, color: "#FFFFFF" }}>{totaleAnno.toFixed(0)}€</div>
+                {hourly > 0 && <div style={{ fontSize: 12.5, color: "#8FE3B4", marginTop: 2 }}>{euroToTime(totaleAnno, hourly)} di lavoro</div>}
+              </div>
+            </div>
+            {hourly > 0 && oreAnno >= 4 && (
+              <div style={{ borderTop: "1px dashed rgba(255,255,255,0.14)", marginTop: 14, paddingTop: 12, fontSize: 12.5, color: "#CFDDD4", lineHeight: 1.5 }}>
+                Ogni anno lavori <strong style={{ color: "#FFFFFF" }}>{Math.round(oreAnno)} ore</strong> solo per pagare questi abbonamenti — {Math.round(oreAnno / 8)} giornate intere.
+              </div>
+            )}
+          </div>
+        )}
+
+        {ordinati.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+            {ordinati.map((a) => {
+              const scad = prossimaScadenza(a);
+              const giorniMancanti = scad ? Math.round((scad - oggi) / 86400000) : null;
+              const Icon = (ABBONAMENTI_CATALOGO.find((c) => c.id === a.catalogoId) || {}).icon || Repeat;
+              const mese = euroAlMese(a.euro, a.cadenza);
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => setEditing(a)}
+                  style={{
+                    width: "100%", textAlign: "left", cursor: "pointer", background: "none",
+                    border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: "13px 14px",
+                    display: "flex", alignItems: "center", gap: 12,
+                  }}
+                >
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", backgroundColor: C.ticket, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon size={17} color={C.brassText} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: C.paper }}>{a.nome}</div>
+                    <div style={{ fontSize: 12, color: C.textFaint }}>
+                      {a.euro ? `${Number(a.euro).toFixed(2)}€ ${ABBONAMENTI_CADENZE[a.cadenza]?.label || "al mese"}` : "Prezzo da impostare"}
+                      {giorniMancanti !== null && giorniMancanti <= 6 && (
+                        <span style={{ color: C.brassText, fontWeight: 700 }}> · rinnova tra {giorniMancanti}g</span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontFamily: MONO_FONT, fontSize: 13, fontWeight: 700, color: C.paper }}>{mese.toFixed(2)}€</div>
+                    {hourly > 0 && <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: C.textFaint }}>{euroToTime(mese, hourly)}</div>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <button
+          onClick={() => setShowCatalogo(true)}
+          style={{
+            width: "100%", padding: "14px 0", borderRadius: 16, border: "none",
+            backgroundColor: C.brass, color: C.ink, fontSize: 14.5, fontWeight: 800, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          <Plus size={18} /> Aggiungi abbonamento
+        </button>
+      </div>
+
+      {showCatalogo && (
+        <AbbonamentoCatalogoSheet
+          onClose={() => setShowCatalogo(false)}
+          onScegli={(voce) => { setShowCatalogo(false); setEditing(voce); }}
+        />
+      )}
+      {editing && (
+        <AbbonamentoEditSheet
+          voce={editing}
+          onClose={() => setEditing(null)}
+          onSalva={salva}
+          onElimina={editing.id ? () => { elimina(editing.id); setEditing(null); } : null}
+        />
+      )}
+    </div>
+  );
+}
+
+// Scegli dal catalogo: precompila, ma non salva finché non si conferma nel modulo
+// successivo. Così anche una scelta rapida passa per la stessa verifica del prezzo.
+function AbbonamentoCatalogoSheet({ onClose, onScegli }) {
+  return (
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, backgroundColor: "rgba(10,20,15,0.4)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        width: "100%", maxHeight: "78%", overflowY: "auto", backgroundColor: C.panel,
+        borderRadius: "24px 24px 0 0", padding: "10px 16px calc(20px + env(safe-area-inset-bottom)) 16px",
+      }}>
+        <div style={{ width: 44, height: 4, borderRadius: 2, backgroundColor: C.panelBorder, margin: "0 auto 14px auto" }} />
+        <div style={{ fontSize: 15, fontWeight: 800, color: C.paper, marginBottom: 12 }}>Cosa vuoi aggiungere?</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {ABBONAMENTI_CATALOGO.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => onScegli({ catalogoId: c.id, nome: c.nome, euro: c.euro || "", cadenza: c.cadenza, giorno: "", attivo: true })}
+              style={{
+                textAlign: "left", cursor: "pointer", background: "none", border: `1px solid ${C.panelBorder}`,
+                borderRadius: 14, padding: "12px 12px", display: "flex", alignItems: "center", gap: 10,
+              }}
+            >
+              <c.icon size={17} color={C.brassText} style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.paper }}>{c.nome}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Aggiungi o modifica: stesso modulo per entrambi i casi, con l'eliminazione
+// disponibile solo quando si sta modificando qualcosa che esiste già.
+function AbbonamentoEditSheet({ voce, onClose, onSalva, onElimina }) {
+  const [nome, setNome] = useState(voce.nome || "");
+  const [euro, setEuro] = useState(voce.euro != null ? String(voce.euro) : "");
+  const [cadenza, setCadenza] = useState(voce.cadenza || "mensile");
+  const [giorno, setGiorno] = useState(voce.giorno || "");
+
+  const puoSalvare = nome.trim() && Number(String(euro).replace(",", ".")) > 0;
+  const campo = {
+    width: "100%", boxSizing: "border-box", backgroundColor: C.inputBg, color: C.paper,
+    border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "12px 13px", fontSize: 14.5, outline: "none",
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, backgroundColor: "rgba(10,20,15,0.4)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        width: "100%", backgroundColor: C.panel, borderRadius: "24px 24px 0 0",
+        padding: "10px 20px calc(22px + env(safe-area-inset-bottom)) 20px",
+      }}>
+        <div style={{ width: 44, height: 4, borderRadius: 2, backgroundColor: C.panelBorder, margin: "0 auto 16px auto" }} />
+
+        <div style={{ marginBottom: 5 }}><FieldLabel>Nome</FieldLabel></div>
+        <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="es. Netflix" style={{ ...campo, marginBottom: 14 }} />
+
+        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ marginBottom: 5 }}><FieldLabel>Prezzo</FieldLabel></div>
+            <input type="number" inputMode="decimal" value={euro} onChange={(e) => setEuro(e.target.value)} placeholder="0" style={campo} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ marginBottom: 5 }}><FieldLabel>Ogni</FieldLabel></div>
+            <select value={cadenza} onChange={(e) => setCadenza(e.target.value)} style={{ ...campo, appearance: "none" }}>
+              <option value="mensile">Mese</option>
+              <option value="annuale">Anno</option>
+              <option value="settimanale">Settimana</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 5 }}><FieldLabel>Giorno del rinnovo (opzionale)</FieldLabel></div>
+        <input type="number" inputMode="numeric" min="1" max="28" value={giorno} onChange={(e) => setGiorno(e.target.value)} placeholder="es. 15" style={{ ...campo, marginBottom: 18 }} />
+
+        <button
+          disabled={!puoSalvare}
+          onClick={() => onSalva({ ...voce, nome: nome.trim(), euro: Number(String(euro).replace(",", ".")), cadenza, giorno: giorno || "", attivo: true })}
+          style={{
+            width: "100%", padding: "14px 0", borderRadius: 14, border: "none", marginBottom: 8,
+            backgroundColor: puoSalvare ? C.brass : C.panelBorder, color: puoSalvare ? C.ink : C.textFaint,
+            fontSize: 14.5, fontWeight: 800, cursor: puoSalvare ? "pointer" : "default",
+          }}
+        >
+          Salva
+        </button>
+        {onElimina && (
+          <button onClick={onElimina} style={{ width: "100%", padding: "12px 0", borderRadius: 14, border: `1px solid ${C.rust}`, background: "none", color: C.rust, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+            Elimina abbonamento
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, showEntra = true }) {
+  const [modo, setModo] = useState("ora"); // ora | mese — due modi di dichiarare quanto si guadagna
+  const [oraStr, setOraStr] = useState(hourly > 0 ? String(Number(hourly.toFixed(2))) : "");
+  const [meseStr, setMeseStr] = useState("");
+  const [prezzoStr, setPrezzoStr] = useState("");
+  // Il confronto tra modi di pagare è la stessa domanda vista da un'altra angolazione,
+  // sullo stesso prezzo: sta qui sotto, chiuso, e si apre solo se serve.
+  const [apriRate, setApriRate] = useState(false);
+  const [modoPag, setModoPag] = useState("cash"); // cash | finanziato
+  const [rata, setRata] = useState(95);
+  const [numRate, setNumRate] = useState(14);
+  const [inputFinanziato, setInputFinanziato] = useState("rata"); // rata | tasso
+  const [tasso, setTasso] = useState(9.9); // TAN annuo %
+  // Si scrive col tastierino dell'app, non con quello del telefono: quello di sistema
+  // copre metà schermo e nasconde proprio il risultato che si vuole leggere.
+  // Un campo alla volta è "attivo" e riceve i tasti.
+  const [campoAttivo, setCampoAttivo] = useState(hourly > 0 ? "prezzo" : "guadagno");
+
+  // Da stipendio mensile a tariffa oraria: 4,33 settimane al mese per 40 ore.
+  const tariffa = modo === "ora"
+    ? Number(String(oraStr).replace(",", ".")) || 0
+    : (Number(String(meseStr).replace(",", ".")) || 0) / (4.33 * 40);
+  const prezzo = Number(String(prezzoStr).replace(",", ".")) || 0;
+  const pronto = tariffa > 0 && prezzo > 0;
+
+  // Rata calcolata dal TAN annuo con l'ammortamento francese (piano a rate costanti)
+  const rataDaTasso = (() => {
+    const i = (Number(tasso) || 0) / 100 / 12;
+    const n = Number(numRate) || 0;
+    if (n <= 0) return 0;
+    if (i === 0) return prezzo / n;
+    return (prezzo * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+  })();
+  const rataEffettiva = inputFinanziato === "tasso" ? rataDaTasso : Number(rata) || 0;
+
+  let costoTotale = prezzo, interessi = 0, rataMostrata = prezzo, numRateMostrate = 1;
+  if (modoPag === "finanziato") {
+    costoTotale = rataEffettiva * (Number(numRate) || 0);
+    interessi = costoTotale - prezzo;
+    rataMostrata = rataEffettiva;
+    numRateMostrate = Number(numRate) || 0;
+  }
+  const oreDiff = tariffa > 0 ? (costoTotale - prezzo) / tariffa : 0;
+
+  const MODI_PAG = [
+    { id: "cash", label: "Subito" },
+    ...(hasTier("premium") ? [{ id: "finanziato", label: "A rate" }] : []),
+  ];
+
+  useEffect(() => {
+    if (tariffa > 0 && onSetHourly) onSetHourly(tariffa);
+  }, [tariffa]);
+
+  const campo = {
+    width: "100%", backgroundColor: C.inputBg, color: C.paper,
+    border: `1px solid ${C.panelBorder}`, borderRadius: 16,
+    padding: "13px 14px", fontSize: 17, fontFamily: MONO_FONT, outline: "none", boxSizing: "border-box",
+  };
+  // Il campo che sta ricevendo i tasti si riconosce dal bordo arancione
+  const campoBox = (id) => ({
+    width: "100%", boxSizing: "border-box", cursor: "pointer", textAlign: "left",
+    backgroundColor: C.inputBg,
+    border: `${campoAttivo === id ? 2 : 1}px solid ${campoAttivo === id ? C.brass : C.panelBorder}`,
+    borderRadius: 16, padding: campoAttivo === id ? "12px 13px" : "13px 14px",
+    display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8,
+  });
+  const valoreStyle = (v) => ({
+    fontFamily: MONO_FONT, fontSize: 20, fontWeight: 700,
+    color: v ? C.paper : C.textFainter,
+  });
+
+  const leggiCampo = () => (campoAttivo === "prezzo" ? prezzoStr : modo === "ora" ? oraStr : meseStr);
+  const scriviCampo = (v) => {
+    if (campoAttivo === "prezzo") setPrezzoStr(v);
+    else if (modo === "ora") setOraStr(v);
+    else setMeseStr(v);
+  };
+  const premiTasto = (k) => {
+    const v = leggiCampo();
+    if (k === "⌫") return scriviCampo(v.slice(0, -1));
+    if (k === ",") return v.includes(",") ? null : scriviCampo((v || "0") + ",");
+    if (v.replace(",", "").length >= 7) return; // limite ragionevole di cifre
+    scriviCampo(v === "0" ? k : v + k);
+  };
+  const etichetta = {
+    fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em",
+    color: C.textDim, fontFamily: MONO_FONT, marginBottom: 6,
+  };
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 32px 20px" }}>
+      <div style={{ paddingTop: 26, marginBottom: 18 }}>
+        <h1 style={{ fontFamily: DISPLAY_FONT, fontSize: 27, color: C.paper, margin: "0 0 6px 0", lineHeight: 1.15 }}>
+          Quante ore di lavoro ti costa?
+        </h1>
+        <p style={{ fontSize: 14, color: C.textFaint, margin: 0, lineHeight: 1.5 }}>
+          Scrivi quanto guadagni e il prezzo di quello che vorresti comprare.
+        </p>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={etichetta}>Quanto guadagni</div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+          {[{ id: "ora", label: "all'ora" }, { id: "mese", label: "al mese" }].map((m) => (
+            <button
+              key={m.id}
+              onClick={() => setModo(m.id)}
+              style={{
+                flex: 1, padding: "8px 0", borderRadius: 999, cursor: "pointer",
+                border: `1px solid ${modo === m.id ? C.brass : C.panelBorder}`,
+                backgroundColor: modo === m.id ? C.brass : "transparent",
+                color: modo === m.id ? C.ink : C.textDim,
+                fontSize: 13, fontWeight: 700, fontFamily: MONO_FONT,
+              }}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setCampoAttivo("guadagno")} style={campoBox("guadagno")}>
+          <span style={valoreStyle(modo === "ora" ? oraStr : meseStr)}>
+            {(modo === "ora" ? oraStr : meseStr) || "0"}
+          </span>
+          <span style={{ fontFamily: MONO_FONT, fontSize: 15, color: C.textFaint }}>€</span>
+        </button>
+        {modo === "mese" && tariffa > 0 && (
+          <div style={{ fontSize: 12.5, color: C.textFaint, marginTop: 6 }}>
+            Fa <strong style={{ color: C.paper }}>{tariffa.toFixed(2)}€/h</strong> su 40 ore a settimana.
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={etichetta}>Quanto costa</div>
+        <button onClick={() => setCampoAttivo("prezzo")} style={campoBox("prezzo")}>
+          <span style={valoreStyle(prezzoStr)}>{prezzoStr || "0"}</span>
+          <span style={{ fontFamily: MONO_FONT, fontSize: 15, color: C.textFaint }}>€</span>
+        </button>
+      </div>
+
+      {/* Tastierino dell'app: scrive nel campo evidenziato in arancione */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+        {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫"].map((k, i) => (
+          <button
+            key={i}
+            onClick={() => premiTasto(k)}
+            style={{ padding: "14px 0", borderRadius: 14, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, color: C.paper, fontFamily: MONO_FONT, fontSize: 18, cursor: "pointer" }}
+          >
+            {k}
+          </button>
+        ))}
+      </div>
+
+      {pronto ? (
+        <>
+          {/* Card scura con il numero a gradiente: è l'elemento più importante
+              della schermata, e l'unico punto in cui il verde incontra il rame. */}
+          <div style={{
+            background: "linear-gradient(150deg, #20342A 0%, #12211B 100%)",
+            borderRadius: 28, padding: "26px 20px", marginBottom: 14, textAlign: "center",
+          }}>
+            <div style={{
+              fontFamily: SANS_FONT, fontSize: 46, fontWeight: 800, lineHeight: 1.05,
+              background: "linear-gradient(90deg, #8FE3B4 0%, #F0C98A 100%)",
+              WebkitBackgroundClip: "text", backgroundClip: "text",
+              WebkitTextFillColor: "transparent", color: "#8FE3B4",
+            }}>
+              {euroToTime(prezzo, tariffa)}
+            </div>
+            <div style={{ fontSize: 14, color: "#8FA396", marginTop: 6 }}>{scalaUmana(prezzo, tariffa)}</div>
+            {/* Il fatto, senza commento: quelle ore sono già state spese al lavoro. */}
+            <div style={{ fontSize: 13.5, color: "#CFDDD4", marginTop: 14, lineHeight: 1.55, borderTop: "1px dashed rgba(255,255,255,0.14)", paddingTop: 12 }}>
+              Per questi soldi hai già passato
+              <strong style={{ color: "#FFFFFF" }}> {euroToTime(prezzo, tariffa)}</strong> al lavoro.
+            </div>
+          </div>
+
+          {/* Confronto tra modi di pagare: funzione Premium, invisibile se non sbloccata */}
+          {hasTier("premium") && (
+          <button
+            onClick={() => setApriRate(!apriRate)}
+            style={{
+              width: "100%", padding: "11px 14px", borderRadius: 16, marginBottom: apriRate ? 10 : 18,
+              border: `1px solid ${C.panelBorder}`, background: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 13.5, color: C.paper, fontWeight: 600 }}>E se non lo paghi subito?</span>
+            <span style={{ fontSize: 12.5, color: C.textDim, fontWeight: 600 }}>{apriRate ? "chiudi" : "confronta"}</span>
+          </button>
+          )}
+
+          {hasTier("premium") && apriRate && (
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ display: "flex", gap: 6, backgroundColor: C.panel, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: 4, marginBottom: 12 }}>
+                {MODI_PAG.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => setModoPag(m.id)}
+                    style={{
+                      flex: 1, padding: "8px 4px", borderRadius: 999, border: "none", cursor: "pointer",
+                      backgroundColor: modoPag === m.id ? C.brass : "transparent",
+                      color: modoPag === m.id ? C.ink : C.textDim,
+                      fontSize: 12.5, fontWeight: 700, fontFamily: MONO_FONT,
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+
+              {modoPag === "finanziato" && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                    {[{ id: "rata", label: "Conosco la rata" }, { id: "tasso", label: "Conosco il tasso" }].map((o) => (
+                      <button
+                        key={o.id}
+                        onClick={() => setInputFinanziato(o.id)}
+                        style={{
+                          flex: 1, padding: "8px 4px", borderRadius: 999, cursor: "pointer",
+                          border: `1px solid ${inputFinanziato === o.id ? C.brass : C.panelBorder}`,
+                          backgroundColor: inputFinanziato === o.id ? "rgba(47,107,79,0.10)" : "transparent",
+                          color: C.textDim, fontSize: 12.5, fontWeight: 600,
+                        }}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ ...etichetta, fontSize: 11 }}>{inputFinanziato === "rata" ? "Euro/mese" : "TAN annuo %"}</div>
+                      <input
+                        type="number" inputMode="decimal"
+                        value={inputFinanziato === "rata" ? rata : tasso}
+                        onChange={(e) => (inputFinanziato === "rata" ? setRata(e.target.value) : setTasso(e.target.value))}
+                        style={{ ...campo, fontSize: 15, padding: "11px 12px" }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ ...etichetta, fontSize: 11 }}>N. rate</div>
+                      <input
+                        type="number" inputMode="numeric" value={numRate}
+                        onChange={(e) => setNumRate(e.target.value)}
+                        style={{ ...campo, fontSize: 15, padding: "11px 12px" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <PunchTicket style={{ padding: "16px 18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, marginBottom: 6 }}>
+                  <span>{numRateMostrate > 1 ? `${numRateMostrate} rate da ${rataMostrata.toFixed(0)}€` : "Pagato subito"}</span>
+                  <strong style={{ fontFamily: MONO_FONT }}>{costoTotale.toFixed(0)}€</strong>
+                </div>
+                {interessi > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.rust, marginBottom: 6 }}>
+                    <span>di cui interessi</span>
+                    <strong style={{ fontFamily: MONO_FONT }}>+{interessi.toFixed(0)}€</strong>
+                  </div>
+                )}
+                <div style={{ borderTop: `1px dashed ${C.sheetBorder}`, paddingTop: 10, marginTop: 8 }}>
+                  <div style={{ fontFamily: SERIF_FONT, fontSize: 26, fontWeight: 700 }}>{euroToTime(costoTotale, tariffa)}</div>
+                  <div style={{ fontSize: 13, color: oreDiff > 0.05 ? C.rust : C.textDim, marginTop: 4, lineHeight: 1.45 }}>
+                    {oreDiff > 0.05
+                      ? `${euroToTime(costoTotale - prezzo, tariffa)} di lavoro in più solo per gli interessi.`
+                      : "Nessun interesse: costa quanto pagarlo subito."}
+                  </div>
+                </div>
+              </PunchTicket>
+            </div>
+          )}
+
+          {onAggiungiSpesa && (
+          <>
+          <div style={{ fontSize: 14, color: C.paper, fontWeight: 700, textAlign: "center", marginBottom: 10 }}>
+            Ti conviene?
+          </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
+            <button
+              onClick={() => { setPrezzoStr(""); }}
+              style={{
+                flex: 1, padding: "13px 0", borderRadius: 16, cursor: "pointer",
+                border: `1px solid ${C.brass}`, backgroundColor: "rgba(47,107,79,0.08)",
+                color: C.paper, fontSize: 14, fontWeight: 700,
+              }}
+            >
+              Lascio perdere
+            </button>
+            <button
+              onClick={() => { if (onAggiungiSpesa) onAggiungiSpesa(prezzo); setPrezzoStr(""); }}
+              style={{
+                flex: 1, padding: "13px 0", borderRadius: 16, cursor: "pointer",
+                border: `1px solid ${C.panelBorder}`, background: "none",
+                color: C.textDim, fontSize: 14, fontWeight: 600,
+              }}
+            >
+              Lo prendo
+            </button>
+          </div>
+          </>
+          )}
+        </>
+      ) : (
+        <div style={{
+          border: `1px dashed ${C.panelBorder}`, borderRadius: 16, padding: "16px 16px",
+          marginBottom: 22, fontSize: 13.5, color: C.textFaint, lineHeight: 1.7,
+        }}>
+          {tariffa > 0 ? (
+            // Numeri calcolati sulla tariffa vera, non frasi fisse: un esempio inventato
+            // che non torna con i propri conti toglie credibilità a tutto il resto.
+            <>
+              <div style={{ textAlign: "center", marginBottom: 8, fontSize: 12.5 }}>Con quello che guadagni tu:</div>
+              {[
+                { nome: "Un caffè", euro: 1.2 },
+                { nome: "Un panino a pranzo", euro: 6 },
+                { nome: "Una cena fuori", euro: 45 },
+              ].map((r) => (
+                <div key={r.nome} style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                  <span>{r.nome}</span>
+                  <strong style={{ color: C.textDim, fontFamily: MONO_FONT }}>{euroToTime(r.euro, tariffa)}</strong>
+                </div>
+              ))}
+            </>
+          ) : (
+            <div style={{ textAlign: "center" }}>
+              Scrivi quanto guadagni e vedrai quanto ti costano davvero le cose di tutti i giorni.
+            </div>
+          )}
+        </div>
+      )}
+
+      {showEntra && (
+        <div style={{ borderTop: `1px solid ${C.panelBorder}`, paddingTop: 18 }}>
+          <div style={{ fontSize: 13.5, color: C.textDim, lineHeight: 1.55, marginBottom: 10 }}>
+            Vuoi anche tenere il conto di quello che spendi, e vedere quante ore ti restano
+            ogni giorno? Ci vogliono due minuti per impostarlo.
+          </div>
+          <button
+            onClick={onEntra}
+            style={{
+              width: "100%", padding: "13px 0", borderRadius: 16, border: "none",
+              backgroundColor: C.brass, color: C.ink, fontSize: 14.5, fontWeight: 800, cursor: "pointer",
+            }}
+          >
+            Iniziamo
+          </button>
+          {/* Chi ha cambiato telefono deve poter rientrare da qui: la schermata successiva
+              contiene sia i profili di questo dispositivo sia il ripristino da backup. */}
+          <button
+            onClick={onEntra}
+            style={{
+              width: "100%", marginTop: 10, padding: "6px 0", background: "none", border: "none",
+              color: C.textDim, fontSize: 13, fontWeight: 600, cursor: "pointer", textDecoration: "underline",
+            }}
+          >
+            Hai già un profilo o un backup? Entra
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function AppInner() {
@@ -6386,6 +7291,19 @@ function AppInner() {
   // ora, prima di entrare, così anche gli utenti "vecchi" vengono migrati automaticamente.
   const [pinChecked, setPinChecked] = useState(!supabaseConfigured);
   const [needsPinSetup, setNeedsPinSetup] = useState(false);
+  // Chi arriva senza profilo vede prima il convertitore: showPicker passa alla registrazione,
+  // anteprimaRate conserva la tariffa che ha appena scritto per non richiedergliela dopo.
+  const [showPicker, setShowPicker] = useState(false);
+  const [anteprimaRate, setAnteprimaRate] = useState(0);
+  // L'introduzione si vede una volta sola per dispositivo: chi torna va dritto al convertitore.
+  const [introFatta, setIntroFatta] = useState(() => {
+    try { return localStorage.getItem("orelibere_intro") === "1"; } catch { return false; }
+  });
+  const chiudiIntro = (tariffa) => {
+    if (tariffa > 0) setAnteprimaRate(tariffa);
+    try { localStorage.setItem("orelibere_intro", "1"); } catch {}
+    setIntroFatta(true);
+  };
 
   useEffect(() => {
     if (!currentUser || !supabaseConfigured) { setPinChecked(true); return; }
@@ -6430,10 +7348,27 @@ function AppInner() {
   const { frameStyle, outerStyle } = useShellStyles();
 
   if (!currentUser) {
+    // Prima di chiedere qualsiasi cosa, l'app fa vedere a cosa serve: due campi,
+    // un numero, dieci secondi. La registrazione arriva solo se uno vuole di più.
     return (
       <div style={outerStyle}>
         <div style={frameStyle}>
-          <UserPickerScreen onSelect={handleSelectUser} />
+          {!introFatta ? (
+            <IntroScreen onFine={chiudiIntro} />
+          ) : showPicker ? (
+            <>
+              <div style={{ padding: "12px 20px 0 20px" }}>
+                <button onClick={() => setShowPicker(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer" }}>← torna al convertitore</button>
+              </div>
+              <UserPickerScreen onSelect={handleSelectUser} />
+            </>
+          ) : (
+            <ConvertitoreScreen
+              hourly={anteprimaRate}
+              onSetHourly={setAnteprimaRate}
+              onEntra={() => setShowPicker(true)}
+            />
+          )}
         </div>
       </div>
     );
@@ -6461,7 +7396,7 @@ function AppInner() {
     );
   }
 
-  return <MainApp key={currentUser} currentUser={currentUser} onChangeUser={handleChangeUser} />;
+  return <MainApp key={currentUser} currentUser={currentUser} onChangeUser={handleChangeUser} rateIniziale={anteprimaRate} />;
 }
 
 export default function App() {
