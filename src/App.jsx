@@ -34,7 +34,7 @@ function ensureAuth() {
 import {
   Home, Calculator, Plus, Coffee, UtensilsCrossed, Beer, Dumbbell, Car,
   MoreHorizontal, X, TrendingDown, Receipt, Zap, Building2, Fuel,
-  Cigarette, Wifi, ArrowRight, Settings2, CreditCard, ShoppingBag, Gift, HeartPulse, BarChart3, ChevronLeft, ChevronRight, Lightbulb, PiggyBank, Landmark, Bell, Info, HandCoins, ExternalLink, TriangleAlert, Calendar, TrendingUp, Clock, HelpCircle, ChevronDown, Lock, Trash2, Pencil, Menu, X as XIcon, Repeat, Tv, Music, Smartphone, Newspaper, Cloud, Gamepad2
+  Cigarette, Wifi, ArrowRight, Settings2, CreditCard, ShoppingBag, Gift, HeartPulse, BarChart3, ChevronLeft, ChevronRight, Lightbulb, PiggyBank, Landmark, Bell, Info, HandCoins, ExternalLink, TriangleAlert, Calendar, TrendingUp, Clock, HelpCircle, ChevronDown, Lock, Trash2, Pencil, Menu, X as XIcon, Repeat
 } from "lucide-react";
 
 // ---- Versione Kickstarter/MVP: nasconde tutto ciò che è collegamento bancario,
@@ -191,37 +191,6 @@ async function playJackpotSound() {
 
 
 const FIXED_ICONS = { affitto: Building2, bollette: Zap, auto: Car, carburante: Fuel, sigarette: Cigarette, internet: Wifi, altro: Receipt };
-// ---- Abbonamenti: catalogo dei servizi italiani più comuni ----
-// Un tocco precompila nome, icona e prezzo tipico. Il prezzo è un punto di partenza:
-// l'utente lo corregge se il suo piano costa diverso.
-const ABBONAMENTI_CATALOGO = [
-  { id: "netflix", nome: "Netflix", icon: Tv, euro: 12.99, cadenza: "mensile" },
-  { id: "spotify", nome: "Spotify", icon: Music, euro: 11.99, cadenza: "mensile" },
-  { id: "prime", nome: "Amazon Prime", icon: Cloud, euro: 4.99, cadenza: "mensile" },
-  { id: "disney", nome: "Disney+", icon: Tv, euro: 8.99, cadenza: "mensile" },
-  { id: "sky", nome: "Sky", icon: Tv, euro: 29.90, cadenza: "mensile" },
-  { id: "dazn", nome: "DAZN", icon: Tv, euro: 34.99, cadenza: "mensile" },
-  { id: "telefono", nome: "Telefono", icon: Smartphone, euro: 12, cadenza: "mensile" },
-  { id: "internet_casa", nome: "Internet casa", icon: Wifi, euro: 29.90, cadenza: "mensile" },
-  { id: "palestra_ab", nome: "Palestra", icon: Dumbbell, euro: 40, cadenza: "mensile" },
-  { id: "icloud", nome: "iCloud / Google One", icon: Cloud, euro: 2.99, cadenza: "mensile" },
-  { id: "quotidiano", nome: "Quotidiano online", icon: Newspaper, euro: 9.99, cadenza: "mensile" },
-  { id: "gaming", nome: "Xbox / PS Plus", icon: Gamepad2, euro: 8.99, cadenza: "mensile" },
-  { id: "altro_abb", nome: "Altro", icon: Repeat, euro: null, cadenza: "mensile" },
-];
-
-// Ogni cadenza normalizzata al mese: è il minimo comune per confrontare abbonamenti
-// diversi (Sky annuale contro Netflix mensile) nello stesso totale.
-const ABBONAMENTI_CADENZE = {
-  mensile: { label: "al mese", divisoreMese: 1 },
-  annuale: { label: "all'anno", divisoreMese: 12 },
-  settimanale: { label: "a settimana", divisoreMese: 1 / 4.33 },
-};
-function euroAlMese(euro, cadenza) {
-  const c = ABBONAMENTI_CADENZE[cadenza] || ABBONAMENTI_CADENZE.mensile;
-  return (Number(euro) || 0) / c.divisoreMese;
-}
-
 const CATEGORIES = [
   { id: "colazione", label: "Colazione", icon: Coffee, suggested: 2.5 },
   { id: "pranzo", label: "Pranzo", icon: UtensilsCrossed, suggested: 9 },
@@ -1046,35 +1015,6 @@ function HoldButton({ onConfirm, children, holdMs = 2000, style = {}, fillColor 
 
 // ===================== ONBOARDING =====================
 
-// Box interattivo "Per te / Per un'altra persona": entra con una piccola animazione
-// slide-up, e al tocco il bordo diventa solido e lo sfondo più pieno.
-function TimeCompareBox({ label, hours, color, delay }) {
-  const [pressed, setPressed] = useState(false);
-  return (
-    <>
-      <style>{`
-        @keyframes tcbSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-      <div
-        onPointerDown={() => setPressed(true)}
-        onPointerUp={() => setPressed(false)}
-        onPointerLeave={() => setPressed(false)}
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          backgroundColor: pressed ? `${color}22` : `${color}14`,
-          border: `1px solid ${pressed ? color : `${color}55`}`,
-          borderRadius: 16, padding: "10px 12px", cursor: "pointer",
-          animation: `tcbSlideUp 0.5s ease ${delay}ms both`,
-          transition: "background-color 0.15s ease, border-color 0.15s ease",
-        }}
-      >
-        <span style={{ fontSize: 12, fontFamily: SANS_FONT, letterSpacing: "0.02em", color: C.ticketInk }}>{label}</span>
-        <span style={{ fontFamily: SERIF_FONT, fontSize: 17, fontWeight: 700, color: C.ticketInk }}>{hours}</span>
-      </div>
-    </>
-  );
-}
-
 function WelcomeScreen({ onStart }) {
   const P = { fontSize: 14, color: C.textDim, lineHeight: 1.6, margin: "0 0 16px 0", fontFamily: SANS_FONT };
   return (
@@ -1087,28 +1027,27 @@ function WelcomeScreen({ onStart }) {
       <div style={{ backgroundColor: "#182620", padding: "36px 24px 30px 24px", borderRadius: "0 0 28px 28px" }}>
         <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.12em", color: C.brass, fontFamily: SANS_FONT, fontWeight: 700, marginBottom: 16, animation: "wsFadeUp 0.6s ease 0ms both" }}>OreLibere</div>
         <h1 style={{ fontSize: 27, fontWeight: 800, color: "#FFFFFF", fontFamily: DISPLAY_FONT, margin: "0 0 8px 0", lineHeight: 1.2, animation: "wsFadeUp 0.6s ease 120ms both" }}>
-          Non hai mai pagato il prezzo giusto.
+          100€ sono sempre 100€.
         </h1>
         <p style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", fontFamily: SERIF_FONT, fontStyle: "italic", fontWeight: 500, margin: 0, animation: "wsFadeUp 0.6s ease 280ms both" }}>
-          Hai sempre guardato il numero sbagliato.
+          Ma quanto tempo ti costano?
         </p>
       </div>
 
       <div style={{ padding: "28px 24px 28px 24px" }}>
         <p style={{ ...P, fontSize: 15, color: C.paper, fontWeight: 600, animation: "wsFadeUp 0.6s ease 440ms both" }}>
-          100€. Due ore per te. Un giorno intero per un altro. Stessa spesa, vite diverse.
+          Siamo abituati a leggere il prezzo di quello che compriamo, convinti che quel numero sia un indicatore uguale per tutti.
         </p>
 
-        <PunchTicket style={{ borderRadius: 10, padding: 18, marginBottom: 20, border: `1px solid ${C.panelBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <div style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, color: C.ticketInk, marginBottom: 16, letterSpacing: "-0.01em" }}>100€</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <TimeCompareBox label="Per te" hours="2h" color={C.greenText} delay={80} />
-            <TimeCompareBox label="Per un altro" hours="8h" color={C.rust} delay={220} />
-          </div>
+        <PunchTicket style={{ borderRadius: 10, padding: 20, marginBottom: 20, textAlign: "center", border: `1px solid ${C.panelBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontFamily: SERIF_FONT, fontSize: 34, fontWeight: 700, color: C.ticketInk, letterSpacing: "-0.01em" }}>100€</div>
+          <div style={{ fontSize: 20, color: C.textFainter, margin: "4px 0" }}>↓</div>
+          <div style={{ fontFamily: SERIF_FONT, fontSize: 26, fontWeight: 700, color: C.brassText, animation: "wsFadeUp 0.5s ease 200ms both" }}>4h 26min</div>
+          <div style={{ fontSize: 12.5, color: C.textFaint, marginTop: 2 }}>del tuo lavoro</div>
         </PunchTicket>
 
         <p style={P}>
-          La banca ti ha mentito. Il denaro non è la tua unica risorsa. <strong style={{ color: C.paper }}>La più preziosa non la recuperi mai più.</strong>
+          Questa app ti mostra quei 100€ in un'altra prospettiva. <strong style={{ color: C.paper }}>100€ restano 100€ — ma quante ore del tuo lavoro ti costano?</strong>
         </p>
 
         <p style={P}>
@@ -1357,9 +1296,9 @@ const QUICK_FIXED = [
   ["sigarette", "Sigarette"],
 ];
 
-function OnboardingFixed({ data, setData, onNext, onBack }) {
+function OnboardingFixed({ data, setData, onNext, onBack, title, showStepBadge = true, ctaLabel = "Continua" }) {
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ nome: "", tipo: "altro", importo: "", frequenza: "mensile" });
+  const [form, setForm] = useState({ nome: "", tipo: "altro", importo: "", frequenza: "mensile", abbonamento: false, giorno: "" });
   const [editingId, setEditingId] = useState(null);
   const list = data.fixedList;
   const monthlyTotal = list.reduce((s, f) => s + toMonthly(f), 0);
@@ -1372,17 +1311,17 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
     } else {
       setData({ ...data, fixedList: [...list, { id: Date.now(), ...form, importo: Number(form.importo) }] });
     }
-    setForm({ nome: "", tipo: "altro", importo: "", frequenza: "mensile" });
+    setForm({ nome: "", tipo: "altro", importo: "", frequenza: "mensile", abbonamento: false, giorno: "" });
     closeModal();
   };
   const remove = (id) => setData({ ...data, fixedList: list.filter((f) => f.id !== id) });
   const startEdit = (f) => {
-    setForm({ nome: f.nome, tipo: f.tipo, importo: String(f.importo), frequenza: f.frequenza });
+    setForm({ nome: f.nome, tipo: f.tipo, importo: String(f.importo), frequenza: f.frequenza, abbonamento: !!f.abbonamento, giorno: f.giorno || "" });
     setEditingId(f.id);
     setShowAdd(true);
   };
   const quickAdd = (tipo, nome) => {
-    setForm({ nome, tipo, importo: "", frequenza: "mensile" });
+    setForm({ nome, tipo, importo: "", frequenza: "mensile", abbonamento: false, giorno: "" });
     setEditingId(null);
     setShowAdd(true);
   };
@@ -1390,12 +1329,14 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "24px 20px 32px 20px", position: "relative", overflowY: "auto" }}>
       <button onClick={onBack} style={{ background: "none", border: "none", color: C.textDim, fontSize: 12, marginBottom: 12, alignSelf: "flex-start", cursor: "pointer" }}>← indietro</button>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT }}>Passo 2 di 3</span>
-        <span style={{ fontSize: 11, fontFamily: MONO_FONT, color: C.textFainter, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "2px 8px" }}>opzionale</span>
-      </div>
-      <h1 style={{ fontSize: 21, fontWeight: 700, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>Spese fisse</h1>
-      <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 20 }}>Facoltativo, ma aiuta a capire quante ore "partono da sole" ogni mese. Tocca una voce per modificarla. Puoi anche saltare e tornarci dopo dalle Impostazioni.</p>
+      {showStepBadge && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.1em", color: C.textDim, fontFamily: MONO_FONT }}>Passo 2 di 3</span>
+          <span style={{ fontSize: 11, fontFamily: MONO_FONT, color: C.textFainter, border: `1px solid ${C.panelBorder}`, borderRadius: 999, padding: "2px 8px" }}>opzionale</span>
+        </div>
+      )}
+      <h1 style={{ fontSize: 21, fontWeight: 700, color: C.paper, fontFamily: DISPLAY_FONT, margin: "0 0 4px 0" }}>{title || "Spese fisse"}</h1>
+      <p style={{ fontSize: 13, color: C.textFainter, marginBottom: 20 }}>Facoltativo, ma aiuta a capire quante ore "partono da sole" ogni mese. Tocca una voce per modificarla. Spunta "È un abbonamento" per ritrovarla anche nella sezione Abbonamenti.</p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
         {list.map((f) => {
@@ -1407,7 +1348,10 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
               </div>
               <button onClick={() => startEdit(f)} style={{ flex: 1, minWidth: 0, background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer" }}>
                 <div style={{ color: C.paper, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.nome}</div>
-                <div style={{ color: C.textDim, fontSize: 13, fontFamily: MONO_FONT }}>{f.importo.toFixed(2)}€ / {f.frequenza === "mensile" ? "mese" : f.frequenza === "settimanale" ? "sett" : f.frequenza === "annuale" ? "anno" : "giorno"}</div>
+                <div style={{ color: C.textDim, fontSize: 13, fontFamily: MONO_FONT }}>
+                  {f.importo.toFixed(2)}€ / {f.frequenza === "mensile" ? "mese" : f.frequenza === "settimanale" ? "sett" : f.frequenza === "annuale" ? "anno" : "giorno"}
+                  {f.abbonamento && <span style={{ color: C.brassText, fontWeight: 700 }}> · abbonamento</span>}
+                </div>
               </button>
               <button onClick={() => remove(f.id)} style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}><X size={15} color={C.textDim} /></button>
             </div>
@@ -1455,7 +1399,7 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
         onClick={onNext}
         style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", backgroundColor: C.brass, color: C.ink, fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 24, cursor: "pointer" }}
       >
-        Continua <ArrowRight size={16} />
+        {ctaLabel} <ArrowRight size={16} />
       </button>
 
       {showAdd && (
@@ -1518,6 +1462,34 @@ function OnboardingFixed({ data, setData, onNext, onBack }) {
                 </select>
               </div>
             </div>
+
+            <button
+              onClick={() => setForm({ ...form, abbonamento: !form.abbonamento })}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+                background: form.abbonamento ? "rgba(47,107,79,0.10)" : "none",
+                border: `1px solid ${form.abbonamento ? C.brass : C.panelBorder}`,
+                borderRadius: 12, padding: "11px 12px", marginBottom: form.abbonamento ? 10 : 16,
+              }}
+            >
+              <div style={{
+                width: 18, height: 18, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                backgroundColor: form.abbonamento ? C.brass : "transparent", border: `1.5px solid ${form.abbonamento ? C.brass : C.panelBorder}`,
+              }}>
+                {form.abbonamento && <span style={{ color: C.ink, fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+              </div>
+              <span style={{ fontSize: 13.5, color: C.paper, textAlign: "left" }}>È un abbonamento (Netflix, palestra, telefono...)</span>
+            </button>
+            {form.abbonamento && (
+              <div style={{ marginBottom: 16 }}>
+                <FieldLabel>Giorno del rinnovo (opzionale)</FieldLabel>
+                <input
+                  type="number" inputMode="numeric" min="1" max="28" value={form.giorno} placeholder="es. 15"
+                  onChange={(e) => setForm({ ...form, giorno: e.target.value })}
+                  style={{ width: "100%", backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "10px 12px", color: C.paper, fontSize: 14, marginTop: 4, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+            )}
 
             {editingId && (
               <button
@@ -2539,11 +2511,14 @@ function AmountKeypad({ value, onChange, onConfirm, confirmLabel = "Conferma", s
   );
 }
 
-function AddSheet({ hourly, onClose, onAdd }) {
+function AddSheet({ hourly, onClose, onAdd, onAddAbbonamento }) {
   const [step, setStep] = useState("category");
   const [category, setCategory] = useState(null);
   const [amount, setAmount] = useState(null);
   const [amountStr, setAmountStr] = useState("");
+  // Se è ricorrente non è una spesa di oggi: diventa una spesa fissa (e un abbonamento),
+  // quindi non si registra nel Diario ma nelle Spese fisse — altrimenti conterebbe due volte.
+  const [ricorrente, setRicorrente] = useState(false);
   // Di norma si registra una spesa di oggi, ma capita di ricordarsi il giorno dopo:
   // si può tornare indietro. Non in avanti — una spesa futura non è una spesa, è una
   // previsione, e quelle stanno nel Calendario come "uscite pianificate".
@@ -2554,15 +2529,19 @@ function AddSheet({ hourly, onClose, onAdd }) {
   const handleAmount = (val) => {
     setAmount(val);
     setStep("done");
-    playExpenseSound();
-    onAdd({
-      id: Date.now() + Math.random(),
-      cat: category.label,
-      iconId: category.id,
-      euro: val,
-      date: giorno,
-      time: isOggi ? "adesso" : shortDayLabel(giorno),
-    });
+    if (ricorrente && onAddAbbonamento) {
+      onAddAbbonamento({ nome: category.label, tipo: category.id, importo: val, frequenza: "mensile", abbonamento: true, giorno: "" });
+    } else {
+      playExpenseSound();
+      onAdd({
+        id: Date.now() + Math.random(),
+        cat: category.label,
+        iconId: category.id,
+        euro: val,
+        date: giorno,
+        time: isOggi ? "adesso" : shortDayLabel(giorno),
+      });
+    }
     setTimeout(onClose, 1400);
   };
 
@@ -2656,7 +2635,27 @@ function AddSheet({ hourly, onClose, onAdd }) {
               <category.icon size={20} color={C.brassText} />
               <span style={{ color: C.paper, fontWeight: 700 }}>{category.label}</span>
             </div>
-            <DaySelector />
+            {!ricorrente && <DaySelector />}
+            <button
+              onClick={() => setRicorrente(!ricorrente)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 14,
+                background: ricorrente ? "rgba(47,107,79,0.10)" : "none",
+                border: `1px solid ${ricorrente ? C.brass : C.panelBorder}`,
+                borderRadius: 14, padding: "10px 12px",
+              }}
+            >
+              <Repeat size={16} color={ricorrente ? C.brassText : C.textFaint} style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 13, color: C.paper, textAlign: "left", flex: 1 }}>
+                Si ripete ogni mese? <span style={{ color: C.textFaint }}>Diventa un abbonamento</span>
+              </span>
+              {ricorrente && <span style={{ fontSize: 11, fontWeight: 800, color: C.brassText }}>✓</span>}
+            </button>
+            {ricorrente && (
+              <div style={{ fontSize: 12, color: C.textFaint, marginBottom: 10, lineHeight: 1.4 }}>
+                Non conta come spesa di oggi: da ora è una spesa fissa mensile, la trovi in Abbonamenti.
+              </div>
+            )}
             <div style={{ display: "flex", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
               {[category.suggested, category.suggested ? category.suggested * 1.5 : null, category.suggested ? category.suggested * 0.6 : null]
                 .filter(Boolean)
@@ -2674,9 +2673,17 @@ function AddSheet({ hourly, onClose, onAdd }) {
           <div style={{ padding: "24px 0", textAlign: "center" }}>
             <div style={{ fontSize: 30, marginBottom: 8, color: C.greenText }}>✓</div>
             <div style={{ fontFamily: MONO_FONT, color: C.paper, fontSize: 18 }}>{amount.toFixed(2)}€</div>
-            <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(amount, hourly)} di lavoro</div>
-            {!isOggi && (
-              <div style={{ fontSize: 13, color: C.textDim, marginTop: 8 }}>registrata su {longDayLabel(giorno)}</div>
+            {ricorrente ? (
+              <div style={{ fontSize: 13, color: C.textDim, marginTop: 8, lineHeight: 1.5 }}>
+                Aggiunta agli abbonamenti: da ora conta come spesa fissa ogni mese.
+              </div>
+            ) : (
+              <>
+                <div style={{ fontFamily: MONO_FONT, color: C.brassText, fontSize: 14, marginTop: 4 }}>→ {euroToTime(amount, hourly)} di lavoro</div>
+                {!isOggi && (
+                  <div style={{ fontSize: 13, color: C.textDim, marginTop: 8 }}>registrata su {longDayLabel(giorno)}</div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -4623,7 +4630,7 @@ function GuidaScreen({ onBack, redditoTipo }) {
       id: "abbonamenti",
       titolo: "Abbonamenti — le spese che tornano ogni mese",
       minTier: "free",
-      esempio: "Netflix, il telefono, la palestra: tutto quello che paghi in automatico, in un posto solo. Tocca \"Aggiungi abbonamento\", scegli dal catalogo o scrivine uno tuo, metti il prezzo e ogni quanto viene addebitato (mese, anno o settimana). In cima trovi il totale al mese e all'anno, sia in euro sia in ore di lavoro — spesso è più di quanto sembra guardando i singoli prezzi uno per uno. Resta separato dal Diario e dalle spese fisse: non vuole contare due volte la stessa spesa, solo farti vedere quanto pesano tutti insieme.",
+      esempio: "Netflix, il telefono, la palestra: tutto quello che paghi in automatico, in un posto solo. Non si aggiunge da qui: quando registri una spesa fissa spunti \"È un abbonamento\" (lo trovi anche nel \"+\" del Diario, spuntando \"si ripete ogni mese\"), e da quel momento compare qui. In cima trovi il totale al mese e all'anno, sia in euro sia in ore di lavoro — spesso è più di quanto sembra guardando i singoli prezzi uno per uno. Non conta due volte: sono le stesse spese fisse già usate per calcolare le tue ore, viste solo da un'altra prospettiva.",
     },
     {
       id: "diario",
@@ -6023,7 +6030,6 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
     stipendio: rateIniziale > 0 ? String(Math.round(rateIniziale * 4.33 * 40)) : "", oreSettimana: "40",
     fixedList: [], // niente preset: ogni tester parte da zero e inserisce le proprie spese fisse
     goals: [], // nessun obiettivo demo: si imposta nel Passo 3 dell'onboarding
-    abbonamenti: [], // Netflix, telefono, palestra... si aggiungono dalla sezione Abbonamenti
     closurePeriod: "settimana", // giorno | settimana | mese
     carryOver: 0, // quanto non è stato allocato nell'ultima chiusura, si somma al prossimo periodo
     connectedAccounts: {}, // { banca: true, revolut: false, paypal: true }
@@ -6333,10 +6339,20 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
           {tab === "closure" && <ClosureScreen hourly={hourlyRate} profile={profile} entries={entries} onBack={() => setTab("report")} onAllocate={addToGoalSaved} onCarryOver={setCarryOver} />}
           {tab === "abbonamenti" && (
             <AbbonamentiScreen
-              abbonamenti={data.abbonamenti}
-              setAbbonamenti={(next) => setData({ ...data, abbonamenti: typeof next === "function" ? next(data.abbonamenti) : next })}
+              fixedList={data.fixedList}
               hourly={hourlyRate}
-              onBack={() => setTab("diario")}
+              onGestisci={() => setTab("spesefisse")}
+            />
+          )}
+          {tab === "spesefisse" && (
+            <OnboardingFixed
+              data={data}
+              setData={setData}
+              title="Spese fisse e abbonamenti"
+              showStepBadge={false}
+              ctaLabel="Fatto"
+              onNext={() => setTab("abbonamenti")}
+              onBack={() => setTab("abbonamenti")}
             />
           )}
           {tab === "goal" && <GoalScreen profile={profile} hourly={hourlyRate} onAddGoal={addGoal} />}
@@ -6443,7 +6459,14 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
               onCategorize={addEntry}
             />
           )}
-          {addOpen && <AddSheet hourly={hourlyRate} onClose={() => setAddOpen(false)} onAdd={addEntry} />}
+          {addOpen && (
+            <AddSheet
+              hourly={hourlyRate}
+              onClose={() => setAddOpen(false)}
+              onAdd={addEntry}
+              onAddAbbonamento={(voce) => setData({ ...data, fixedList: [...data.fixedList, { id: Date.now() + Math.random(), ...voce }] })}
+            />
+          )}
           {bankTx && !categorizeOpen && (
             <BankNotificationBanner tx={bankTx} onTap={() => setCategorizeOpen(true)} onDismiss={() => setBankTx(null)} />
           )}
@@ -6456,7 +6479,7 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
             />
           )}
         </div>
-        {(tab === "converti" || tab === "diario" || tab === "abbonamenti" || tab === "goal" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
+        {(tab === "converti" || tab === "diario" || tab === "abbonamenti" || tab === "spesefisse" || tab === "goal" || tab === "closure" || tab === "transactions" || tab === "calendario" || tab === "locked-calendario" || tab === "locked-closure" || tab === "locked-transactions") && (
           <div id="tut-tabbar" style={{ flexShrink: 0, borderTop: `1px solid ${C.panelBorder}`, backgroundColor: C.bg, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 6px" }}>
             <button onClick={() => setTab("converti")} style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <Calculator size={20} color={tab === "converti" ? C.brassText : C.textFaint} />
@@ -6671,20 +6694,21 @@ function IntroScreen({ onFine }) {
 // Sezione a sé stante e non un filtro del Diario: il Diario ragiona per giornata,
 // qui si ragiona per mese. Mischiare le due logiche nella stessa schermata avrebbe
 // reso ambiguo cosa si sta guardando.
-function AbbonamentiScreen({ abbonamenti, setAbbonamenti, hourly, onBack }) {
-  const [showCatalogo, setShowCatalogo] = useState(false);
-  const [editing, setEditing] = useState(null); // abbonamento in modifica, o {} per uno nuovo
-
-  const attivi = (abbonamenti || []).filter((a) => a.attivo !== false);
-  const totaleMese = attivi.reduce((s, a) => s + euroAlMese(a.euro, a.cadenza), 0);
+// ---- Abbonamenti ----
+// Non ha un modulo di aggiunta proprio: la fonte è unica, le spese fisse. Qui si
+// legge quali sono state marcate "abbonamento" e si mostra il totale in una
+// prospettiva diversa — mese, anno, e soprattutto ore di lavoro.
+function AbbonamentiScreen({ fixedList, hourly, onGestisci }) {
+  const attivi = (fixedList || []).filter((f) => f.abbonamento);
+  const totaleMese = attivi.reduce((s, f) => s + toMonthly(f), 0);
   const totaleAnno = totaleMese * 12;
   const oreMese = hourly > 0 ? totaleMese / hourly : 0;
   const oreAnno = hourly > 0 ? totaleAnno / hourly : 0;
 
   const oggi = new Date();
-  const prossimaScadenza = (a) => {
-    if (!a.giorno) return null;
-    const g = Math.min(Math.max(Number(a.giorno) || 1, 1), 28);
+  const prossimaScadenza = (f) => {
+    if (!f.giorno) return null;
+    const g = Math.min(Math.max(Number(f.giorno) || 1, 1), 28);
     let d = new Date(oggi.getFullYear(), oggi.getMonth(), g);
     if (d < oggi) d = new Date(oggi.getFullYear(), oggi.getMonth() + 1, g);
     return d;
@@ -6696,16 +6720,6 @@ function AbbonamentiScreen({ abbonamenti, setAbbonamenti, hourly, onBack }) {
     if (!dy) return -1;
     return dx - dy;
   });
-
-  const salva = (voce) => {
-    if (voce.id && (abbonamenti || []).some((a) => a.id === voce.id)) {
-      setAbbonamenti(abbonamenti.map((a) => (a.id === voce.id ? voce : a)));
-    } else {
-      setAbbonamenti([...(abbonamenti || []), { ...voce, id: voce.id || Date.now() + Math.random() }]);
-    }
-    setEditing(null);
-  };
-  const elimina = (id) => setAbbonamenti((abbonamenti || []).filter((a) => a.id !== id));
 
   return (
     <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }}>
@@ -6720,7 +6734,9 @@ function AbbonamentiScreen({ abbonamenti, setAbbonamenti, hourly, onBack }) {
             <div style={{ fontSize: 13.5, color: C.textDim, lineHeight: 1.55, marginBottom: 4 }}>
               Netflix, il telefono, la palestra: tutto quello che paghi senza più pensarci.
             </div>
-            <div style={{ fontSize: 13, color: C.textFaint }}>Aggiungi il primo qui sotto.</div>
+            <div style={{ fontSize: 13, color: C.textFaint }}>
+              Segna una spesa fissa come "abbonamento" e la trovi qui.
+            </div>
           </div>
         ) : (
           <div style={{
@@ -6749,15 +6765,15 @@ function AbbonamentiScreen({ abbonamenti, setAbbonamenti, hourly, onBack }) {
 
         {ordinati.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-            {ordinati.map((a) => {
-              const scad = prossimaScadenza(a);
+            {ordinati.map((f) => {
+              const scad = prossimaScadenza(f);
               const giorniMancanti = scad ? Math.round((scad - oggi) / 86400000) : null;
-              const Icon = (ABBONAMENTI_CATALOGO.find((c) => c.id === a.catalogoId) || {}).icon || Repeat;
-              const mese = euroAlMese(a.euro, a.cadenza);
+              const Icon = FIXED_ICONS[f.tipo] || Repeat;
+              const mese = toMonthly(f);
               return (
                 <button
-                  key={a.id}
-                  onClick={() => setEditing(a)}
+                  key={f.id}
+                  onClick={onGestisci}
                   style={{
                     width: "100%", textAlign: "left", cursor: "pointer", background: "none",
                     border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: "13px 14px",
@@ -6768,9 +6784,9 @@ function AbbonamentiScreen({ abbonamenti, setAbbonamenti, hourly, onBack }) {
                     <Icon size={17} color={C.brassText} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14.5, fontWeight: 700, color: C.paper }}>{a.nome}</div>
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: C.paper }}>{f.nome}</div>
                     <div style={{ fontSize: 12, color: C.textFaint }}>
-                      {a.euro ? `${Number(a.euro).toFixed(2)}€ ${ABBONAMENTI_CADENZE[a.cadenza]?.label || "al mese"}` : "Prezzo da impostare"}
+                      {f.importo.toFixed(2)}€ {f.frequenza === "mensile" ? "al mese" : f.frequenza === "annuale" ? "all'anno" : f.frequenza === "settimanale" ? "a settimana" : "al giorno"}
                       {giorniMancanti !== null && giorniMancanti <= 6 && (
                         <span style={{ color: C.brassText, fontWeight: 700 }}> · rinnova tra {giorniMancanti}g</span>
                       )}
@@ -6787,125 +6803,15 @@ function AbbonamentiScreen({ abbonamenti, setAbbonamenti, hourly, onBack }) {
         )}
 
         <button
-          onClick={() => setShowCatalogo(true)}
+          onClick={onGestisci}
           style={{
             width: "100%", padding: "14px 0", borderRadius: 16, border: "none",
             backgroundColor: C.brass, color: C.ink, fontSize: 14.5, fontWeight: 800, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}
         >
-          <Plus size={18} /> Aggiungi abbonamento
+          <Plus size={18} /> {attivi.length === 0 ? "Aggiungi dalle Spese fisse" : "Gestisci spese fisse e abbonamenti"}
         </button>
-      </div>
-
-      {showCatalogo && (
-        <AbbonamentoCatalogoSheet
-          onClose={() => setShowCatalogo(false)}
-          onScegli={(voce) => { setShowCatalogo(false); setEditing(voce); }}
-        />
-      )}
-      {editing && (
-        <AbbonamentoEditSheet
-          voce={editing}
-          onClose={() => setEditing(null)}
-          onSalva={salva}
-          onElimina={editing.id ? () => { elimina(editing.id); setEditing(null); } : null}
-        />
-      )}
-    </div>
-  );
-}
-
-// Scegli dal catalogo: precompila, ma non salva finché non si conferma nel modulo
-// successivo. Così anche una scelta rapida passa per la stessa verifica del prezzo.
-function AbbonamentoCatalogoSheet({ onClose, onScegli }) {
-  return (
-    <div onClick={onClose} style={{ position: "absolute", inset: 0, backgroundColor: "rgba(10,20,15,0.4)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{
-        width: "100%", maxHeight: "78%", overflowY: "auto", backgroundColor: C.panel,
-        borderRadius: "24px 24px 0 0", padding: "10px 16px calc(20px + env(safe-area-inset-bottom)) 16px",
-      }}>
-        <div style={{ width: 44, height: 4, borderRadius: 2, backgroundColor: C.panelBorder, margin: "0 auto 14px auto" }} />
-        <div style={{ fontSize: 15, fontWeight: 800, color: C.paper, marginBottom: 12 }}>Cosa vuoi aggiungere?</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {ABBONAMENTI_CATALOGO.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => onScegli({ catalogoId: c.id, nome: c.nome, euro: c.euro || "", cadenza: c.cadenza, giorno: "", attivo: true })}
-              style={{
-                textAlign: "left", cursor: "pointer", background: "none", border: `1px solid ${C.panelBorder}`,
-                borderRadius: 14, padding: "12px 12px", display: "flex", alignItems: "center", gap: 10,
-              }}
-            >
-              <c.icon size={17} color={C.brassText} style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: C.paper }}>{c.nome}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Aggiungi o modifica: stesso modulo per entrambi i casi, con l'eliminazione
-// disponibile solo quando si sta modificando qualcosa che esiste già.
-function AbbonamentoEditSheet({ voce, onClose, onSalva, onElimina }) {
-  const [nome, setNome] = useState(voce.nome || "");
-  const [euro, setEuro] = useState(voce.euro != null ? String(voce.euro) : "");
-  const [cadenza, setCadenza] = useState(voce.cadenza || "mensile");
-  const [giorno, setGiorno] = useState(voce.giorno || "");
-
-  const puoSalvare = nome.trim() && Number(String(euro).replace(",", ".")) > 0;
-  const campo = {
-    width: "100%", boxSizing: "border-box", backgroundColor: C.inputBg, color: C.paper,
-    border: `1px solid ${C.panelBorder}`, borderRadius: 12, padding: "12px 13px", fontSize: 14.5, outline: "none",
-  };
-
-  return (
-    <div onClick={onClose} style={{ position: "absolute", inset: 0, backgroundColor: "rgba(10,20,15,0.4)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{
-        width: "100%", backgroundColor: C.panel, borderRadius: "24px 24px 0 0",
-        padding: "10px 20px calc(22px + env(safe-area-inset-bottom)) 20px",
-      }}>
-        <div style={{ width: 44, height: 4, borderRadius: 2, backgroundColor: C.panelBorder, margin: "0 auto 16px auto" }} />
-
-        <div style={{ marginBottom: 5 }}><FieldLabel>Nome</FieldLabel></div>
-        <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="es. Netflix" style={{ ...campo, marginBottom: 14 }} />
-
-        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ marginBottom: 5 }}><FieldLabel>Prezzo</FieldLabel></div>
-            <input type="number" inputMode="decimal" value={euro} onChange={(e) => setEuro(e.target.value)} placeholder="0" style={campo} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ marginBottom: 5 }}><FieldLabel>Ogni</FieldLabel></div>
-            <select value={cadenza} onChange={(e) => setCadenza(e.target.value)} style={{ ...campo, appearance: "none" }}>
-              <option value="mensile">Mese</option>
-              <option value="annuale">Anno</option>
-              <option value="settimanale">Settimana</option>
-            </select>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 5 }}><FieldLabel>Giorno del rinnovo (opzionale)</FieldLabel></div>
-        <input type="number" inputMode="numeric" min="1" max="28" value={giorno} onChange={(e) => setGiorno(e.target.value)} placeholder="es. 15" style={{ ...campo, marginBottom: 18 }} />
-
-        <button
-          disabled={!puoSalvare}
-          onClick={() => onSalva({ ...voce, nome: nome.trim(), euro: Number(String(euro).replace(",", ".")), cadenza, giorno: giorno || "", attivo: true })}
-          style={{
-            width: "100%", padding: "14px 0", borderRadius: 14, border: "none", marginBottom: 8,
-            backgroundColor: puoSalvare ? C.brass : C.panelBorder, color: puoSalvare ? C.ink : C.textFaint,
-            fontSize: 14.5, fontWeight: 800, cursor: puoSalvare ? "pointer" : "default",
-          }}
-        >
-          Salva
-        </button>
-        {onElimina && (
-          <button onClick={onElimina} style={{ width: "100%", padding: "12px 0", borderRadius: 14, border: `1px solid ${C.rust}`, background: "none", color: C.rust, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
-            Elimina abbonamento
-          </button>
-        )}
       </div>
     </div>
   );
