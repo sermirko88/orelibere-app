@@ -4702,6 +4702,16 @@ function GuidaScreen({ onBack, redditoTipo }) {
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}><ChevronLeft size={20} color={C.textDim} /></button>
       </div>
       <ScreenHeader eyebrow="Da consultare quando vuoi" title="Guida all'uso" />
+
+      {/* Lo stesso concetto della prima schermata, in sintesi: qui va spiegato cosa fa
+          davvero l'app, non solo perché il tempo conta — quello lo si è già letto una volta. */}
+      <div style={{ margin: "0 20px 18px 20px", padding: "14px 16px", borderRadius: 16, backgroundColor: C.ticket, border: `1px solid ${C.ticketBorder}` }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: C.paper, marginBottom: 4 }}>Come funziona, in breve</div>
+        <p style={{ fontSize: 12.5, color: C.textFaint, lineHeight: 1.5, margin: 0 }}>
+          Scrivi quanto guadagni. Ogni spesa che segni — nel Convertitore o nel Diario — viene tradotta in ore di lavoro: non più "quanto costa" in euro, ma "quanto tempo ti costa" davvero. Il resto dell'app — Diario, Abbonamenti, Budget — usa sempre questo stesso conto, applicato a momenti diversi della tua vita finanziaria.
+        </p>
+      </div>
+
       <p style={{ padding: "0 20px", fontSize: 12.5, color: C.textFaint, lineHeight: 1.5, marginBottom: 18 }}>
         Un esempio semplice per ogni parte dell'app. Tocca una voce per aprirla.
       </p>
@@ -6026,8 +6036,11 @@ function MainApp({ currentUser, onChangeUser, rateIniziale = 0 }) {
   const [tutorialStep, setTutorialStep] = useState(0);
   const [step, setStep] = useState(0);
   const [data, setData] = useState({
-    // Se ha già scritto quanto guadagna nel convertitore, non glielo si richiede da capo
+    // Se ha già scritto quanto guadagna nel convertitore prima di registrarsi, non glielo
+    // si richiede da capo — vale sia per lo stipendio mensile sia per la tariffa oraria,
+    // nel caso scelga più avanti "reddito variabile".
     stipendio: rateIniziale > 0 ? String(Math.round(rateIniziale * 4.33 * 40)) : "", oreSettimana: "40",
+    tariffaOrariaLorda: rateIniziale > 0 ? String(Number(rateIniziale.toFixed(2))) : "", tariffaUnita: "ora",
     fixedList: [], // niente preset: ogni tester parte da zero e inserisce le proprie spese fisse
     goals: [], // nessun obiettivo demo: si imposta nel Passo 3 dell'onboarding
     closurePeriod: "settimana", // giorno | settimana | mese
@@ -6567,260 +6580,14 @@ class ErrorBoundary extends React.Component {
 }
 
 // ---- Introduzione ----
-// Tre schermate, un'idea per schermata. Non spiega perché il tempo vale più dei soldi:
-// fa fare il conto alla persona sui propri numeri e su una cosa che ha fatto stamattina.
-// Chi entra senza già avere questa prospettiva ha bisogno di vederla, non di leggerla.
-const CAFFE_EURO = 1.2;
-
-function IntroScreen({ onFine }) {
-  const [passo, setPasso] = useState(0);
-  const [modo, setModo] = useState("ora"); // ora | mese
-  const [valore, setValore] = useState("");
-
-  const tariffa = modo === "ora"
-    ? Number(String(valore).replace(",", ".")) || 0
-    : (Number(String(valore).replace(",", ".")) || 0) / (4.33 * 40);
-
-  const premiTasto = (k) => {
-    if (k === "⌫") return setValore(valore.slice(0, -1));
-    if (k === ",") return valore.includes(",") ? null : setValore((valore || "0") + ",");
-    if (valore.replace(",", "").length >= 7) return;
-    setValore(valore === "0" ? k : valore + k);
-  };
-
-  const wrap = { flex: 1, display: "flex", flexDirection: "column", padding: "0 24px 28px 24px", overflowY: "auto" };
-  const avanti = (label, onClick, attivo = true) => (
-    <button
-      onClick={onClick}
-      disabled={!attivo}
-      style={{
-        width: "100%", padding: "15px 0", borderRadius: 16, border: "none", marginTop: 22,
-        backgroundColor: attivo ? C.brass : C.panelBorder, color: attivo ? C.ink : C.textFaint,
-        fontSize: 15, fontWeight: 800, cursor: attivo ? "pointer" : "default",
-      }}
-    >
-      {label}
-    </button>
-  );
-
-  if (passo === 0) {
-    return (
-      <div style={wrap}>
-        <div style={{ paddingTop: 40, marginBottom: 22 }}>
-          <h1 style={{ fontFamily: DISPLAY_FONT, fontSize: 30, color: C.paper, margin: 0, lineHeight: 1.15 }}>
-            Quanto guadagni?
-          </h1>
-        </div>
-
-        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-          {[{ id: "ora", label: "all'ora" }, { id: "mese", label: "al mese" }].map((m) => (
-            <button
-              key={m.id}
-              onClick={() => { setModo(m.id); setValore(""); }}
-              style={{
-                flex: 1, padding: "10px 0", borderRadius: 999, cursor: "pointer",
-                border: `1px solid ${modo === m.id ? C.brass : C.panelBorder}`,
-                backgroundColor: modo === m.id ? C.brass : "transparent",
-                color: modo === m.id ? C.ink : C.textDim,
-                fontSize: 14, fontWeight: 700, fontFamily: MONO_FONT,
-              }}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-
-        <div style={{
-          backgroundColor: C.inputBg, border: `2px solid ${C.brass}`, borderRadius: 16,
-          padding: "16px 16px", display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 18,
-        }}>
-          <span style={{ fontFamily: MONO_FONT, fontSize: 26, fontWeight: 700, color: valore ? C.paper : C.textFainter }}>
-            {valore || "0"}
-          </span>
-          <span style={{ fontFamily: MONO_FONT, fontSize: 17, color: C.textFaint }}>€</span>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-          {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫"].map((k, i) => (
-            <button
-              key={i}
-              onClick={() => premiTasto(k)}
-              style={{ padding: "15px 0", borderRadius: 14, backgroundColor: C.inputBg, border: `1px solid ${C.panelBorder}`, color: C.paper, fontFamily: MONO_FONT, fontSize: 19, cursor: "pointer" }}
-            >
-              {k}
-            </button>
-          ))}
-        </div>
-
-        {avanti("Avanti", () => setPasso(1), tariffa > 0)}
-      </div>
-    );
-  }
-
-  if (passo === 1) {
-    return (
-      <div style={{ ...wrap, justifyContent: "center", textAlign: "center" }}>
-        <div style={{ fontSize: 16, color: C.textDim, marginBottom: 10 }}>Il caffè di stamattina</div>
-        <div style={{ fontFamily: SERIF_FONT, fontSize: 58, fontWeight: 700, color: C.paper, lineHeight: 1 }}>
-          {euroToTime(CAFFE_EURO, tariffa)}
-        </div>
-        <div style={{ fontSize: 16, color: C.textDim, marginTop: 10 }}>di lavoro</div>
-        {avanti("Avanti", () => setPasso(2))}
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ ...wrap, justifyContent: "center", textAlign: "center" }}>
-      <div style={{ fontSize: 17, color: C.textDim, lineHeight: 1.5, marginBottom: 14 }}>
-        Otto ore di lavoro al giorno.
-      </div>
-      <div style={{ fontFamily: DISPLAY_FONT, fontSize: 28, color: C.paper, lineHeight: 1.25 }}>
-        Quante te ne restano davvero?
-      </div>
-      {avanti("Scoprilo", () => onFine(tariffa))}
-    </div>
-  );
-}
-
-// ---- Convertitore euro → ore ----
-// È il gesto che distingue OreLibere da un'app di spese: sei davanti a una cosa che
-// vorresti, digiti il prezzo, e vedi quanto devi lavorare per permettertela — PRIMA
-// di comprarla. Per questo è la prima cosa che si vede, e per questo chiede soltanto
-// la tariffa oraria: tutto il resto (spese fisse, obiettivi) serve al Diario, non a
-// questo conto, e chiederlo qui vorrebbe dire mettere sei schermate prima del primo
-// momento in cui l'app dimostra di servire a qualcosa.
-// ---- Abbonamenti ----
-// Sezione a sé stante e non un filtro del Diario: il Diario ragiona per giornata,
-// qui si ragiona per mese. Mischiare le due logiche nella stessa schermata avrebbe
-// reso ambiguo cosa si sta guardando.
-// ---- Abbonamenti ----
-// Non ha un modulo di aggiunta proprio: la fonte è unica, le spese fisse. Qui si
-// legge quali sono state marcate "abbonamento" e si mostra il totale in una
-// prospettiva diversa — mese, anno, e soprattutto ore di lavoro.
-function AbbonamentiScreen({ fixedList, hourly, onGestisci }) {
-  const attivi = (fixedList || []).filter((f) => f.abbonamento);
-  const totaleMese = attivi.reduce((s, f) => s + toMonthly(f), 0);
-  const totaleAnno = totaleMese * 12;
-  const oreMese = hourly > 0 ? totaleMese / hourly : 0;
-  const oreAnno = hourly > 0 ? totaleAnno / hourly : 0;
-
-  const oggi = new Date();
-  const prossimaScadenza = (f) => {
-    if (!f.giorno) return null;
-    const g = Math.min(Math.max(Number(f.giorno) || 1, 1), 28);
-    let d = new Date(oggi.getFullYear(), oggi.getMonth(), g);
-    if (d < oggi) d = new Date(oggi.getFullYear(), oggi.getMonth() + 1, g);
-    return d;
-  };
-  const ordinati = [...attivi].sort((x, y) => {
-    const dx = prossimaScadenza(x), dy = prossimaScadenza(y);
-    if (!dx && !dy) return 0;
-    if (!dx) return 1;
-    if (!dy) return -1;
-    return dx - dy;
-  });
-
-  return (
-    <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }}>
-      <ScreenHeader eyebrow="Spese che tornano ogni mese" title="Abbonamenti" />
-
-      <div style={{ padding: "0 20px" }}>
-        {attivi.length === 0 ? (
-          <div style={{
-            border: `1px dashed ${C.panelBorder}`, borderRadius: 16, padding: "22px 18px",
-            marginBottom: 20, textAlign: "center",
-          }}>
-            <div style={{ fontSize: 13.5, color: C.textDim, lineHeight: 1.55, marginBottom: 4 }}>
-              Netflix, il telefono, la palestra: tutto quello che paghi senza più pensarci.
-            </div>
-            <div style={{ fontSize: 13, color: C.textFaint }}>
-              Segna una spesa fissa come "abbonamento" e la trovi qui.
-            </div>
-          </div>
-        ) : (
-          <div style={{
-            background: "linear-gradient(150deg, #20342A 0%, #12211B 100%)",
-            borderRadius: 24, padding: "20px 20px", marginBottom: 20,
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8FA396", fontFamily: MONO_FONT, marginBottom: 4 }}>Al mese</div>
-                <div style={{ fontFamily: SANS_FONT, fontSize: 26, fontWeight: 800, color: "#FFFFFF" }}>{totaleMese.toFixed(2)}€</div>
-                {hourly > 0 && <div style={{ fontSize: 12.5, color: "#8FE3B4", marginTop: 2 }}>{euroToTime(totaleMese, hourly)} di lavoro</div>}
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8FA396", fontFamily: MONO_FONT, marginBottom: 4 }}>All'anno</div>
-                <div style={{ fontFamily: SANS_FONT, fontSize: 26, fontWeight: 800, color: "#FFFFFF" }}>{totaleAnno.toFixed(0)}€</div>
-                {hourly > 0 && <div style={{ fontSize: 12.5, color: "#8FE3B4", marginTop: 2 }}>{euroToTime(totaleAnno, hourly)} di lavoro</div>}
-              </div>
-            </div>
-            {hourly > 0 && oreAnno >= 4 && (
-              <div style={{ borderTop: "1px dashed rgba(255,255,255,0.14)", marginTop: 14, paddingTop: 12, fontSize: 12.5, color: "#CFDDD4", lineHeight: 1.5 }}>
-                Ogni anno lavori <strong style={{ color: "#FFFFFF" }}>{Math.round(oreAnno)} ore</strong> solo per pagare questi abbonamenti — {Math.round(oreAnno / 8)} giornate intere.
-              </div>
-            )}
-          </div>
-        )}
-
-        {ordinati.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-            {ordinati.map((f) => {
-              const scad = prossimaScadenza(f);
-              const giorniMancanti = scad ? Math.round((scad - oggi) / 86400000) : null;
-              const Icon = FIXED_ICONS[f.tipo] || Repeat;
-              const mese = toMonthly(f);
-              return (
-                <button
-                  key={f.id}
-                  onClick={onGestisci}
-                  style={{
-                    width: "100%", textAlign: "left", cursor: "pointer", background: "none",
-                    border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: "13px 14px",
-                    display: "flex", alignItems: "center", gap: 12,
-                  }}
-                >
-                  <div style={{ width: 38, height: 38, borderRadius: "50%", backgroundColor: C.ticket, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon size={17} color={C.brassText} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14.5, fontWeight: 700, color: C.paper }}>{f.nome}</div>
-                    <div style={{ fontSize: 12, color: C.textFaint }}>
-                      {f.importo.toFixed(2)}€ {f.frequenza === "mensile" ? "al mese" : f.frequenza === "annuale" ? "all'anno" : f.frequenza === "settimanale" ? "a settimana" : "al giorno"}
-                      {giorniMancanti !== null && giorniMancanti <= 6 && (
-                        <span style={{ color: C.brassText, fontWeight: 700 }}> · rinnova tra {giorniMancanti}g</span>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontFamily: MONO_FONT, fontSize: 13, fontWeight: 700, color: C.paper }}>{mese.toFixed(2)}€</div>
-                    {hourly > 0 && <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: C.textFaint }}>{euroToTime(mese, hourly)}</div>}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        <button
-          onClick={onGestisci}
-          style={{
-            width: "100%", padding: "14px 0", borderRadius: 16, border: "none",
-            backgroundColor: C.brass, color: C.ink, fontSize: 14.5, fontWeight: 800, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          }}
-        >
-          <Plus size={18} /> {attivi.length === 0 ? "Aggiungi dalle Spese fisse" : "Gestisci spese fisse e abbonamenti"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, showEntra = true }) {
-  const [modo, setModo] = useState("ora"); // ora | mese — due modi di dichiarare quanto si guadagna
+  // "Al mese" è il modo più naturale in cui la maggior parte delle persone conosce
+  // il proprio guadagno, quindi è il predefinito. Entrambi i campi vanno precompilati
+  // reciprocamente quando la tariffa è già nota: altrimenti, passando a un modo che
+  // parte sempre vuoto, il risultato sembrerebbe azzerarsi anche se il dato c'era.
+  const [modo, setModo] = useState("mese"); // mese | ora — due modi di dichiarare quanto si guadagna
   const [oraStr, setOraStr] = useState(hourly > 0 ? String(Number(hourly.toFixed(2))) : "");
-  const [meseStr, setMeseStr] = useState("");
+  const [meseStr, setMeseStr] = useState(hourly > 0 ? String(Math.round(hourly * 4.33 * 40)) : "");
   const [prezzoStr, setPrezzoStr] = useState("");
   // Il confronto tra modi di pagare è la stessa domanda vista da un'altra angolazione,
   // sullo stesso prezzo: sta qui sotto, chiuso, e si apre solo se serve.
@@ -6920,7 +6687,7 @@ function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, sho
       <div style={{ marginBottom: 16 }}>
         <div style={etichetta}>Quanto guadagni</div>
         <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-          {[{ id: "ora", label: "all'ora" }, { id: "mese", label: "al mese" }].map((m) => (
+          {[{ id: "mese", label: "al mese" }, { id: "ora", label: "all'ora" }].map((m) => (
             <button
               key={m.id}
               onClick={() => setModo(m.id)}
@@ -7197,19 +6964,11 @@ function AppInner() {
   // ora, prima di entrare, così anche gli utenti "vecchi" vengono migrati automaticamente.
   const [pinChecked, setPinChecked] = useState(!supabaseConfigured);
   const [needsPinSetup, setNeedsPinSetup] = useState(false);
-  // Chi arriva senza profilo vede prima il convertitore: showPicker passa alla registrazione,
-  // anteprimaRate conserva la tariffa che ha appena scritto per non richiedergliela dopo.
+  // Chi arriva senza profilo vede sempre prima la spiegazione, poi il convertitore
+  // (dove prova il concetto sui propri numeri), solo alla fine la registrazione.
+  const [showSpiegazione, setShowSpiegazione] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
   const [anteprimaRate, setAnteprimaRate] = useState(0);
-  // L'introduzione si vede una volta sola per dispositivo: chi torna va dritto al convertitore.
-  const [introFatta, setIntroFatta] = useState(() => {
-    try { return localStorage.getItem("orelibere_intro") === "1"; } catch { return false; }
-  });
-  const chiudiIntro = (tariffa) => {
-    if (tariffa > 0) setAnteprimaRate(tariffa);
-    try { localStorage.setItem("orelibere_intro", "1"); } catch {}
-    setIntroFatta(true);
-  };
 
   useEffect(() => {
     if (!currentUser || !supabaseConfigured) { setPinChecked(true); return; }
@@ -7254,13 +7013,13 @@ function AppInner() {
   const { frameStyle, outerStyle } = useShellStyles();
 
   if (!currentUser) {
-    // Prima di chiedere qualsiasi cosa, l'app fa vedere a cosa serve: due campi,
-    // un numero, dieci secondi. La registrazione arriva solo se uno vuole di più.
+    // Prima cosa in assoluto: la spiegazione, sempre — non una tantum per dispositivo.
+    // Poi il convertitore, dove si prova il concetto sui propri numeri prima di registrarsi.
     return (
       <div style={outerStyle}>
         <div style={frameStyle}>
-          {!introFatta ? (
-            <IntroScreen onFine={chiudiIntro} />
+          {showSpiegazione ? (
+            <WelcomeScreen onStart={() => setShowSpiegazione(false)} />
           ) : showPicker ? (
             <>
               <div style={{ padding: "12px 20px 0 20px" }}>
