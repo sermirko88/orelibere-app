@@ -6574,6 +6574,129 @@ class ErrorBoundary extends React.Component {
 }
 
 // ---- Introduzione ----
+// ---- Abbonamenti ----
+// Non ha un modulo di aggiunta proprio: la fonte è unica, le spese fisse. Qui si
+// legge quali sono state marcate "abbonamento" e si mostra il totale in una
+// prospettiva diversa — mese, anno, e soprattutto ore di lavoro.
+function AbbonamentiScreen({ fixedList, hourly, onGestisci }) {
+  const attivi = (fixedList || []).filter((f) => f.abbonamento);
+  const totaleMese = attivi.reduce((s, f) => s + toMonthly(f), 0);
+  const totaleAnno = totaleMese * 12;
+  const oreMese = hourly > 0 ? totaleMese / hourly : 0;
+  const oreAnno = hourly > 0 ? totaleAnno / hourly : 0;
+
+  const oggi = new Date();
+  const prossimaScadenza = (f) => {
+    if (!f.giorno) return null;
+    const g = Math.min(Math.max(Number(f.giorno) || 1, 1), 28);
+    let d = new Date(oggi.getFullYear(), oggi.getMonth(), g);
+    if (d < oggi) d = new Date(oggi.getFullYear(), oggi.getMonth() + 1, g);
+    return d;
+  };
+  const ordinati = [...attivi].sort((x, y) => {
+    const dx = prossimaScadenza(x), dy = prossimaScadenza(y);
+    if (!dx && !dy) return 0;
+    if (!dx) return 1;
+    if (!dy) return -1;
+    return dx - dy;
+  });
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+      <ScreenHeader eyebrow="Spese che tornano ogni mese" title="Abbonamenti" />
+
+      <div style={{ padding: "0 20px" }}>
+        {attivi.length === 0 ? (
+          <div style={{
+            border: `1px dashed ${C.panelBorder}`, borderRadius: 16, padding: "22px 18px",
+            marginBottom: 20, textAlign: "center",
+          }}>
+            <div style={{ fontSize: 13.5, color: C.textDim, lineHeight: 1.55, marginBottom: 4 }}>
+              Netflix, il telefono, la palestra: tutto quello che paghi senza più pensarci.
+            </div>
+            <div style={{ fontSize: 13, color: C.textFaint }}>
+              Segna una spesa fissa come "abbonamento" e la trovi qui.
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            background: "linear-gradient(150deg, #20342A 0%, #12211B 100%)",
+            borderRadius: 24, padding: "20px 20px", marginBottom: 20,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8FA396", fontFamily: MONO_FONT, marginBottom: 4 }}>Al mese</div>
+                <div style={{ fontFamily: SANS_FONT, fontSize: 26, fontWeight: 800, color: "#FFFFFF" }}>{totaleMese.toFixed(2)}€</div>
+                {hourly > 0 && <div style={{ fontSize: 12.5, color: "#8FE3B4", marginTop: 2 }}>{euroToTime(totaleMese, hourly)} di lavoro</div>}
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8FA396", fontFamily: MONO_FONT, marginBottom: 4 }}>All'anno</div>
+                <div style={{ fontFamily: SANS_FONT, fontSize: 26, fontWeight: 800, color: "#FFFFFF" }}>{totaleAnno.toFixed(0)}€</div>
+                {hourly > 0 && <div style={{ fontSize: 12.5, color: "#8FE3B4", marginTop: 2 }}>{euroToTime(totaleAnno, hourly)} di lavoro</div>}
+              </div>
+            </div>
+            {hourly > 0 && oreAnno >= 4 && (
+              <div style={{ borderTop: "1px dashed rgba(255,255,255,0.14)", marginTop: 14, paddingTop: 12, fontSize: 12.5, color: "#CFDDD4", lineHeight: 1.5 }}>
+                Ogni anno lavori <strong style={{ color: "#FFFFFF" }}>{Math.round(oreAnno)} ore</strong> solo per pagare questi abbonamenti — {Math.round(oreAnno / 8)} giornate intere.
+              </div>
+            )}
+          </div>
+        )}
+
+        {ordinati.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+            {ordinati.map((f) => {
+              const scad = prossimaScadenza(f);
+              const giorniMancanti = scad ? Math.round((scad - oggi) / 86400000) : null;
+              const Icon = FIXED_ICONS[f.tipo] || Repeat;
+              const mese = toMonthly(f);
+              return (
+                <button
+                  key={f.id}
+                  onClick={onGestisci}
+                  style={{
+                    width: "100%", textAlign: "left", cursor: "pointer", background: "none",
+                    border: `1px solid ${C.panelBorder}`, borderRadius: 16, padding: "13px 14px",
+                    display: "flex", alignItems: "center", gap: 12,
+                  }}
+                >
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", backgroundColor: C.ticket, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon size={17} color={C.brassText} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: C.paper }}>{f.nome}</div>
+                    <div style={{ fontSize: 12, color: C.textFaint }}>
+                      {f.importo.toFixed(2)}€ {f.frequenza === "mensile" ? "al mese" : f.frequenza === "annuale" ? "all'anno" : f.frequenza === "settimanale" ? "a settimana" : "al giorno"}
+                      {giorniMancanti !== null && giorniMancanti <= 6 && (
+                        <span style={{ color: C.brassText, fontWeight: 700 }}> · rinnova tra {giorniMancanti}g</span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontFamily: MONO_FONT, fontSize: 13, fontWeight: 700, color: C.paper }}>{mese.toFixed(2)}€</div>
+                    {hourly > 0 && <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: C.textFaint }}>{euroToTime(mese, hourly)}</div>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <button
+          onClick={onGestisci}
+          style={{
+            width: "100%", padding: "14px 0", borderRadius: 16, border: "none",
+            backgroundColor: C.brass, color: C.ink, fontSize: 14.5, fontWeight: 800, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          <Plus size={18} /> {attivi.length === 0 ? "Aggiungi dalle Spese fisse" : "Gestisci spese fisse e abbonamenti"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ConvertitoreScreen({ hourly, onSetHourly, onEntra, onAggiungiSpesa, showEntra = true }) {
   // "Al mese" è il modo più naturale in cui la maggior parte delle persone conosce
   // il proprio guadagno, quindi è il predefinito. Entrambi i campi vanno precompilati
